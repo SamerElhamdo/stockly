@@ -213,7 +213,7 @@ async function loadInvoices() {
                     <div class="text-sm text-gray-600 dark:text-gray-400 customer-name">${invoice.customer_name}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">${invoice.total_amount.toLocaleString()} د.ك</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">${invoice.total_amount.toLocaleString()} $</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium invoice-status ${
@@ -573,6 +573,17 @@ function clearInvoiceSearch() {
 }
 
 // Load data on page load
-document.addEventListener('DOMContentLoaded', loadInvoices);
+document.addEventListener('DOMContentLoaded', function() {
+    // Show loader while loading data
+    PageLoader.show('جاري تحميل الفواتير...');
+    
+    loadInvoices().then(() => {
+        // Hide loader after data is loaded
+        PageLoader.hide();
+    }).catch((error) => {
+        console.error('Error loading invoices:', error);
+        PageLoader.hide();
+    });
+});
 </script>
 {% endblock %}

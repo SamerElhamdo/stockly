@@ -302,6 +302,17 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 });
 
 // Load data on page load
-document.addEventListener('DOMContentLoaded', loadCustomers);
+document.addEventListener('DOMContentLoaded', function() {
+    // Show loader while loading data
+    PageLoader.show('جاري تحميل العملاء...');
+    
+    loadCustomers().then(() => {
+        // Hide loader after data is loaded
+        PageLoader.hide();
+    }).catch((error) => {
+        console.error('Error loading customers:', error);
+        PageLoader.hide();
+    });
+});
 </script>
 {% endblock %}

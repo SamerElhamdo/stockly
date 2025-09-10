@@ -19,7 +19,11 @@ def api_products(request):
     if q: qs = qs.filter(name__icontains=q) | qs.filter(sku__icontains=q)
     return Response([{
         "id":p.id,"sku":p.sku,"name":p.name,"price":float(p.price),"stock_qty":p.stock_qty,
-        "category_name":p.category.name if p.category else None
+        "category_name":p.category.name if p.category else None,
+        "unit":p.unit,
+        "unit_display":p.get_unit_display() if p.unit else None,
+        "measurement":p.measurement,
+        "description":p.description
     } for p in qs[:50]])
 
 @api_view(["POST"])
@@ -44,7 +48,11 @@ def api_get_invoice(request, session_id:int):
         "created_at": inv.created_at.isoformat(),
         "items": [{
             "id":it.id,"name":it.product.name,"sku":it.product.sku,
-            "qty":float(it.qty),"price":float(it.price_at_add),"line_total":float(it.line_total)
+            "qty":float(it.qty),"price":float(it.price_at_add),"line_total":float(it.line_total),
+            "unit":it.product.unit,
+            "unit_display":it.product.get_unit_display() if it.product.unit else None,
+            "measurement":it.product.measurement,
+            "description":it.product.description
         } for it in inv.items.all()],
         "total_amount": float(inv.total_amount)
     })
@@ -74,9 +82,19 @@ def api_add_item(request, session_id:int):
             if not p: 
                 return Response({"error": "product_not_found"}, status=404)
         
-        # Check stock availability
-        if p.stock_qty < qty:
-            return Response({"error": "insufficient_stock", "available": p.stock_qty}, status=400)
+        # Check stock availability - calculate remaining stock after this addition
+        # Get current quantity already in this invoice for this product
+        existing_qty = sum(float(item.qty) for item in inv.items.filter(product=p))
+        total_required = existing_qty + qty
+        
+        if p.stock_qty < total_required:
+            available_after_existing = p.stock_qty - existing_qty
+            return Response({
+                "error": "insufficient_stock", 
+                "available": p.stock_qty,
+                "already_in_invoice": existing_qty,
+                "can_add": max(0, available_after_existing)
+            }, status=400)
         
         # Create invoice item
         InvoiceItem.objects.create(invoice=inv, product=p, qty=qty, price_at_add=p.price)
@@ -103,11 +121,42 @@ def api_add_item(request, session_id:int):
 @api_admin_required
 @transaction.atomic
 def api_confirm(request, session_id:int):
-    inv = Invoice.objects.select_for_update().get(pk=session_id, status=Invoice.DRAFT)
-    for it in inv.items.select_related("product"):
-        it.product.stock_qty -= int(it.qty); it.product.save(update_fields=["stock_qty"])
-    inv.status = Invoice.CONFIRMED; inv.save(update_fields=["status"])
-    return Response({"invoice_id": inv.id, "status": inv.status, "pdf_url": f"/invoice/{inv.id}/pdf"})
+    try:
+        inv = Invoice.objects.select_for_update().get(pk=session_id, status=Invoice.DRAFT)
+        
+        # Check stock availability before confirming
+        insufficient_products = []
+        for it in inv.items.select_related("product"):
+            if it.product.stock_qty < it.qty:
+                insufficient_products.append({
+                    "product_name": it.product.name,
+                    "required": float(it.qty),
+                    "available": it.product.stock_qty
+                })
+        
+        if insufficient_products:
+            return Response({
+                "error": "insufficient_stock_for_confirmation",
+                "products": insufficient_products
+            }, status=400)
+        
+        # Update stock quantities
+        for it in inv.items.select_related("product"):
+            it.product.stock_qty -= int(it.qty)
+            it.product.save(update_fields=["stock_qty"])
+        
+        inv.status = Invoice.CONFIRMED
+        inv.save(update_fields=["status"])
+        
+        return Response({
+            "invoice_id": inv.id, 
+            "status": inv.status, 
+            "pdf_url": f"/invoice/{inv.id}/pdf"
+        })
+    except Invoice.DoesNotExist:
+        return Response({"error": "invoice_not_found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
 
 # Additional API endpoints for the new pages
 
@@ -161,16 +210,52 @@ def api_add_product(request):
     price = request.data.get("price")
     stock_qty = request.data.get("stock_qty")
     
-    if not all([name, sku, category_id, price, stock_qty]):
+    # New optional fields
+    unit = request.data.get("unit", "piece")
+    measurement = request.data.get("measurement", "")
+    description = request.data.get("description", "")
+    
+    if not all([name, category_id, price, stock_qty]):
         return Response({"error": "missing_fields"}, status=400)
     
     try:
         category = Category.objects.get(id=category_id)
-        product = Product.objects.create(
-            name=name, sku=sku, category=category,
-            price=float(price), stock_qty=int(stock_qty)
-        )
-        return Response({"id": product.id, "name": product.name})
+        
+        # Prepare product data
+        product_data = {
+            "name": name, 
+            "category": category,
+            "price": float(price), 
+            "stock_qty": int(stock_qty),
+            "unit": unit if unit else "piece"
+        }
+        
+        # Add SKU only if provided and valid
+        if sku and sku.strip():
+            import re
+            sku_clean = sku.strip()
+            # Validate SKU contains only English letters and numbers
+            if not re.match(r'^[A-Za-z0-9]+$', sku_clean):
+                return Response({"error": "invalid_sku_format"}, status=400)
+            product_data["sku"] = sku_clean
+        
+        # Add optional fields if provided
+        if measurement:
+            product_data["measurement"] = measurement
+        if description:
+            product_data["description"] = description
+            
+        product = Product.objects.create(**product_data)
+        
+        return Response({
+            "id": product.id, 
+            "name": product.name,
+            "sku": product.sku,
+            "unit": product.unit,
+            "unit_display": product.get_unit_display(),
+            "measurement": product.measurement,
+            "description": product.description
+        })
     except Category.DoesNotExist:
         return Response({"error": "category_not_found"}, status=404)
     except Exception as e:
@@ -324,11 +409,19 @@ def api_update_product(request, product_id):
         product = Product.objects.get(id=product_id)
         data = request.data
         
+        # Update basic fields
         product.name = data.get('name', product.name)
-        product.description = data.get('description', product.description)
+        product.sku = data.get('sku', product.sku)
         product.price = data.get('price', product.price)
-        product.stock_quantity = data.get('stock_quantity', product.stock_quantity)
-        product.min_stock_level = data.get('min_stock_level', product.min_stock_level)
+        product.stock_qty = data.get('stock_qty', product.stock_qty)
+        
+        # Update new fields
+        if 'unit' in data:
+            product.unit = data.get('unit', product.unit)
+        if 'measurement' in data:
+            product.measurement = data.get('measurement', product.measurement)
+        if 'description' in data:
+            product.description = data.get('description', product.description)
         
         # Update category if provided
         if 'category_id' in data:
@@ -345,10 +438,13 @@ def api_update_product(request, product_id):
             "product": {
                 "id": product.id,
                 "name": product.name,
-                "description": product.description,
+                "sku": product.sku,
                 "price": float(product.price),
-                "stock_quantity": product.stock_quantity,
-                "min_stock_level": product.min_stock_level,
+                "stock_qty": product.stock_qty,
+                "unit": product.unit,
+                "unit_display": product.get_unit_display() if product.unit else None,
+                "measurement": product.measurement,
+                "description": product.description,
                 "category": {
                     "id": product.category.id,
                     "name": product.category.name

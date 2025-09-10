@@ -220,7 +220,7 @@ async function loadRecentInvoices() {
                     </div>
                 </div>
                 <div class="text-right">
-                    <p class="font-semibold text-gray-900 dark:text-white font-cairo">${invoice.total_amount.toLocaleString()} د.ك</p>
+                    <p class="font-semibold text-gray-900 dark:text-white font-cairo">${invoice.total_amount.toLocaleString()} $</p>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         invoice.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 
                         invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 

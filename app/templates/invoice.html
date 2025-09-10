@@ -118,7 +118,7 @@
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">المجموع الكلي</h2>
             <div class="text-right">
-                <p class="text-3xl font-bold text-primary-600 dark:text-primary-400" id="totalAmount">0.00 د.ك</p>
+                <p class="text-3xl font-bold text-primary-600 dark:text-primary-400" id="totalAmount">0.00 $</p>
             </div>
         </div>
     </div>
@@ -170,7 +170,7 @@ async function loadInvoice() {
         updateInvoiceItems(inv.items);
         
         // Update total
-        document.getElementById('totalAmount').textContent = `${inv.total_amount.toLocaleString()} د.ك`;
+        document.getElementById('totalAmount').textContent = `${inv.total_amount.toLocaleString()} $`;
         
         // Hide confirm button if already confirmed
         if (inv.status === 'confirmed') {
@@ -200,10 +200,12 @@ function updateInvoiceItems(items) {
             <div class="flex-1">
                 <h3 class="font-medium text-gray-900 dark:text-white">${item.name}</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400">SKU: ${item.sku}</p>
+                ${item.unit_display ? `<p class="text-xs text-gray-500 dark:text-gray-500">الوحدة: ${item.unit_display}</p>` : ''}
+                ${item.measurement ? `<p class="text-xs text-gray-500 dark:text-gray-500">القياس: ${item.measurement}</p>` : ''}
             </div>
             <div class="text-right">
-                <p class="text-sm text-gray-600 dark:text-gray-400">${item.qty} × ${item.price.toLocaleString()} د.ك</p>
-                <p class="font-semibold text-gray-900 dark:text-white">${item.line_total.toLocaleString()} د.ك</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${item.qty} × ${item.price.toLocaleString()} $</p>
+                <p class="font-semibold text-gray-900 dark:text-white">${item.line_total.toLocaleString()} $</p>
             </div>
         </div>
     `).join('');
@@ -221,6 +223,9 @@ async function confirmInvoice() {
     
     if (confirmed) {
         try {
+            // Show loader
+            PageLoader.show('جاري تأكيد الفاتورة...');
+            
             const res = await fetch(`/api/invoices/${sessionId}/confirm`, {
                 method: 'POST',
                 headers: {
@@ -229,13 +234,33 @@ async function confirmInvoice() {
             });
             
             if (res.ok) {
-                showNotification('✅ تم تأكيد الفاتورة بنجاح', 'success');
-                loadInvoice();
+                PageLoader.setText('تم تأكيد الفاتورة بنجاح!');
+                setTimeout(() => {
+                    loadInvoice();
+                    PageLoader.hide();
+                    showNotification('✅ تم تأكيد الفاتورة بنجاح', 'success');
+                }, 800);
             } else {
-                showNotification('❌ حدث خطأ في تأكيد الفاتورة', 'error');
+                const error = await res.json();
+                let errorMessage = 'حدث خطأ في تأكيد الفاتورة';
+                
+                if (error.error === 'insufficient_stock_for_confirmation') {
+                    const productList = error.products.map(p => 
+                        `${p.product_name}: مطلوب ${p.required}، متوفر ${p.available}`
+                    ).join('\n');
+                    errorMessage = `المخزون غير كافي لتأكيد الفاتورة:\n${productList}`;
+                } else if (error.error === 'invoice_not_found') {
+                    errorMessage = 'الفاتورة غير موجودة';
+                } else if (error.error) {
+                    errorMessage = error.error;
+                }
+                
+                PageLoader.hide();
+                showErrorNotification(errorMessage);
             }
         } catch (error) {
             console.error('Error confirming invoice:', error);
+            PageLoader.hide();
             showNotification('❌ حدث خطأ في تأكيد الفاتورة', 'error');
         }
     }
@@ -325,7 +350,7 @@ function searchProducts() {
                             <p class="font-medium text-gray-900 dark:text-white">${product.name}</p>
                             <div class="flex items-center gap-3 mt-1">
                                 <span class="text-xs text-gray-500 dark:text-gray-400">SKU: ${product.sku}</span>
-                                <span class="text-xs text-blue-500 dark:text-blue-400">${product.price.toLocaleString()} د.ك</span>
+                                <span class="text-xs text-blue-500 dark:text-blue-400">${product.price.toLocaleString()} $</span>
                                 <span class="text-xs text-green-500 dark:text-green-400">المخزون: ${product.stock_qty}</span>
                             </div>
                         </div>
@@ -346,7 +371,7 @@ function selectProduct(productId, productName, price, stock) {
     
     // Update UI
     document.getElementById('selectedProductName').textContent = productName;
-    document.getElementById('selectedProductInfo').textContent = `السعر: ${price.toLocaleString()} د.ك | المخزون: ${stock}`;
+    document.getElementById('selectedProductInfo').textContent = `السعر: ${price.toLocaleString()} $ | المخزون: ${stock}`;
     document.getElementById('selectedProduct').classList.remove('hidden');
     document.getElementById('productSuggestions').classList.add('hidden');
     document.getElementById('productQuery').value = '';
@@ -381,6 +406,9 @@ async function addItem() {
     }
     
     try {
+        // Show loader
+        PageLoader.show('جاري إضافة المنتج للفاتورة...');
+        
         const res = await fetch(`/api/invoices/${sessionId}/items`, {
             method: 'POST',
             headers: {
@@ -392,36 +420,57 @@ async function addItem() {
         
         if (res.ok) {
             const data = await res.json();
-            showSuccessNotification(`تم إضافة ${data.product_name} بنجاح - الكمية: ${data.qty}`);
-            clearSelectedProduct();
-            document.getElementById('qty').value = '1';
-            loadInvoice();
+            PageLoader.setText('تم إضافة المنتج بنجاح!');
+            setTimeout(() => {
+                clearSelectedProduct();
+                document.getElementById('qty').value = '1';
+                loadInvoice();
+                PageLoader.hide();
+                showSuccessNotification(`تم إضافة ${data.product_name} بنجاح - الكمية: ${data.qty}`);
+            }, 500);
         } else {
             const error = await res.json();
             let errorMessage = 'حدث خطأ في إضافة المنتج';
             
             if (error.error === 'product_not_found') {
                 errorMessage = 'المنتج غير موجود';
-            } else if (error.error === 'insufficient_stock') {
-                errorMessage = `المخزون غير كافي. المتوفر: ${error.available}`;
+            } else             if (error.error === 'insufficient_stock') {
+                if (error.already_in_invoice && error.already_in_invoice > 0) {
+                    errorMessage = `المخزون غير كافي. المتوفر: ${error.available}، موجود في الفاتورة: ${error.already_in_invoice}، يمكن إضافة: ${error.can_add}`;
+                } else {
+                    errorMessage = `المخزون غير كافي. المتوفر: ${error.available}`;
+                }
             } else if (error.error === 'invoice_not_found') {
                 errorMessage = 'الفاتورة غير موجودة';
             } else if (error.error) {
                 errorMessage = error.error;
             }
             
+            PageLoader.hide();
             showErrorNotification(errorMessage);
         }
     } catch (error) {
         console.error('Error adding item:', error);
+        PageLoader.hide();
         showErrorNotification('حدث خطأ في إضافة المنتج');
     }
 }
 
 // Load invoice on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadInvoice();
-    loadAllProducts();
+    // Show loader while loading data
+    PageLoader.show('جاري تحميل الفاتورة...');
+    
+    Promise.all([
+        loadInvoice(),
+        loadAllProducts()
+    ]).then(() => {
+        // Hide loader after data is loaded
+        PageLoader.hide();
+    }).catch((error) => {
+        console.error('Error loading data:', error);
+        PageLoader.hide();
+    });
 });
 
 // Auto-refresh every 30 seconds

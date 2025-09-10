@@ -241,9 +241,21 @@ document.getElementById('addCategoryForm').addEventListener('submit', addCategor
 
 // Load data on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadCategories();
-    loadParentCategories();
-    initDropdowns(); // Initialize custom dropdowns
+    // Show loader while loading data
+    PageLoader.show('جاري تحميل الفئات...');
+    
+    Promise.all([
+        loadCategories(),
+        loadParentCategories()
+    ]).then(() => {
+        // Initialize custom dropdowns
+        initDropdowns();
+        // Hide loader after data is loaded
+        PageLoader.hide();
+    }).catch((error) => {
+        console.error('Error loading data:', error);
+        PageLoader.hide();
+    });
 });
 </script>
 {% endblock %}
