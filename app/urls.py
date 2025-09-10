@@ -44,4 +44,7 @@ urlpatterns = [
   path('categories/', views.categories, name='categories'),
   path('invoices/', views.invoices, name='invoices'),
   path('invoice/<int:session_id>/', views.invoice_page, name='invoice_page'),
+  
+  # PDF Generation
+  path('invoice/<int:invoice_id>/pdf/', views.invoice_pdf, name='invoice_pdf'),
 ]

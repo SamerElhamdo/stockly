@@ -129,6 +129,10 @@
             ← العودة للفواتير
         </a>
         <div class="space-x-4">
+            <button onclick="printInvoice()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center">
+                <i class="fas fa-print ml-2"></i>
+                طباعة PDF
+            </button>
             <button onclick="confirmInvoice()" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center">
                 <span class="text-xl mr-2">✅</span>
                 تأكيد الفاتورة
@@ -148,6 +152,9 @@ async function loadInvoice() {
             }
         });
         const inv = await res.json();
+        
+        // Store invoice data globally for PDF printing
+        window.currentInvoice = inv;
         
         // Update customer info
         document.getElementById('customerName').textContent = inv.customer.name;
@@ -211,6 +218,21 @@ function updateInvoiceItems(items) {
     `).join('');
 }
 
+
+function printInvoice() {
+    // Get the invoice ID from the current invoice data
+    if (window.currentInvoice && window.currentInvoice.id) {
+        const invoiceId = window.currentInvoice.id;
+        const printUrl = `/invoice/${invoiceId}/pdf/`;
+        
+        // Open PDF in new tab
+        window.open(printUrl, '_blank');
+        
+        showNotification('📄 جاري تحضير الفاتورة للطباعة...', 'info');
+    } else {
+        showNotification('❌ لا يمكن طباعة الفاتورة - لم يتم تحميل بيانات الفاتورة', 'error');
+    }
+}
 
 async function confirmInvoice() {
     const confirmed = await showConfirmation(
