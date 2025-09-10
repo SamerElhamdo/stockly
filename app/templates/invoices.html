@@ -31,7 +31,10 @@
             </select>
             <input id="dateFilter" type="date" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
             <button onclick="searchInvoices()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
-                🔍 بحث
+                <i class="fas fa-search ml-2"></i>بحث
+            </button>
+            <button onclick="clearInvoiceSearch()" id="clearInvoiceSearchBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                <i class="fas fa-times ml-2"></i>مسح
             </button>
         </div>
     </div>
@@ -204,16 +207,16 @@ async function loadInvoices() {
         tbody.innerHTML = invoices.map(invoice => `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">#${invoice.id}</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white invoice-number">#${invoice.id}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">${invoice.customer_name}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 customer-name">${invoice.customer_name}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900 dark:text-white">${invoice.total_amount.toLocaleString()} د.ك</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium invoice-status ${
                         invoice.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 
                         invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 
                         'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
@@ -223,7 +226,7 @@ async function loadInvoices() {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">${new Date(invoice.created_at).toLocaleDateString('ar-SA')}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 invoice-date">${new Date(invoice.created_at).toLocaleDateString('ar-SA')}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button onclick="viewInvoice(${invoice.id})" class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3">
@@ -452,11 +455,53 @@ async function createInvoice() {
 }
 
 function searchInvoices() {
-    const query = document.getElementById('searchInput').value;
+    const query = document.getElementById('searchInput').value.toLowerCase();
     const status = document.getElementById('statusFilter').value;
     const date = document.getElementById('dateFilter').value;
-    // Implement search functionality
-    console.log('Searching for:', query, 'Status:', status, 'Date:', date);
+    
+    // Get all invoice rows
+    const invoiceRows = document.querySelectorAll('#invoicesTableBody tr');
+    
+    invoiceRows.forEach(row => {
+        const invoiceNumber = row.querySelector('.invoice-number')?.textContent.toLowerCase() || '';
+        const customerName = row.querySelector('.customer-name')?.textContent.toLowerCase() || '';
+        const invoiceStatus = row.querySelector('.invoice-status')?.textContent.toLowerCase() || '';
+        const invoiceDate = row.querySelector('.invoice-date')?.textContent || '';
+        
+        // Check if row matches search criteria
+        const matchesQuery = !query || invoiceNumber.includes(query) || customerName.includes(query);
+        const matchesStatus = !status || invoiceStatus.includes(status.toLowerCase());
+        const matchesDate = !date || invoiceDate.includes(date);
+        
+        if (matchesQuery && matchesStatus && matchesDate) {
+            row.style.display = '';
+            row.classList.remove('hidden');
+        } else {
+            row.style.display = 'none';
+            row.classList.add('hidden');
+        }
+    });
+    
+    // Show/hide no results message
+    const visibleRows = Array.from(invoiceRows).filter(row => row.style.display !== 'none');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    
+    if (visibleRows.length === 0 && (query || status || date)) {
+        if (!noResultsMessage) {
+            const tbody = document.getElementById('invoicesTableBody');
+            tbody.insertAdjacentHTML('afterend', `
+                <tr id="noResultsMessage" class="bg-gray-50 dark:bg-gray-700">
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-search text-4xl mb-4 text-gray-400"></i>
+                        <p class="mt-2 font-cairo">لا توجد نتائج للبحث</p>
+                        <p class="text-sm mt-1">جرب تغيير معايير البحث</p>
+                    </td>
+                </tr>
+            `);
+        }
+    } else if (noResultsMessage) {
+        noResultsMessage.remove();
+    }
 }
 
 function viewInvoice(invoiceId) {
@@ -504,11 +549,28 @@ function printInvoice(invoiceId) {
 }
 
 // Event listeners
+// Search functionality with real-time filtering
+document.getElementById('searchInput').addEventListener('input', searchInvoices);
 document.getElementById('searchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         searchInvoices();
     }
 });
+
+// Status filter with real-time filtering
+document.getElementById('statusFilter').addEventListener('change', searchInvoices);
+
+// Date filter with real-time filtering
+document.getElementById('dateFilter').addEventListener('change', searchInvoices);
+
+// Clear invoice search function
+function clearInvoiceSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    searchInvoices();
+}
 
 // Load data on page load
 document.addEventListener('DOMContentLoaded', loadInvoices);

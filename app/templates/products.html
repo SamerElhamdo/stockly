@@ -27,7 +27,10 @@
                 <option value="">جميع الفئات</option>
             </select>
             <button onclick="searchProducts()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
-                🔍 بحث
+                <i class="fas fa-search ml-2"></i>بحث
+            </button>
+            <button onclick="clearSearch()" id="clearSearchBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                <i class="fas fa-times ml-2"></i>مسح
             </button>
         </div>
     </div>
@@ -154,13 +157,13 @@ async function loadProducts() {
         tbody.innerHTML = products.map(product => `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">${product.name}</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white product-name">${product.name}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 font-mono">${product.sku}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 font-mono product-sku">${product.sku}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">${product.category_name || '-'}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 product-category">${product.category_name || '-'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900 dark:text-white">${product.price.toLocaleString()} د.ك</div>
@@ -192,6 +195,11 @@ async function loadProducts() {
         
         // Check for low stock
         checkLowStock(products);
+        
+        // Apply any existing search filters after loading
+        setTimeout(() => {
+            searchProducts();
+        }, 100);
     } catch (error) {
         console.error('Error loading products:', error);
     }
@@ -211,7 +219,7 @@ async function loadCategories() {
         const productCategory = document.getElementById('productCategory');
         
         categories.forEach(category => {
-            const option1 = new Option(category.name, category.id);
+            const option1 = new Option(category.name, category.name);
             const option2 = new Option(category.name, category.id);
             categoryFilter.add(option1);
             productCategory.add(option2);
@@ -278,15 +286,258 @@ async function addProduct(event) {
 }
 
 function searchProducts() {
-    const query = document.getElementById('searchInput').value;
+    const query = document.getElementById('searchInput').value.toLowerCase();
     const category = document.getElementById('categoryFilter').value;
-    // Implement search functionality
-    console.log('Searching for:', query, 'Category:', category);
+    
+    // Get all product rows (excluding the loading/no products row)
+    const productRows = document.querySelectorAll('#productsTableBody tr:not([colspan])');
+    
+    // If no products loaded yet, return
+    if (productRows.length === 0) {
+        return;
+    }
+    
+    let visibleCount = 0;
+    
+    productRows.forEach(row => {
+        // Skip if this is a message row
+        if (row.querySelector('[colspan]')) {
+            return;
+        }
+        
+        const productName = row.querySelector('.product-name')?.textContent.toLowerCase() || '';
+        const productCategory = row.querySelector('.product-category')?.textContent.toLowerCase() || '';
+        const productSku = row.querySelector('.product-sku')?.textContent.toLowerCase() || '';
+        
+        // Check if row matches search criteria
+        const matchesQuery = !query || productName.includes(query) || productSku.includes(query);
+        const matchesCategory = !category || productCategory === category.toLowerCase() || productCategory.includes(category.toLowerCase());
+        
+        if (matchesQuery && matchesCategory) {
+            row.style.display = '';
+            row.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+            row.classList.add('hidden');
+        }
+    });
+    
+    // Show/hide no results message
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    
+    if (visibleCount === 0 && (query || category)) {
+        if (!noResultsMessage) {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.insertAdjacentHTML('afterend', `
+                <tr id="noResultsMessage" class="bg-gray-50 dark:bg-gray-700">
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-search text-4xl mb-4 text-gray-400"></i>
+                        <p class="mt-2 font-cairo">لا توجد نتائج للبحث</p>
+                        <p class="text-sm mt-1">جرب تغيير معايير البحث</p>
+                    </td>
+                </tr>
+            `);
+        }
+    } else if (noResultsMessage) {
+        noResultsMessage.remove();
+    }
 }
 
-function editProduct(productId) {
-    // Implement edit product functionality
-    console.log('Editing product:', productId);
+async function editProduct(productId) {
+    try {
+        // Get product data first
+        const res = await fetch(`/api/products/`, {
+            headers: {
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            }
+        });
+        const products = await res.json();
+        const product = products.find(p => p.id === productId);
+        
+        if (!product) {
+            showErrorNotification('المنتج غير موجود');
+            return;
+        }
+        
+        // Show edit modal
+        showEditProductModal(product);
+    } catch (error) {
+        console.error('Error loading product:', error);
+        showErrorNotification('حدث خطأ في تحميل بيانات المنتج');
+    }
+}
+
+function showEditProductModal(product) {
+    // Create modal HTML
+    const modalHtml = `
+        <div id="editProductModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 backdrop-blur-sm">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full p-6 transform transition-all duration-300">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white font-cairo">
+                            <i class="fas fa-edit ml-2"></i>تعديل المنتج
+                        </h3>
+                        <button onclick="closeEditProductModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="editProductForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-tag ml-2"></i>اسم المنتج *
+                                </label>
+                                <input type="text" id="editProductName" value="${product.name}" required
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-dollar-sign ml-2"></i>السعر *
+                                </label>
+                                <input type="number" id="editProductPrice" value="${product.price}" step="0.01" required
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-boxes ml-2"></i>الكمية في المخزون *
+                                </label>
+                                <input type="number" id="editProductStock" value="${product.stock_quantity}" required
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-exclamation-triangle ml-2"></i>الحد الأدنى للمخزون
+                                </label>
+                                <input type="number" id="editProductMinStock" value="${product.min_stock_level || 0}"
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-list ml-2"></i>الفئة
+                            </label>
+                            <select id="editProductCategory" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                                <option value="">اختر الفئة</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-align-right ml-2"></i>الوصف
+                            </label>
+                            <textarea id="editProductDescription" rows="3" placeholder="وصف المنتج..."
+                                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">${product.description || ''}</textarea>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <button type="button" onclick="closeEditProductModal()" class="btn-secondary">
+                                <i class="fas fa-times ml-2"></i>
+                                إلغاء
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save ml-2"></i>
+                                حفظ التعديلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Load categories
+    loadCategoriesForEdit();
+    
+    // Set current category
+    if (product.category) {
+        setTimeout(() => {
+            document.getElementById('editProductCategory').value = product.category.id;
+        }, 100);
+    }
+    
+    // Show modal
+    document.getElementById('editProductModal').classList.remove('hidden');
+}
+
+async function loadCategoriesForEdit() {
+    try {
+        const res = await fetch('/api/categories/', {
+            headers: {
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            }
+        });
+        const categories = await res.json();
+        
+        const select = document.getElementById('editProductCategory');
+        select.innerHTML = '<option value="">اختر الفئة</option>' + 
+            categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+function closeEditProductModal() {
+    const modal = document.getElementById('editProductModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Handle edit form submission
+document.addEventListener('submit', function(e) {
+    if (e.target.id === 'editProductForm') {
+        e.preventDefault();
+        updateProduct();
+    }
+});
+
+async function updateProduct() {
+    const form = document.getElementById('editProductForm');
+    const formData = new FormData(form);
+    
+    const productData = {
+        name: document.getElementById('editProductName').value,
+        price: parseFloat(document.getElementById('editProductPrice').value),
+        stock_quantity: parseInt(document.getElementById('editProductStock').value),
+        min_stock_level: parseInt(document.getElementById('editProductMinStock').value) || 0,
+        description: document.getElementById('editProductDescription').value,
+        category_id: document.getElementById('editProductCategory').value || null
+    };
+    
+    try {
+        // Get product ID from the current product being edited
+        const productId = window.currentEditingProductId;
+        
+        const res = await fetch(`/api/products/${productId}/update/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            },
+            body: JSON.stringify(productData)
+        });
+        
+        if (res.ok) {
+            showSuccessNotification('تم تحديث المنتج بنجاح');
+            closeEditProductModal();
+            loadProducts(); // Reload products list
+        } else {
+            const error = await res.json();
+            showErrorNotification('حدث خطأ في تحديث المنتج: ' + (error.error || 'خطأ غير معروف'));
+        }
+    } catch (error) {
+        console.error('Error updating product:', error);
+        showErrorNotification('حدث خطأ في تحديث المنتج');
+    }
 }
 
 function generateQR(productId) {
@@ -343,11 +594,42 @@ async function deleteProduct(productId) {
 
 // Event listeners
 document.getElementById('addProductForm').addEventListener('submit', addProduct);
+
+// Search functionality with real-time filtering
+document.getElementById('searchInput').addEventListener('input', searchProducts);
 document.getElementById('searchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         searchProducts();
     }
 });
+
+// Category filter with real-time filtering
+document.getElementById('categoryFilter').addEventListener('change', searchProducts);
+
+// Clear search function
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    
+    // Remove any existing no results message
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    if (noResultsMessage) {
+        noResultsMessage.remove();
+    }
+    
+    // Show all rows
+    const productRows = document.querySelectorAll('#productsTableBody tr');
+    productRows.forEach(row => {
+        row.style.display = '';
+        row.classList.remove('hidden');
+    });
+    
+    // If no products are loaded, reload them
+    if (productRows.length === 0 || (productRows.length === 1 && productRows[0].querySelector('[colspan]'))) {
+        loadProducts();
+    }
+}
 
 // Load data on page load
 document.addEventListener('DOMContentLoaded', function() {

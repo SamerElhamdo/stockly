@@ -54,14 +54,48 @@ def api_get_invoice(request, session_id:int):
 @permission_classes([IsAuthenticated])
 @api_admin_required
 def api_add_item(request, session_id:int):
-    inv = Invoice.objects.get(pk=session_id, status=Invoice.DRAFT)
-    product_query = request.data.get("product_query")
-    qty = float(request.data.get("qty",1))
-    p = Product.objects.filter(sku__iexact=product_query).first() or Product.objects.filter(name__icontains=product_query).first()
-    if not p: return Response({"error":"product_not_found"}, status=404)
-    InvoiceItem.objects.create(invoice=inv, product=p, qty=qty, price_at_add=p.price)
-    inv.total_amount = sum(i.line_total for i in inv.items.all()); inv.save(update_fields=["total_amount"])
-    return Response({"ok": True, "total": float(inv.total_amount)})
+    try:
+        inv = Invoice.objects.get(pk=session_id, status=Invoice.DRAFT)
+        qty = float(request.data.get("qty", 1))
+        
+        # Check if product_id is provided (new method)
+        if "product_id" in request.data:
+            product_id = request.data.get("product_id")
+            try:
+                p = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                return Response({"error": "product_not_found"}, status=404)
+        else:
+            # Fallback to old method with product_query
+            product_query = request.data.get("product_query")
+            if not product_query:
+                return Response({"error": "product_query_required"}, status=400)
+            p = Product.objects.filter(sku__iexact=product_query).first() or Product.objects.filter(name__icontains=product_query).first()
+            if not p: 
+                return Response({"error": "product_not_found"}, status=404)
+        
+        # Check stock availability
+        if p.stock_qty < qty:
+            return Response({"error": "insufficient_stock", "available": p.stock_qty}, status=400)
+        
+        # Create invoice item
+        InvoiceItem.objects.create(invoice=inv, product=p, qty=qty, price_at_add=p.price)
+        
+        # Update total amount
+        inv.total_amount = sum(i.line_total for i in inv.items.all())
+        inv.save(update_fields=["total_amount"])
+        
+        return Response({
+            "ok": True, 
+            "total": float(inv.total_amount),
+            "product_name": p.name,
+            "qty": qty,
+            "line_total": float(qty * float(p.price))
+        })
+    except Invoice.DoesNotExist:
+        return Response({"error": "invoice_not_found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
 
 @api_view(["POST"])
 @csrf_exempt
@@ -250,5 +284,110 @@ def api_add_category(request):
         return Response({"id": category.id, "name": category.name})
     except Category.DoesNotExist:
         return Response({"error": "parent_category_not_found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+# Update endpoints
+@api_view(["PUT"])
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+@api_admin_required
+def api_update_category(request, category_id):
+    try:
+        category = Category.objects.get(id=category_id)
+        data = request.data
+        
+        category.name = data.get('name', category.name)
+        category.description = data.get('description', category.description)
+        category.save()
+        
+        return Response({
+            "success": True,
+            "category": {
+                "id": category.id,
+                "name": category.name,
+                "description": category.description,
+                "products_count": category.products.count()
+            }
+        })
+    except Category.DoesNotExist:
+        return Response({"error": "category_not_found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+@api_view(["PUT"])
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+@api_admin_required
+def api_update_product(request, product_id):
+    try:
+        product = Product.objects.get(id=product_id)
+        data = request.data
+        
+        product.name = data.get('name', product.name)
+        product.description = data.get('description', product.description)
+        product.price = data.get('price', product.price)
+        product.stock_quantity = data.get('stock_quantity', product.stock_quantity)
+        product.min_stock_level = data.get('min_stock_level', product.min_stock_level)
+        
+        # Update category if provided
+        if 'category_id' in data:
+            try:
+                category = Category.objects.get(id=data['category_id'])
+                product.category = category
+            except Category.DoesNotExist:
+                return Response({"error": "category_not_found"}, status=400)
+        
+        product.save()
+        
+        return Response({
+            "success": True,
+            "product": {
+                "id": product.id,
+                "name": product.name,
+                "description": product.description,
+                "price": float(product.price),
+                "stock_quantity": product.stock_quantity,
+                "min_stock_level": product.min_stock_level,
+                "category": {
+                    "id": product.category.id,
+                    "name": product.category.name
+                } if product.category else None
+            }
+        })
+    except Product.DoesNotExist:
+        return Response({"error": "product_not_found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+@api_view(["PUT"])
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+@api_admin_required
+def api_update_customer(request, customer_id):
+    try:
+        customer = Customer.objects.get(id=customer_id)
+        data = request.data
+        
+        customer.name = data.get('name', customer.name)
+        customer.phone = data.get('phone', customer.phone)
+        customer.email = data.get('email', customer.email)
+        customer.address = data.get('address', customer.address)
+        customer.save()
+        
+        return Response({
+            "success": True,
+            "customer": {
+                "id": customer.id,
+                "name": customer.name,
+                "phone": customer.phone,
+                "email": customer.email,
+                "address": customer.address,
+                "invoices_count": customer.invoices.count(),
+                "last_purchase": customer.invoices.order_by('-created_at').first().created_at.strftime('%Y-%m-%d') if customer.invoices.exists() else None
+            }
+        })
+    except Customer.DoesNotExist:
+        return Response({"error": "customer_not_found"}, status=404)
     except Exception as e:
         return Response({"error": str(e)}, status=400)

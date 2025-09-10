@@ -2,7 +2,8 @@ from django.urls import path
 from .api import (api_products, api_invoice_session, api_get_invoice, api_add_item, api_confirm,
                   api_customers, api_add_customer, api_categories, api_add_product,
                   api_invoices_list, api_recent_invoices, api_dashboard_stats,
-                  api_delete_category, api_delete_product, api_delete_customer, api_add_category)
+                  api_delete_category, api_delete_product, api_delete_customer, api_add_category,
+                  api_update_category, api_update_product, api_update_customer)
 from . import views
 
 urlpatterns = [
@@ -23,11 +24,14 @@ urlpatterns = [
   path('api/customers/', api_customers),
   path('api/customers/add/', api_add_customer),
   path('api/customers/<int:customer_id>/', api_delete_customer),
+  path('api/customers/<int:customer_id>/update/', api_update_customer),
   path('api/categories/', api_categories),
   path('api/categories/<int:category_id>/', api_delete_category),
+  path('api/categories/<int:category_id>/update/', api_update_category),
   path('api/categories/add/', api_add_category),
   path('api/products/add/', api_add_product),
   path('api/products/<int:product_id>/', api_delete_product),
+  path('api/products/<int:product_id>/update/', api_update_product),
   path('api/invoices/', api_invoices_list),
   path('api/invoices/<int:invoice_id>/confirm', api_confirm),
   path('api/invoices/recent', api_recent_invoices),
