@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %}إدارة العملاء - Stockly{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white"> إدارة العملاء</h1>    
+            <p class="mt-2 text-gray-600 dark:text-gray-400">إدارة بيانات العملاء وفواتيرهم</p>
+        </div>
+        <button onclick="showAddCustomerModal()" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center">
+            <span class="text-xl mr-2"></span>
+            إضافة عميل جديد
+        </button>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <input id="searchInput" type="text" placeholder="البحث بالاسم أو الهاتف أو البريد الإلكتروني..."
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <button onclick="searchCustomers()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
+                🔍 بحث
+            </button>
+        </div>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">قائمة العملاء</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الاسم</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الهاتف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">البريد الإلكتروني</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">عدد الفواتير</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">آخر عملية شراء</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="customersTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <span class="text-4xl">👥</span>
+                            <p class="mt-2">جاري تحميل العملاء...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="addCustomerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">إضافة عميل جديد</h3>
+            <form id="addCustomerForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الاسم *</label>
+                    <input id="customerName" type="text" required
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الهاتف</label>
+                    <input id="customerPhone" type="tel"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">البريد الإلكتروني</label>
+                    <input id="customerEmail" type="email"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">العنوان</label>
+                    <textarea id="customerAddress" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddCustomerModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        إلغاء
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md">
+                        إضافة العميل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load customers data
+async function loadCustomers() {
+    try {
+        const res = await fetch('/api/customers/', {
+            headers: {
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            }
+        });
+        const customers = await res.json();
+        
+        const tbody = document.getElementById('customersTableBody');
+        if (customers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-users text-4xl mb-4 text-gray-400"></i>
+                        <p class="mt-2 font-cairo">لا توجد عملاء حالياً</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = customers.map(customer => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">${customer.name}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">${customer.phone || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">${customer.email || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                        ${customer.invoices_count || 0}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">${customer.last_purchase || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="createInvoiceForCustomer(${customer.id}, '${customer.name}')" 
+                                class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md transition-colors duration-200">
+                            <i class="fas fa-file-invoice ml-1"></i>فاتورة جديدة
+                        </button>
+                        <button onclick="viewCustomer(${customer.id})" 
+                                class="inline-flex items-center px-3 py-1.5 text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 text-xs font-medium rounded-md transition-colors duration-200">
+                            <i class="fas fa-eye ml-1"></i>عرض
+                        </button>
+                        <button onclick="editCustomer(${customer.id})" 
+                                class="inline-flex items-center px-3 py-1.5 text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 text-xs font-medium rounded-md transition-colors duration-200">
+                            <i class="fas fa-edit ml-1"></i>تعديل
+                        </button>
+                        <button onclick="deleteCustomer(${customer.id})" 
+                                class="inline-flex items-center px-3 py-1.5 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium rounded-md transition-colors duration-200">
+                            <i class="fas fa-trash ml-1"></i>حذف
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
+function showAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.remove('hidden');
+}
+
+function closeAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.add('hidden');
+    document.getElementById('addCustomerForm').reset();
+}
+
+async function addCustomer(event) {
+    event.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('customerName').value,
+        phone: document.getElementById('customerPhone').value,
+        email: document.getElementById('customerEmail').value,
+        address: document.getElementById('customerAddress').value
+    };
+    
+    try {
+        const res = await fetch('/api/customers/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (res.ok) {
+            closeAddCustomerModal();
+            loadCustomers();
+            showNotification('✅ تم إضافة العميل بنجاح', 'success');
+        } else {
+            showNotification('❌ حدث خطأ في إضافة العميل', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding customer:', error);
+        showNotification('❌ حدث خطأ في إضافة العميل', 'error');
+    }
+}
+
+function searchCustomers() {
+    const query = document.getElementById('searchInput').value;
+    // Implement search functionality
+    console.log('Searching for:', query);
+}
+
+function viewCustomer(customerId) {
+    // Implement view customer functionality
+    console.log('Viewing customer:', customerId);
+}
+
+function editCustomer(customerId) {
+    // Implement edit customer functionality
+    console.log('Editing customer:', customerId);
+}
+
+async function deleteCustomer(customerId) {
+    const confirmed = await showConfirmation(
+        'حذف العميل',
+        'هل أنت متأكد من حذف هذا العميل؟ لا يمكن التراجع عن هذا الإجراء.',
+        'حذف',
+        'إلغاء',
+        'danger'
+    );
+    
+    if (confirmed) {
+        try {
+            const res = await fetch(`/api/customers/${customerId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                }
+            });
+            
+            if (res.ok) {
+                loadCustomers();
+                showNotification('🗑️ تم حذف العميل بنجاح', 'success');
+            } else {
+                showNotification('❌ حدث خطأ في حذف العميل', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            showNotification('❌ حدث خطأ في حذف العميل', 'error');
+        }
+    }
+}
+
+// Create invoice for specific customer
+async function createInvoiceForCustomer(customerId, customerName) {
+    try {
+        // Show confirmation dialog
+        const confirmed = await showConfirmation(
+            `هل تريد إنشاء فاتورة جديدة للعميل "${customerName}"؟`,
+            'إنشاء فاتورة جديدة',
+            'success'
+        );
+        
+        if (!confirmed) return;
+        
+        // Create invoice session
+        const res = await fetch('/api/invoices/session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            },
+            body: JSON.stringify({customer_name: customerName})
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            showSuccessNotification(`تم إنشاء فاتورة جديدة للعميل: ${customerName}`);
+            // Redirect to invoice page
+            window.location.href = `/invoice/${data.session_id}/`;
+        } else {
+            showErrorNotification('حدث خطأ في إنشاء الفاتورة');
+        }
+    } catch (error) {
+        console.error('Error creating invoice for customer:', error);
+        showErrorNotification('حدث خطأ في إنشاء الفاتورة');
+    }
+}
+
+// Event listeners
+document.getElementById('addCustomerForm').addEventListener('submit', addCustomer);
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchCustomers();
+    }
+});
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadCustomers);
+</script>
+{% endblock %}

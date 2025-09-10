@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}فاتورة #{{ session_id }} - Stockly{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Invoice Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">فاتورة #{{ session_id }}</h1>
+                <div id="invoiceStatus" class="mt-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                        مسودة
+                    </span>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600 dark:text-gray-400">التاريخ</p>
+                <p class="text-lg font-semibold text-gray-900 dark:text-white" id="invoiceDate"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">معلومات العميل</h2>
+        <div id="customerInfo" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">الاسم</p>
+                <p class="text-lg font-medium text-gray-900 dark:text-white" id="customerName">جاري التحميل...</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">الهاتف</p>
+                <p class="text-lg font-medium text-gray-900 dark:text-white" id="customerPhone">-</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Items -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">عناصر الفاتورة</h2>
+        </div>
+        <div class="p-6">
+            <div id="invoiceItems" class="space-y-4">
+                <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <span class="text-4xl">📄</span>
+                    <p class="mt-2">جاري تحميل العناصر...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">إضافة منتج</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اسم المنتج أو SKU</label>
+                <input id="productQuery" type="text" placeholder="ابحث عن المنتج..."
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الكمية</label>
+                <input id="qty" type="number" value="1" min="1"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div class="flex items-end">
+                <button onclick="addItem()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center justify-center">
+                    <span class="text-xl mr-2">➕</span>
+                    إضافة منتج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Total -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">المجموع الكلي</h2>
+            <div class="text-right">
+                <p class="text-3xl font-bold text-primary-600 dark:text-primary-400" id="totalAmount">0.00 د.ك</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-between items-center">
+        <a href="{% url 'invoices' %}" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+            ← العودة للفواتير
+        </a>
+        <div class="space-x-4">
+            <button onclick="confirmInvoice()" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg flex items-center">
+                <span class="text-xl mr-2">✅</span>
+                تأكيد الفاتورة
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const sessionId = "{{ session_id }}";
+
+async function loadInvoice() {
+    try {
+        const res = await fetch(`/api/invoices/${sessionId}`, {
+            headers: {
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            }
+        });
+        const inv = await res.json();
+        
+        // Update customer info
+        document.getElementById('customerName').textContent = inv.customer.name;
+        document.getElementById('customerPhone').textContent = inv.customer.phone || '-';
+        
+        // Update invoice date
+        document.getElementById('invoiceDate').textContent = new Date(inv.created_at).toLocaleDateString('ar-SA');
+        
+        // Update status
+        const statusElement = document.getElementById('invoiceStatus');
+        const status = inv.status === 'confirmed' ? 'مؤكدة' : 
+                      inv.status === 'draft' ? 'مسودة' : 'ملغاة';
+        const statusClass = inv.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 
+                           inv.status === 'draft' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 
+                           'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+        
+        statusElement.innerHTML = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusClass}">${status}</span>`;
+        
+        // Update items
+        updateInvoiceItems(inv.items);
+        
+        // Update total
+        document.getElementById('totalAmount').textContent = `${inv.total_amount.toLocaleString()} د.ك`;
+        
+        // Hide confirm button if already confirmed
+        if (inv.status === 'confirmed') {
+            document.querySelector('button[onclick="confirmInvoice()"]').style.display = 'none';
+        }
+        
+    } catch (error) {
+        console.error('Error loading invoice:', error);
+    }
+}
+
+function updateInvoiceItems(items) {
+    const container = document.getElementById('invoiceItems');
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                <span class="text-4xl">📦</span>
+                <p class="mt-2">لا توجد منتجات في الفاتورة</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = items.map(item => `
+        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="flex-1">
+                <h3 class="font-medium text-gray-900 dark:text-white">${item.name}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">SKU: ${item.sku}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600 dark:text-gray-400">${item.qty} × ${item.price.toLocaleString()} د.ك</p>
+                <p class="font-semibold text-gray-900 dark:text-white">${item.line_total.toLocaleString()} د.ك</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function addItem() {
+    const productQuery = document.getElementById('productQuery').value;
+    const qty = document.getElementById('qty').value;
+    
+    if (!productQuery.trim()) {
+        showNotification('يرجى إدخال اسم المنتج أو SKU', 'warning');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/api/invoices/${sessionId}/items`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+            },
+            body: JSON.stringify({product_query: productQuery, qty: qty})
+        });
+        
+        if (res.ok) {
+            document.getElementById('productQuery').value = '';
+            document.getElementById('qty').value = '1';
+            loadInvoice();
+        } else {
+            const error = await res.json();
+            showNotification(error.error === 'product_not_found' ? 'المنتج غير موجود' : 'حدث خطأ في إضافة المنتج', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding item:', error);
+        showNotification('حدث خطأ في إضافة المنتج', 'error');
+    }
+}
+
+async function confirmInvoice() {
+    const confirmed = await showConfirmation(
+        'تأكيد الفاتورة',
+        'هل أنت متأكد من تأكيد هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء.',
+        'تأكيد',
+        'إلغاء',
+        'warning'
+    );
+    
+    if (confirmed) {
+        try {
+            const res = await fetch(`/api/invoices/${sessionId}/confirm`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                }
+            });
+            
+            if (res.ok) {
+                showNotification('✅ تم تأكيد الفاتورة بنجاح', 'success');
+                loadInvoice();
+            } else {
+                showNotification('❌ حدث خطأ في تأكيد الفاتورة', 'error');
+            }
+        } catch (error) {
+            console.error('Error confirming invoice:', error);
+            showNotification('❌ حدث خطأ في تأكيد الفاتورة', 'error');
+        }
+    }
+}
+
+// Load invoice on page load
+document.addEventListener('DOMContentLoaded', loadInvoice);
+
+// Auto-refresh every 30 seconds
+setInterval(loadInvoice, 30000);
+</script>
+{% endblock %}
