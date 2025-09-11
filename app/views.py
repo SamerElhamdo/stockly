@@ -47,7 +47,13 @@ def format_arabic_text(text):
 def auth_view(request):
     """Unified authentication page with login, company registration, and staff registration"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        # Check if user has access to the system
+        if request.user.is_superuser or request.user.account_type in ['superuser', 'company_owner', 'company_staff']:
+            return redirect('dashboard')
+        else:
+            # User doesn't have proper access, logout and show error
+            logout(request)
+            messages.error(request, 'ليس لديك صلاحية للوصول إلى النظام')
     
     if request.method == 'POST':
         form = LoginForm(data=request.POST)
@@ -79,28 +85,27 @@ def logout_view(request):
     return redirect('auth')
 
 # Protected Views
-@company_owner_required
-@login_required
+@company_staff_required
 def dashboard(request):
     return render(request, "dashboard.html")
 
-@company_owner_required
+@company_staff_required
 def customers(request):
     return render(request, "customers.html")
 
-@company_owner_required
+@company_staff_required
 def products(request):
     return render(request, "products.html")
 
-@company_owner_required
+@company_staff_required
 def categories(request):
     return render(request, "categories.html")
 
-@company_owner_required
+@company_staff_required
 def invoices(request):
     return render(request, "invoices.html")
 
-@company_owner_required
+@company_staff_required
 def invoice_page(request, session_id):
     return render(request, "invoice.html", {"session_id": session_id})
 
@@ -333,7 +338,6 @@ def register_company(request):
     """Legacy company registration view - redirects to auth"""
     return redirect('auth')
 
-@login_required
 def register_staff(request):
     """Legacy staff registration view - redirects to auth"""
     return redirect('auth')

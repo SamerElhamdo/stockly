@@ -51,7 +51,7 @@ class User(AbstractUser):
         return check_password(raw_password, self.password)
     
     def __str__(self):
-        return f"{self.username} ({self.get_user_type_display()})"
+        return f"{self.username} ({self.get_account_type_display()})"
     
     def get_account_type_display_arabic(self):
         """Get Arabic display for account type"""

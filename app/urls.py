@@ -12,7 +12,6 @@ from . import views
 urlpatterns = [
   # Authentication
   path('auth/', views.auth_view, name='auth'),
-  path('login/', views.auth_view, name='login'),  # Redirect to auth
   path('logout/', views.logout_view, name='logout'),
   path('register-company/', views.auth_view, name='register_company'),  # Redirect to auth
   path('register-staff/', views.auth_view, name='register_staff'),  # Redirect to auth
