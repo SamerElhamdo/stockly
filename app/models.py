@@ -223,8 +223,17 @@ def company_queryset(model, user):
     Helper function to filter queryset by company
     Returns queryset filtered by user's company
     """
-    if not user or not user.company:
+    if not user:
         return model.objects.none()
+    
+    # Superuser can see all objects
+    if user.is_superuser:
+        return model.objects.all()
+    
+    # Company users can only see their company's objects
+    if not user.company:
+        return model.objects.none()
+    
     return model.objects.filter(company=user.company)
 
 def get_company_objects(model, user):
@@ -249,7 +258,7 @@ def can_manage_company(user):
     """
     Check if user can manage company (owner or staff)
     """
-    return user and user.is_authenticated and (user.is_company_owner or user.is_company_staff)
+    return user and user.is_authenticated and (user.is_superuser or user.account_type in ['company_owner', 'company_staff'])
 
 
 class OTPVerification(models.Model):

@@ -15,7 +15,7 @@ import random
 import uuid
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_products(request):
     if not can_manage_company(request.user):
         return Response({"error": "Unauthorized"}, status=403)
@@ -51,7 +51,7 @@ def api_invoice_session(request):
     return Response({"session_id": inv.id, "customer_id": customer.id})
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_get_invoice(request, session_id:int):
     if not can_manage_company(request.user):
         return Response({"error": "Unauthorized"}, status=403)
@@ -182,7 +182,7 @@ def api_confirm(request, session_id:int):
 # Additional API endpoints for the new pages
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_customers(request):
     customers = company_queryset(Customer, request.user).annotate(
         invoices_count=Count('invoices')
@@ -213,7 +213,7 @@ def api_add_customer(request):
     return Response({"id": customer.id, "name": customer.name})
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_categories(request):
     categories = company_queryset(Category, request.user)
     return Response([{"id": c.id, "name": c.name} for c in categories])
@@ -283,7 +283,7 @@ def api_add_product(request):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_invoices_list(request):
     invoices = company_queryset(Invoice, request.user).select_related('customer').order_by('-created_at')
     return Response([{
@@ -293,7 +293,7 @@ def api_invoices_list(request):
     } for inv in invoices])
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_recent_invoices(request):
     invoices = company_queryset(Invoice, request.user).select_related('customer').order_by('-created_at')[:10]
     return Response([{
@@ -303,7 +303,7 @@ def api_recent_invoices(request):
     } for inv in invoices])
 
 @api_view(["GET"])
-@api_company_owner_required
+@api_company_staff_required
 def api_dashboard_stats(request):
     today = timezone.now().date()
     today_invoices = company_queryset(Invoice, request.user).filter(created_at__date=today).count()
