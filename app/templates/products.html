@@ -216,7 +216,7 @@ async function loadProducts() {
     try {
         const res = await fetch('/api/products/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const products = await res.json();
@@ -301,7 +301,7 @@ async function loadCategories() {
     try {
         const res = await fetch('/api/categories/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const categories = await res.json();
@@ -374,7 +374,7 @@ async function addProduct(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             },
             body: JSON.stringify(formData)
         });
@@ -471,7 +471,7 @@ async function editProduct(productId) {
         // Get product data first
         const res = await fetch(`/api/products/`, {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const products = await res.json();
@@ -623,7 +623,7 @@ async function loadCategoriesForEdit() {
     try {
         const res = await fetch('/api/categories/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const categories = await res.json();
@@ -673,7 +673,7 @@ async function updateProduct() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             },
             body: JSON.stringify(productData)
         });
@@ -733,7 +733,7 @@ async function deleteProduct(productId) {
             const res = await fetch(`/api/products/${productId}/`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             });
             

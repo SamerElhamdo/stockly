@@ -5,17 +5,23 @@ from django.db import transaction
 from django.db.models import Count, Sum, Q, Max
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
 from datetime import datetime, timedelta
-from .models import Product, Customer, Invoice, InvoiceItem, Category
-from .decorators import api_admin_required
+from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, User, OTPVerification, company_queryset, can_manage_company
+from .decorators import api_company_owner_required, api_company_staff_required
+import requests
+import random
+import uuid
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_products(request):
+    if not can_manage_company(request.user):
+        return Response({"error": "Unauthorized"}, status=403)
+    
     q = request.GET.get("query","")
-    qs = Product.objects.select_related('category')
+    qs = company_queryset(Product, request.user).select_related('category')
     if q: qs = qs.filter(name__icontains=q) | qs.filter(sku__icontains=q)
     return Response([{
         "id":p.id,"sku":p.sku,"name":p.name,"price":float(p.price),"stock_qty":p.stock_qty,
@@ -27,50 +33,64 @@ def api_products(request):
     } for p in qs[:50]])
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_invoice_session(request):
+    # Check if user is company owner (only owners can create invoices)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can create invoices"}, status=403)
+    if not can_manage_company(request.user):
+        return Response({"error": "Unauthorized"}, status=403)
+    
     name = request.data.get("customer_name","عميل نقدي")
-    customer, _ = Customer.objects.get_or_create(name=name)
-    inv = Invoice.objects.create(customer=customer)
+    customer, _ = Customer.objects.get_or_create(
+        name=name, 
+        company=request.user.company,
+        defaults={'phone': '', 'email': '', 'address': ''}
+    )
+    inv = Invoice.objects.create(customer=customer, company=request.user.company)
     return Response({"session_id": inv.id, "customer_id": customer.id})
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_get_invoice(request, session_id:int):
-    inv = Invoice.objects.select_related("customer").get(pk=session_id)
-    return Response({
-        "id": inv.id,
-        "customer": {"id": inv.customer.id, "name": inv.customer.name, "phone": inv.customer.phone},
-        "status": inv.status,
-        "created_at": inv.created_at.isoformat(),
-        "items": [{
-            "id":it.id,"name":it.product.name,"sku":it.product.sku,
-            "qty":float(it.qty),"price":float(it.price_at_add),"line_total":float(it.line_total),
-            "unit":it.product.unit,
-            "unit_display":it.product.get_unit_display() if it.product.unit else None,
-            "measurement":it.product.measurement,
-            "description":it.product.description
-        } for it in inv.items.all()],
-        "total_amount": float(inv.total_amount)
-    })
+    if not can_manage_company(request.user):
+        return Response({"error": "Unauthorized"}, status=403)
+    
+    try:
+        inv = company_queryset(Invoice, request.user).select_related("customer").get(pk=session_id)
+        return Response({
+            "id": inv.id,
+            "customer": {"id": inv.customer.id, "name": inv.customer.name, "phone": inv.customer.phone},
+            "status": inv.status,
+            "created_at": inv.created_at.isoformat(),
+            "items": [{
+                "id":it.id,"name":it.product.name,"sku":it.product.sku,
+                "qty":float(it.qty),"price":float(it.price_at_add),"line_total":float(it.line_total),
+                "unit":it.product.unit,
+                "unit_display":it.product.get_unit_display() if it.product.unit else None,
+                "measurement":it.product.measurement,
+                "description":it.product.description
+            } for it in inv.items.all()],
+            "total_amount": float(inv.total_amount)
+        })
+    except Invoice.DoesNotExist:
+        return Response({"error": "Invoice not found"}, status=404)
 
 @api_view(["POST"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_add_item(request, session_id:int):
+    # Check if user is company owner (only owners can add items to invoices)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can add items to invoices"}, status=403)
     try:
-        inv = Invoice.objects.get(pk=session_id, status=Invoice.DRAFT)
+        inv = company_queryset(Invoice, request.user).get(pk=session_id, status=Invoice.DRAFT)
         qty = float(request.data.get("qty", 1))
         
         # Check if product_id is provided (new method)
         if "product_id" in request.data:
             product_id = request.data.get("product_id")
             try:
-                p = Product.objects.get(id=product_id)
+                p = company_queryset(Product, request.user).get(id=product_id)
             except Product.DoesNotExist:
                 return Response({"error": "product_not_found"}, status=404)
         else:
@@ -78,7 +98,7 @@ def api_add_item(request, session_id:int):
             product_query = request.data.get("product_query")
             if not product_query:
                 return Response({"error": "product_query_required"}, status=400)
-            p = Product.objects.filter(sku__iexact=product_query).first() or Product.objects.filter(name__icontains=product_query).first()
+            p = company_queryset(Product, request.user).filter(sku__iexact=product_query).first() or company_queryset(Product, request.user).filter(name__icontains=product_query).first()
             if not p: 
                 return Response({"error": "product_not_found"}, status=404)
         
@@ -116,13 +136,14 @@ def api_add_item(request, session_id:int):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["POST"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 @transaction.atomic
 def api_confirm(request, session_id:int):
+    # Check if user is company owner (only owners can confirm invoices)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can confirm invoices"}, status=403)
     try:
-        inv = Invoice.objects.select_for_update().get(pk=session_id, status=Invoice.DRAFT)
+        inv = company_queryset(Invoice, request.user).select_for_update().get(pk=session_id, status=Invoice.DRAFT)
         
         # Check stock availability before confirming
         insufficient_products = []
@@ -161,11 +182,9 @@ def api_confirm(request, session_id:int):
 # Additional API endpoints for the new pages
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_customers(request):
-    customers = Customer.objects.annotate(
+    customers = company_queryset(Customer, request.user).annotate(
         invoices_count=Count('invoices')
     ).order_by('-created_at')
     return Response([{
@@ -175,15 +194,17 @@ def api_customers(request):
     } for c in customers])
 
 @api_view(["POST"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_add_customer(request):
+    # Check if user is company owner (only owners can add customers)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can add customers"}, status=403)
     name = request.data.get("name")
     if not name:
         return Response({"error": "name_required"}, status=400)
     
     customer = Customer.objects.create(
+        company=request.user.company,
         name=name,
         phone=request.data.get("phone", ""),
         email=request.data.get("email", ""),
@@ -192,18 +213,17 @@ def api_add_customer(request):
     return Response({"id": customer.id, "name": customer.name})
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_categories(request):
-    categories = Category.objects.all()
+    categories = company_queryset(Category, request.user)
     return Response([{"id": c.id, "name": c.name} for c in categories])
 
 @api_view(["POST"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_add_product(request):
+    # Check if user is company owner (only owners can add products)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can add products"}, status=403)
     name = request.data.get("name")
     sku = request.data.get("sku")
     category_id = request.data.get("category")
@@ -219,10 +239,11 @@ def api_add_product(request):
         return Response({"error": "missing_fields"}, status=400)
     
     try:
-        category = Category.objects.get(id=category_id)
+        category = company_queryset(Category, request.user).get(id=category_id)
         
         # Prepare product data
         product_data = {
+            "company": request.user.company,
             "name": name, 
             "category": category,
             "price": float(price), 
@@ -262,11 +283,9 @@ def api_add_product(request):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_invoices_list(request):
-    invoices = Invoice.objects.select_related('customer').order_by('-created_at')
+    invoices = company_queryset(Invoice, request.user).select_related('customer').order_by('-created_at')
     return Response([{
         "id": inv.id, "customer_name": inv.customer.name,
         "total_amount": float(inv.total_amount), "status": inv.status,
@@ -274,11 +293,9 @@ def api_invoices_list(request):
     } for inv in invoices])
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_recent_invoices(request):
-    invoices = Invoice.objects.select_related('customer').order_by('-created_at')[:10]
+    invoices = company_queryset(Invoice, request.user).select_related('customer').order_by('-created_at')[:10]
     return Response([{
         "id": inv.id, "customer_name": inv.customer.name,
         "total_amount": float(inv.total_amount), "status": inv.status,
@@ -286,15 +303,13 @@ def api_recent_invoices(request):
     } for inv in invoices])
 
 @api_view(["GET"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_dashboard_stats(request):
     today = timezone.now().date()
-    today_invoices = Invoice.objects.filter(created_at__date=today).count()
-    total_sales = Invoice.objects.filter(status=Invoice.CONFIRMED).aggregate(
+    today_invoices = company_queryset(Invoice, request.user).filter(created_at__date=today).count()
+    total_sales = company_queryset(Invoice, request.user).filter(status=Invoice.CONFIRMED).aggregate(
         total=Sum('total_amount'))['total'] or 0
-    low_stock_items = Product.objects.filter(stock_qty__lt=5).count()
+    low_stock_items = company_queryset(Product, request.user).filter(stock_qty__lt=5).count()
     
     return Response({
         "today_invoices": today_invoices,
@@ -304,12 +319,13 @@ def api_dashboard_stats(request):
 
 # Delete endpoints
 @api_view(["DELETE"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_delete_category(request, category_id):
+    # Check if user is company owner (only owners can delete categories)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can delete categories"}, status=403)
     try:
-        category = Category.objects.get(id=category_id)
+        category = company_queryset(Category, request.user).get(id=category_id)
         category.delete()
         return Response({"success": True})
     except Category.DoesNotExist:
@@ -318,12 +334,13 @@ def api_delete_category(request, category_id):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["DELETE"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_delete_product(request, product_id):
+    # Check if user is company owner (only owners can delete products)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can delete products"}, status=403)
     try:
-        product = Product.objects.get(id=product_id)
+        product = company_queryset(Product, request.user).get(id=product_id)
         product.delete()
         return Response({"success": True})
     except Product.DoesNotExist:
@@ -332,12 +349,13 @@ def api_delete_product(request, product_id):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["DELETE"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_delete_customer(request, customer_id):
+    # Check if user is company owner (only owners can delete customers)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can delete customers"}, status=403)
     try:
-        customer = Customer.objects.get(id=customer_id)
+        customer = company_queryset(Customer, request.user).get(id=customer_id)
         customer.delete()
         return Response({"success": True})
     except Customer.DoesNotExist:
@@ -347,10 +365,11 @@ def api_delete_customer(request, customer_id):
 
 # Add category endpoint
 @api_view(["POST"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_add_category(request):
+    # Check if user is company owner (only owners can add categories)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can add categories"}, status=403)
     name = request.data.get("name")
     parent_id = request.data.get("parent")
     
@@ -360,9 +379,10 @@ def api_add_category(request):
     try:
         parent = None
         if parent_id:
-            parent = Category.objects.get(id=parent_id)
+            parent = company_queryset(Category, request.user).get(id=parent_id)
         
         category = Category.objects.create(
+            company=request.user.company,
             name=name,
             parent=parent
         )
@@ -374,12 +394,13 @@ def api_add_category(request):
 
 # Update endpoints
 @api_view(["PUT"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_update_category(request, category_id):
+    # Check if user is company owner (only owners can update categories)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can update categories"}, status=403)
     try:
-        category = Category.objects.get(id=category_id)
+        category = company_queryset(Category, request.user).get(id=category_id)
         data = request.data
         
         category.name = data.get('name', category.name)
@@ -401,12 +422,13 @@ def api_update_category(request, category_id):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["PUT"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_update_product(request, product_id):
+    # Check if user is company owner (only owners can update products)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can update products"}, status=403)
     try:
-        product = Product.objects.get(id=product_id)
+        product = company_queryset(Product, request.user).get(id=product_id)
         data = request.data
         
         # Update basic fields
@@ -457,12 +479,13 @@ def api_update_product(request, product_id):
         return Response({"error": str(e)}, status=400)
 
 @api_view(["PUT"])
-@csrf_exempt
-@permission_classes([IsAuthenticated])
-@api_admin_required
+@api_company_owner_required
 def api_update_customer(request, customer_id):
+    # Check if user is company owner (only owners can update customers)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can update customers"}, status=403)
     try:
-        customer = Customer.objects.get(id=customer_id)
+        customer = company_queryset(Customer, request.user).get(id=customer_id)
         data = request.data
         
         customer.name = data.get('name', customer.name)
@@ -485,5 +508,395 @@ def api_update_customer(request, customer_id):
         })
     except Customer.DoesNotExist:
         return Response({"error": "customer_not_found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# Company Registration API
+@api_view(["POST"])
+@permission_classes([])  # No authentication required
+def api_register_company(request):
+    """Register a new company"""
+    try:
+        data = request.data
+        company_data = data.get('company', {})
+        
+        # Clean phone number
+        company_phone = company_data.get('phone', '')
+        
+        if company_phone:
+            company_phone = company_phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        
+        # Validate required fields
+        if not company_data.get('name'):
+            return Response({"error": "Company name is required"}, status=400)
+        
+        if not company_data.get('code'):
+            return Response({"error": "Company code is required"}, status=400)
+        
+        # Check if company code already exists
+        if Company.objects.filter(code=company_data['code']).exists():
+            return Response({"error": "Company code already exists"}, status=400)
+        
+        # Verify OTP first
+        otp_session_id = data.get('otp_session_id')
+        if not otp_session_id:
+            return Response({"error": "OTP verification is required"}, status=400)
+        
+        try:
+            otp_record = OTPVerification.objects.get(id=otp_session_id)
+            print(f"Debug: OTP record found - Phone: {otp_record.phone}, OTP: {otp_record.otp_code}")
+            print(f"Debug: Company phone: {company_phone}")
+            
+            # Check if OTP is expired (but allow reuse for verification)
+            if otp_record.is_expired():
+                print(f"Debug: OTP has expired")
+                return Response({"error": "OTP has expired"}, status=400)
+            
+            # Clean the phone number from OTP record for comparison
+            otp_phone_clean = otp_record.phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            print(f"Debug: OTP phone cleaned: {otp_phone_clean}")
+            print(f"Debug: Company phone: {company_phone}")
+            
+            if otp_phone_clean != company_phone:
+                return Response({"error": f"Phone number mismatch: OTP phone ({otp_phone_clean}) != Company phone ({company_phone})"}, status=400)
+        except OTPVerification.DoesNotExist:
+            return Response({"error": "Invalid OTP session"}, status=400)
+        
+        with transaction.atomic():
+            # Create company
+            company = Company.objects.create(
+                name=company_data['name'],
+                code=company_data['code'],
+                email=company_data.get('email', ''),
+                phone=company_phone,
+                address=company_data.get('address', ''),
+                phone_verified=True
+            )
+            
+            # Create admin user for the company
+            admin_data = data.get('admin', {})
+            admin_username = admin_data.get('username')
+            admin_password = admin_data.get('password')
+            
+            if not admin_username or not admin_password:
+                return Response({"error": "Admin username and password are required"}, status=400)
+            
+            # Check if username already exists
+            if User.objects.filter(username=admin_username).exists():
+                return Response({"error": "Username already exists"}, status=400)
+            
+            admin_user = User.objects.create_user(
+                username=admin_username,
+                password=admin_password,
+                first_name=f"مدير {company_data['name']}",
+                email=company_data.get('email', ''),
+                phone=company_phone,
+                company=company,
+                account_type='company_owner',
+                user_type='admin',
+                role='owner',
+                is_staff=True,
+                is_active=True
+            )
+            
+            return Response({
+                "success": True,
+                "message": "Company and admin account created successfully",
+                "company": {
+                    "id": company.id,
+                    "name": company.name,
+                    "code": company.code,
+                    "email": company.email,
+                    "phone": company.phone
+                },
+                "admin": {
+                    "username": admin_username,
+                    "message": "يمكنك الآن تسجيل الدخول باستخدام هذه البيانات"
+                }
+            })
+            
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# Staff Registration API
+@api_view(["POST"])
+@api_company_owner_required
+def api_register_staff(request):
+    # Check if user is company owner (only owners can register staff)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can register staff"}, status=403)
+    """Register a new staff user for the current company"""
+    try:
+        if not can_manage_company(request.user):
+            return Response({"error": "Unauthorized"}, status=403)
+        
+        data = request.data
+        
+        # Clean phone number
+        phone = data.get('phone', '')
+        if phone:
+            phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        
+        # Validate required fields
+        if not data.get('username') or not data.get('email') or not data.get('password'):
+            return Response({"error": "Username, email, and password are required"}, status=400)
+        
+        # Check if username or email already exists
+        if User.objects.filter(username=data['username']).exists():
+            return Response({"error": "Username already exists"}, status=400)
+        
+        if User.objects.filter(email=data['email']).exists():
+            return Response({"error": "Email already exists"}, status=400)
+        
+        # Create staff user
+        user = User.objects.create_user(
+            username=data['username'],
+            email=data['email'],
+            password=data['password'],
+            phone=phone,
+            first_name=data.get('first_name', ''),
+            last_name=data.get('last_name', ''),
+            company=request.user.company,
+            account_type='company_staff',
+            role='staff',
+            user_type='user',
+            is_active=True
+        )
+        
+        return Response({
+            "success": True,
+            "message": "Staff user created successfully",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+                "company": user.company.name
+            }
+        })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# Company Users List API
+@api_view(["GET"])
+@api_company_owner_required
+def api_company_users(request):
+    """Get all users for the current company"""
+    try:
+        if not can_manage_company(request.user):
+            return Response({"error": "Unauthorized"}, status=403)
+        
+        users = company_queryset(User, request.user).exclude(id=request.user.id)
+        
+        return Response([{
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "role": user.role,
+            "role_display": user.get_role_display(),
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat(),
+            "last_login": user.last_login.isoformat() if user.last_login else None
+        } for user in users])
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# OTP Send API
+@api_view(["POST"])
+@permission_classes([])  # No authentication required
+def api_send_otp(request):
+    """Send OTP via WhatsApp"""
+    try:
+        data = request.data
+        phone = data.get('phone', '').strip()
+        verification_type = data.get('verification_type', 'company_registration')
+        
+        if not phone:
+            return Response({"error": "Phone number is required"}, status=400)
+        
+        # Clean phone number (remove +, spaces, dashes, parentheses)
+        clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        
+        # Validate phone number format
+        if len(clean_phone) < 10:
+            return Response({"error": "Phone number must be at least 10 digits"}, status=400)
+        
+        # Generate 6-digit OTP
+        otp_code = str(random.randint(100000, 999999))
+        
+        # Create OTP record
+        otp_record = OTPVerification.objects.create(
+            phone=clean_phone,
+            otp_code=otp_code,
+            verification_type=verification_type
+        )
+        webhook_url = f"https://n8n.srv772321.hstgr.cloud/webhook/7d526f0e-36a0-4d77-a05b-e9a0fe46785a"
+        requests.post(webhook_url, json={"phone": clean_phone, "otp_code": otp_code})
+
+        print(f"WhatsApp Message to {clean_phone}: Your OTP code is: {otp_code}")
+        
+        return Response({
+            "success": True,
+            "message": "OTP sent successfully",
+            "session_id": str(otp_record.id),
+            "expires_in": 300  # 5 minutes in seconds
+        })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# OTP Verify API
+@api_view(["POST"])
+@permission_classes([])  # No authentication required
+def api_verify_otp(request):
+    """Verify OTP code"""
+    try:
+        data = request.data
+        session_id = data.get('session_id')
+        otp_code = data.get('otp_code', '').strip()
+        
+        if not session_id or not otp_code:
+            return Response({"error": "Session ID and OTP code are required"}, status=400)
+        
+        try:
+            otp_record = OTPVerification.objects.get(id=session_id)
+            print(f"Debug: OTP record found - Phone: {otp_record.phone}, OTP: {otp_record.otp_code}")
+            print(f"Debug: Provided OTP: {otp_code}")
+        except OTPVerification.DoesNotExist:
+            return Response({"error": "Invalid session ID"}, status=400)
+        
+        # Check if OTP is expired (but allow reuse for verification)
+        if otp_record.is_expired():
+            print(f"Debug: OTP has expired")
+            return Response({"error": "OTP has expired"}, status=400)
+        
+        # Verify OTP code
+        print(f"Debug: Comparing OTP codes - Stored: {otp_record.otp_code}, Provided: {otp_code}")
+        if otp_record.otp_code != otp_code:
+            return Response({"error": "Invalid OTP code"}, status=400)
+        
+        # Mark OTP as used
+        otp_record.is_used = True
+        otp_record.save()
+        
+        return Response({
+            "success": True,
+            "message": "OTP verified successfully",
+            "phone": otp_record.phone,
+            "verification_type": otp_record.verification_type
+        })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# WhatsApp Webhook API
+@api_view(["POST"])
+def api_whatsapp_webhook(request):
+    """Webhook to receive WhatsApp messages and send OTP"""
+    try:
+        data = request.data
+        
+        # Extract phone number and message from webhook
+        # This depends on your WhatsApp API provider
+        phone = data.get('phone', '').strip()
+        message = data.get('message', '').strip()
+        
+        if not phone or not message:
+            return Response({"error": "Phone and message are required"}, status=400)
+        
+        # Check if this is an OTP request
+        if 'otp' in message.lower() or 'verify' in message.lower():
+            # Generate and send OTP
+            import random
+            otp_code = str(random.randint(100000, 999999))
+            
+            # Create OTP record
+            otp_record = OTPVerification.objects.create(
+                phone=phone,
+                otp_code=otp_code,
+                verification_type='company_registration'
+            )
+            
+            # Send OTP via WhatsApp
+            # TODO: Implement actual WhatsApp sending logic
+            whatsapp_message = f"رمز التحقق الخاص بك هو: {otp_code}\n\nهذا الرمز صالح لمدة 5 دقائق.\n\nStockly Team"
+            
+            # Here you would send the message via your WhatsApp API
+            print(f"Sending WhatsApp message to {phone}: {whatsapp_message}")
+            
+            return Response({
+                "success": True,
+                "message": "OTP sent via WhatsApp",
+                "session_id": str(otp_record.id)
+            })
+        
+        return Response({
+            "success": True,
+            "message": "Webhook received"
+        })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+# Get Auth Token API
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def api_get_token(request):
+    """Get or create auth token for the current user"""
+    try:
+        token, created = Token.objects.get_or_create(user=request.user)
+        return Response({
+            "success": True,
+            "token": token.key,
+            "created": created
+        })
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+# User Management APIs
+@api_view(["DELETE"])
+@api_company_owner_required
+def api_delete_user(request, user_id):
+    # Check if user is company owner (only owners can delete users)
+    if request.user.account_type != 'company_owner':
+        return Response({"error": "Only company owners can delete users"}, status=403)
+    """Delete a user (only company users, not superuser)"""
+    try:
+        if not can_manage_company(request.user):
+            return Response({"error": "Unauthorized"}, status=403)
+        
+        # Get user to delete
+        if request.user.is_superuser:
+            # Superuser can delete any company user
+            user = User.objects.filter(id=user_id, account_type__in=['company_owner', 'company_staff']).first()
+        else:
+            # Company admin can only delete users from their company
+            user = User.objects.filter(id=user_id, company=request.user.company).first()
+        
+        if not user:
+            return Response({"error": "User not found"}, status=404)
+        
+        # Prevent deleting superuser
+        if user.is_superuser:
+            return Response({"error": "Cannot delete superuser"}, status=403)
+        
+        # Prevent deleting yourself
+        if user.id == request.user.id:
+            return Response({"error": "Cannot delete yourself"}, status=403)
+        
+        user.delete()
+        return Response({"success": True, "message": "User deleted successfully"})
+        
     except Exception as e:
         return Response({"error": str(e)}, status=400)

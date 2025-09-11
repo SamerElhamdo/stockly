@@ -30,7 +30,8 @@ class LoginForm(AuthenticationForm):
                 raise forms.ValidationError('اسم المستخدم أو كلمة المرور غير صحيحة')
             if not user.is_active:
                 raise forms.ValidationError('هذا الحساب غير مفعل')
-            if user.user_type != 'admin':
+            # Allow different types of users to login
+            if not (user.is_superuser or user.account_type in ['superuser', 'company_owner', 'company_staff']):
                 raise forms.ValidationError('ليس لديك صلاحية للوصول إلى النظام')
             # Store the authenticated user for get_user()
             self.user_cache = user
@@ -54,7 +55,7 @@ class UserRegistrationForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'phone', 'user_type']
+        fields = ['username', 'email', 'first_name', 'last_name', 'phone']
         widgets = {
             'username': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white',
@@ -78,9 +79,6 @@ class UserRegistrationForm(forms.ModelForm):
                 'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white',
                 'placeholder': 'رقم الهاتف',
                 'dir': 'ltr'
-            }),
-            'user_type': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white'
             })
         }
     

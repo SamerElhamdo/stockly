@@ -139,10 +139,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'app.User'
 
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Login/Logout URLs
-LOGIN_URL = '/login/'
+LOGIN_URL = '/auth/'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/auth/'
 
 # Session settings
 SESSION_COOKIE_AGE = 3600  # 1 hour

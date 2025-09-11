@@ -47,8 +47,8 @@
                             <div class="text-sm text-gray-600 dark:text-gray-400">{{ user.email|default:"-" }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if user.user_type == 'admin' %}bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400{% else %}bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400{% endif %}">
-                                {{ user.get_user_type_display }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if user.account_type == 'company_owner' %}bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400{% elif user.account_type == 'company_staff' %}bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400{% else %}bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400{% endif %}">
+                                {{ user.get_account_type_display_arabic }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -105,7 +105,7 @@ async function deleteUser(userId) {
             const res = await fetch(`/api/users/${userId}/`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             });
             

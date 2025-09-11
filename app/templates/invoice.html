@@ -148,7 +148,7 @@ async function loadInvoice() {
     try {
         const res = await fetch(`/api/invoices/${sessionId}`, {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const inv = await res.json();
@@ -251,7 +251,7 @@ async function confirmInvoice() {
             const res = await fetch(`/api/invoices/${sessionId}/confirm`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             });
             
@@ -299,7 +299,7 @@ async function loadAllProducts() {
     try {
         const res = await fetch('/api/products/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         allProducts = await res.json();
@@ -435,7 +435,7 @@ async function addItem() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             },
             body: JSON.stringify({product_id: selectedProductId, qty: qty})
         });

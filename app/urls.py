@@ -3,13 +3,19 @@ from .api import (api_products, api_invoice_session, api_get_invoice, api_add_it
                   api_customers, api_add_customer, api_categories, api_add_product,
                   api_invoices_list, api_recent_invoices, api_dashboard_stats,
                   api_delete_category, api_delete_product, api_delete_customer, api_add_category,
-                  api_update_category, api_update_product, api_update_customer)
+                  api_update_category, api_update_product, api_update_customer,
+                  api_register_company, api_register_staff, api_company_users,
+                  api_send_otp, api_verify_otp, api_whatsapp_webhook, api_delete_user,
+                  api_get_token)
 from . import views
 
 urlpatterns = [
   # Authentication
-  path('login/', views.login_view, name='login'),
+  path('auth/', views.auth_view, name='auth'),
+  path('login/', views.auth_view, name='login'),  # Redirect to auth
   path('logout/', views.logout_view, name='logout'),
+  path('register-company/', views.auth_view, name='register_company'),  # Redirect to auth
+  path('register-staff/', views.auth_view, name='register_staff'),  # Redirect to auth
   
   # User Management
   path('users/', views.user_management, name='user_management'),
@@ -36,6 +42,20 @@ urlpatterns = [
   path('api/invoices/<int:invoice_id>/confirm', api_confirm),
   path('api/invoices/recent', api_recent_invoices),
   path('api/dashboard/stats', api_dashboard_stats),
+  
+  # Company Registration & OTP
+  path('api/register-company/', api_register_company),
+  path('api/register-staff/', api_register_staff),
+  path('api/company-users/', api_company_users),
+  path('api/send-otp/', api_send_otp),
+  path('api/verify-otp/', api_verify_otp),
+  path('api/whatsapp-webhook/', api_whatsapp_webhook),
+  
+  # User Management
+  path('api/users/<int:user_id>/', api_delete_user),
+  
+  # Auth Token
+  path('api/get-token/', api_get_token),
 
   # Dashboard Pages
   path('', views.dashboard, name='dashboard'),

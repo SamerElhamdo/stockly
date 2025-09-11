@@ -186,7 +186,7 @@ async function loadInvoices() {
     try {
         const res = await fetch('/api/invoices/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const invoices = await res.json();
@@ -287,7 +287,7 @@ async function loadAllCustomers() {
     try {
         const res = await fetch('/api/customers/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         allCustomers = await res.json();
@@ -410,7 +410,7 @@ async function createInvoice() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                        'Authorization': 'Token ' + localStorage.getItem('authToken')
                     },
                     body: JSON.stringify({
                         name: newCustomerName,
@@ -439,7 +439,7 @@ async function createInvoice() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             },
             body: JSON.stringify({customer_name: customerName})
         });
@@ -548,7 +548,7 @@ async function confirmInvoice(invoiceId) {
             const res = await fetch(`/api/invoices/${invoiceId}/confirm`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             });
             if (res.ok) {

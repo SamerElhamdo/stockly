@@ -102,17 +102,17 @@ async function loadDashboardData() {
         const [invoicesRes, productsRes, customersRes] = await Promise.all([
             fetch('/api/dashboard/stats', {
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             }),
             fetch('/api/products/', {
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             }),
             fetch('/api/customers/', {
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             })
         ]);
@@ -140,7 +140,7 @@ async function loadRecentInvoices() {
     try {
         const res = await fetch('/api/invoices/recent', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const invoices = await res.json();

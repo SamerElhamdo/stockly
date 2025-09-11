@@ -82,7 +82,7 @@ async function loadCategories() {
     try {
         const res = await fetch('/api/categories/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const categories = await res.json();
@@ -144,7 +144,7 @@ async function loadParentCategories() {
     try {
         const res = await fetch('/api/categories/', {
             headers: {
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             }
         });
         const categories = await res.json();
@@ -180,7 +180,7 @@ async function addCategory(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
             },
             body: JSON.stringify(formData)
         });
@@ -217,7 +217,7 @@ async function deleteCategory(categoryId) {
             const res = await fetch(`/api/categories/${categoryId}/`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
                 }
             });
             
