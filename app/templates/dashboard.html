@@ -72,30 +72,6 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="card mb-8">
-        <div class="flex items-center mb-6">
-            <div class="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center m-3">
-                <i class="fas fa-bolt text-white text-sm"></i>
-            </div>
-            <h2 class="text-xl font-semibold text-primary font-cairo">إجراءات سريعة</h2>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button onclick="createInvoice()" class="group flex items-center justify-center p-6 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                <i class="fas fa-plus-circle text-xl mr-3 group-hover:scale-110 transition-transform"></i>
-                <span class="font-medium font-cairo">إنشاء فاتورة جديدة</span>
-            </button>
-            <a href="{% url 'products' %}" class="group flex items-center justify-center p-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                <i class="fas fa-box text-xl mr-3 group-hover:scale-110 transition-transform"></i>
-                <span class="font-medium font-cairo">إضافة منتج جديد</span>
-            </a>
-            <a href="{% url 'customers' %}" class="group flex items-center justify-center p-6 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                <i class="fas fa-user-plus text-xl mr-3 group-hover:scale-110 transition-transform"></i>
-                <span class="font-medium font-cairo">إضافة عميل جديد</span>
-            </a>
-        </div>
-    </div>
-
     <!-- Recent Invoices -->
     <div class="card">
         <div class="px-6 py-4 border-b border-primary">
@@ -117,34 +93,6 @@
     </div>
 </div>
 
-<!-- Create Invoice Modal -->
-<div id="createInvoiceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 backdrop-blur-sm">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-primary rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all duration-300">
-            <div class="flex items-center mb-6">
-                <div class="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mr-3">
-                    <i class="fas fa-plus text-white"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-primary font-cairo">إنشاء فاتورة جديدة</h3>
-            </div>
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-secondary mb-2 font-cairo">اسم العميل</label>
-                <input id="customerName" type="text" placeholder="اسم العميل (اختياري)"
-                       class="input-primary w-full">
-            </div>
-            <div class="flex justify-end space-x-3 space-x-reverse">
-                <button onclick="closeCreateInvoiceModal()" class="btn-secondary">
-                    <i class="fas fa-times ml-2"></i>
-                    إلغاء
-                </button>
-                <button onclick="createInvoice()" class="btn-primary">
-                    <i class="fas fa-check ml-2"></i>
-                    إنشاء فاتورة
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
 // Load dashboard data
@@ -211,7 +159,7 @@ async function loadRecentInvoices() {
         container.innerHTML = invoices.map(invoice => `
             <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200">
                 <div class="flex items-center">
-                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center m-3">
                         <i class="fas fa-file-invoice text-white text-sm"></i>
                     </div>
                     <div>
@@ -238,34 +186,6 @@ async function loadRecentInvoices() {
         `).join('');
     } catch (error) {
         console.error('Error loading recent invoices:', error);
-    }
-}
-
-function showCreateInvoiceModal() {
-    document.getElementById('createInvoiceModal').classList.remove('hidden');
-}
-
-function closeCreateInvoiceModal() {
-    document.getElementById('createInvoiceModal').classList.add('hidden');
-    document.getElementById('customerName').value = '';
-}
-
-async function createInvoice() {
-    const name = document.getElementById('customerName').value || 'عميل نقدي';
-    try {
-        const res = await fetch('/api/invoices/session', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Token a9b4424599bdfd8427acf9ed3be853f2749de5c6'
-            },
-            body: JSON.stringify({customer_name: name})
-        });
-        const data = await res.json();
-        window.location.href = `/invoice/${data.session_id}/`;
-    } catch (error) {
-        console.error('Error creating invoice:', error);
-        showNotification('❌ حدث خطأ في إنشاء الفاتورة', 'error');
     }
 }
 
