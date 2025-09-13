@@ -98,21 +98,27 @@
 // Load dashboard data
 async function loadDashboardData() {
     try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token found in loadDashboardData');
+            return;
+        }
+        
         // Load stats
         const [invoicesRes, productsRes, customersRes] = await Promise.all([
             fetch('/api/dashboard/stats', {
                 headers: {
-                    'Authorization': 'Token ' + localStorage.getItem('authToken')
+                    'Authorization': 'Token ' + token
                 }
             }),
             fetch('/api/products/', {
                 headers: {
-                    'Authorization': 'Token ' + localStorage.getItem('authToken')
+                    'Authorization': 'Token ' + token
                 }
             }),
             fetch('/api/customers/', {
                 headers: {
-                    'Authorization': 'Token ' + localStorage.getItem('authToken')
+                    'Authorization': 'Token ' + token
                 }
             })
         ]);
@@ -138,15 +144,31 @@ async function loadDashboardData() {
 
 async function loadRecentInvoices() {
     try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token found, retrying...');
+            // Try to get token again
+            setTimeout(loadRecentInvoices, 1000);
+            return;
+        }
+        
         const res = await fetch('/api/invoices/recent', {
             headers: {
-                'Authorization': 'Token ' + localStorage.getItem('authToken')
+                'Authorization': 'Token ' + token
             }
         });
-        const invoices = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        // Ensure invoices is an array
+        const invoices = Array.isArray(data) ? data : (data.invoices || []);
         
         const container = document.getElementById('recentInvoices');
-        if (invoices.length === 0) {
+        if (!invoices || invoices.length === 0) {
             container.innerHTML = `
                 <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                     <i class="fas fa-file-invoice text-4xl mb-4"></i>
@@ -186,10 +208,47 @@ async function loadRecentInvoices() {
         `).join('');
     } catch (error) {
         console.error('Error loading recent invoices:', error);
+        const container = document.getElementById('recentInvoices');
+        container.innerHTML = `
+            <div class="text-center text-red-500 dark:text-red-400 py-8">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                <p class="mt-2 font-cairo">حدث خطأ في تحميل الفواتير</p>
+            </div>
+        `;
     }
 }
 
+// Wait for auth token to be available
+function waitForAuthToken() {
+    return new Promise((resolve) => {
+        const checkToken = () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                resolve(token);
+            } else {
+                setTimeout(checkToken, 100);
+            }
+        };
+        checkToken();
+    });
+}
+
 // Load data on page load
-document.addEventListener('DOMContentLoaded', loadDashboardData);
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        await waitForAuthToken();
+        loadDashboardData();
+    } catch (error) {
+        console.error('Error waiting for auth token:', error);
+        // Try to load data anyway after a delay
+        setTimeout(loadDashboardData, 2000);
+    }
+});
+
+// Listen for auth token ready event
+window.addEventListener('authTokenReady', function(event) {
+    console.log('Auth token ready event received:', event.detail);
+    loadDashboardData();
+});
 </script>
 {% endblock %}
