@@ -63,7 +63,7 @@ def auth_view(request):
                 login(request, user)
                 # Create or get token for API authentication
                 token, created = Token.objects.get_or_create(user=user)
-                messages.success(request, f'مرحباً {user.first_name or user.username}!')
+                # messages.success(request, f'مرحباً {user.first_name or user.username}!')
                 return redirect('dashboard')
             else:
                 messages.error(request, 'اسم المستخدم أو كلمة المرور غير صحيحة')

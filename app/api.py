@@ -544,9 +544,13 @@ def api_register_company(request):
             return Response({"error": "OTP verification is required"}, status=400)
         
         try:
-            otp_record = OTPVerification.objects.get(id=otp_session_id)
-            print(f"Debug: OTP record found - Phone: {otp_record.phone}, OTP: {otp_record.otp_code}")
+            otp_record = OTPVerification.objects.get(session_id=otp_session_id)
+            print(f"Debug: OTP record found - Phone: {otp_record.phone}, OTP: {otp_record.otp_code}, Type: {otp_record.verification_type}")
             print(f"Debug: Company phone: {company_phone}")
+            
+            # Check if OTP is for company registration
+            if otp_record.verification_type != 'company_registration':
+                return Response({"error": "OTP is not valid for company registration"}, status=400)
             
             # Check if OTP is expired (but allow reuse for verification)
             if otp_record.is_expired():
@@ -599,6 +603,10 @@ def api_register_company(request):
                 is_staff=True,
                 is_active=True
             )
+            
+            # Mark OTP as used after successful company registration
+            otp_record.is_used = True
+            otp_record.save()
             
             return Response({
                 "success": True,
@@ -739,6 +747,17 @@ def api_send_otp(request):
             otp_code=otp_code,
             verification_type=verification_type
         )
+        
+        # For forgot password, verify username exists
+        if verification_type == 'forgot_password':
+            username = request.data.get('username')
+            if not username:
+                return Response({"error": "اسم المستخدم مطلوب لإعادة تعيين كلمة المرور"}, status=400)
+            
+            try:
+                user = User.objects.get(username=username, phone=clean_phone)
+            except User.DoesNotExist:
+                return Response({"error": "اسم المستخدم أو رقم الهاتف غير صحيح"}, status=400)
         webhook_url = f"https://n8n.srv772321.hstgr.cloud/webhook/7d526f0e-36a0-4d77-a05b-e9a0fe46785a"
         requests.post(webhook_url, json={"phone": clean_phone, "otp_code": otp_code})
 
@@ -747,7 +766,7 @@ def api_send_otp(request):
         return Response({
             "success": True,
             "message": "OTP sent successfully",
-            "session_id": str(otp_record.id),
+            "session_id": str(otp_record.session_id),
             "expires_in": 300  # 5 minutes in seconds
         })
         
@@ -769,7 +788,7 @@ def api_verify_otp(request):
             return Response({"error": "Session ID and OTP code are required"}, status=400)
         
         try:
-            otp_record = OTPVerification.objects.get(id=session_id)
+            otp_record = OTPVerification.objects.get(session_id=session_id)
             print(f"Debug: OTP record found - Phone: {otp_record.phone}, OTP: {otp_record.otp_code}")
             print(f"Debug: Provided OTP: {otp_code}")
         except OTPVerification.DoesNotExist:
@@ -785,9 +804,8 @@ def api_verify_otp(request):
         if otp_record.otp_code != otp_code:
             return Response({"error": "Invalid OTP code"}, status=400)
         
-        # Mark OTP as used
-        otp_record.is_used = True
-        otp_record.save()
+        # Don't mark OTP as used here - let the specific endpoints handle it
+        # This allows the same OTP to be verified for different purposes
         
         return Response({
             "success": True,
@@ -795,6 +813,55 @@ def api_verify_otp(request):
             "phone": otp_record.phone,
             "verification_type": otp_record.verification_type
         })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+@permission_classes([])  # No authentication required
+def api_reset_password(request):
+    """Reset user password after OTP verification"""
+    try:
+        username = request.data.get('username')
+        phone = request.data.get('phone')
+        new_password = request.data.get('new_password')
+        otp_session_id = request.data.get('otp_session_id')
+        
+        if not all([username, phone, new_password, otp_session_id]):
+            return Response({"error": "جميع الحقول مطلوبة"}, status=400)
+        
+        # Clean phone number
+        clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        
+        # Verify OTP
+        try:
+            otp_record = OTPVerification.objects.get(
+                session_id=otp_session_id,
+                phone=clean_phone,
+                verification_type='forgot_password'
+            )
+        except OTPVerification.DoesNotExist:
+            return Response({"error": "رمز التحقق غير صحيح"}, status=400)
+        
+        if not otp_record.is_valid():
+            return Response({"error": "رمز التحقق منتهي الصلاحية"}, status=400)
+        
+        # Find user by username and phone
+        try:
+            user = User.objects.get(username=username, phone=clean_phone)
+        except User.DoesNotExist:
+            return Response({"error": "اسم المستخدم أو رقم الهاتف غير صحيح"}, status=400)
+        
+        # Update password
+        user.set_password(new_password)
+        user.save()
+        
+        # Mark OTP as used
+        otp_record.is_used = True
+        otp_record.save()
+        
+        return Response({"message": "تم إعادة تعيين كلمة المرور بنجاح"})
         
     except Exception as e:
         return Response({"error": str(e)}, status=400)
@@ -838,7 +905,7 @@ def api_whatsapp_webhook(request):
             return Response({
                 "success": True,
                 "message": "OTP sent via WhatsApp",
-                "session_id": str(otp_record.id)
+                "session_id": str(otp_record.session_id)
             })
         
         return Response({

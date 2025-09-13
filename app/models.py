@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
+import uuid
 
 class Company(models.Model):
     name = models.CharField(max_length=256, verbose_name='اسم الشركة')
@@ -263,6 +264,7 @@ def can_manage_company(user):
 
 class OTPVerification(models.Model):
     """Model for OTP verification via WhatsApp"""
+    session_id = models.UUIDField(default=uuid.uuid4, unique=True, verbose_name='معرف الجلسة')
     phone = models.CharField(max_length=32, verbose_name='رقم الهاتف')
     otp_code = models.CharField(max_length=6, verbose_name='رمز التحقق')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
@@ -271,7 +273,7 @@ class OTPVerification(models.Model):
     verification_type = models.CharField(max_length=20, choices=[
         ('company_registration', 'تسجيل شركة'),
         ('user_registration', 'تسجيل مستخدم'),
-        ('password_reset', 'إعادة تعيين كلمة المرور'),
+        ('forgot_password', 'إعادة تعيين كلمة المرور'),
     ], default='company_registration', verbose_name='نوع التحقق')
     
     class Meta:

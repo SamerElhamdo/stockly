@@ -6,7 +6,7 @@ from .api import (api_products, api_invoice_session, api_get_invoice, api_add_it
                   api_update_category, api_update_product, api_update_customer,
                   api_register_company, api_register_staff, api_company_users,
                   api_send_otp, api_verify_otp, api_whatsapp_webhook, api_delete_user,
-                  api_get_token)
+                  api_get_token, api_reset_password)
 from . import views
 
 urlpatterns = [
@@ -48,6 +48,7 @@ urlpatterns = [
   path('api/company-users/', api_company_users),
   path('api/send-otp/', api_send_otp),
   path('api/verify-otp/', api_verify_otp),
+  path('api/reset-password/', api_reset_password),
   path('api/whatsapp-webhook/', api_whatsapp_webhook),
   
   # User Management
