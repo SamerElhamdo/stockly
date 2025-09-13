@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-i$3)c($@(544q2defgc!$4l4t(l)+3f$-*y62*+v*)+e31##k^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "stockly.encryptosystem.com",
+    "localhost",
+    "127.0.0.1",
+    "*"  # Remove this in production
+]
 
 
 # Application definition
@@ -157,3 +162,34 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://stockly.encryptosystem.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# CORS settings (if needed)
+CORS_ALLOWED_ORIGINS = [
+    'https://stockly.encryptosystem.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# Additional CSRF settings
+CSRF_COOKIE_SECURE = True  # Set to True in production with HTTPS
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Session settings for production
+SESSION_COOKIE_SECURE = True  # Set to True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# Production settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
