@@ -1,3 +1,4 @@
+# Core Django Requirements
 arabic-reshaper==3.0.0
 asgiref==3.9.1
 certifi==2025.8.3
@@ -11,3 +12,6 @@ reportlab==4.4.3
 requests==2.32.5
 sqlparse==0.5.3
 urllib3==2.5.0
+
+# WhatsApp Agent Requirements
+google-generativeai==0.8.5

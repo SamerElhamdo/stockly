@@ -270,9 +270,15 @@
                         <div class="flex flex-col">
                             <h1 class="navbar-title">Stockly</h1>
                             {% if user.is_authenticated and user.company %}
-                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                <i class="fas fa-building ml-1"></i>{{ user.company.name }}
-                            </span>
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                    <i class="fas fa-building ml-1"></i>{{ user.company.name }}
+                                </span>
+                                <div class="flex items-center space-x-1 space-x-reverse">
+                                    <div id="agentStatus" class="w-2 h-2 rounded-full bg-gray-400" title="حالة الوكيل"></div>
+                                    <span class="text-xs text-gray-400" id="agentStatusText">الوكيل</span>
+                                </div>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -349,10 +355,48 @@
                                 </div>
                                 
                                 <!-- Menu Items -->
-                                <a href="{% url 'user_management' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    <i class="fas fa-users ml-3"></i>
-                                    إدارة المستخدمين
-                                </a>
+                <a href="{% url 'user_management' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-users ml-3"></i>
+                    إدارة المستخدمين
+                </a>
+                <!-- الوكيل الذكي - للادمن فقط -->
+                {% if user.is_superuser %}
+                <div class="relative group" id="agentDropdown">
+                    <button onclick="toggleAgentDropdown()" class="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-robot ml-3"></i>
+                            الوكيل الذكي
+                            <div id="agentStatusSmall" class="w-2 h-2 rounded-full bg-gray-400 mr-2" title="حالة الوكيل"></div>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform" id="agentDropdownArrow"></i>
+                    </button>
+                    <div class="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg opacity-0 invisible transition-all duration-200 z-50 border border-gray-200 dark:border-gray-700" id="agentDropdownMenu">
+                        <div class="py-1">
+                            <div class="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                                <i class="fas fa-robot ml-2"></i>
+                                إدارة الوكيل الذكي
+                            </div>
+                            <a href="{% url 'agent_settings' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fas fa-cog ml-3"></i>
+                                إعدادات الوكيل
+                            </a>
+                            <a href="{% url 'test_agent' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fas fa-flask ml-3"></i>
+                                اختبار الوكيل
+                            </a>
+                            <a href="{% url 'conversation_history' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fas fa-comments ml-3"></i>
+                                تاريخ المحادثات
+                            </a>
+                            <div class="border-t border-gray-200 dark:border-gray-700 mt-1"></div>
+                            <div class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle ml-2"></i>
+                                الوكيل يستخدم الذكاء الاصطناعي
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                                 <a href="{% url 'add_user' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                     <i class="fas fa-user-plus ml-3"></i>
                                     إضافة مستخدم
@@ -416,6 +460,23 @@
                 <i class="fas fa-users ml-2"></i>
                 إدارة المستخدمين
             </a>
+            {% if user.is_superuser %}
+            <div class="space-y-1 mr-4">
+                <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">الوكيل الذكي</div>
+                <a href="{% url 'agent_settings' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'agent_settings' %}active{% endif %}">
+                    <i class="fas fa-cog ml-2"></i>
+                    إعدادات الوكيل
+                </a>
+                <a href="{% url 'test_agent' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'test_agent' %}active{% endif %}">
+                    <i class="fas fa-flask ml-2"></i>
+                    اختبار الوكيل
+                </a>
+                <a href="{% url 'conversation_history' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'conversation_history' %}active{% endif %}">
+                    <i class="fas fa-comments ml-2"></i>
+                    تاريخ المحادثات
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -423,6 +484,11 @@
     <main class="flex-1">
         {% block content %}{% endblock %}
     </main>
+
+    <!-- System Messages Container -->
+    <div id="systemMessagesContainer" class="fixed top-4 left-4 z-50 space-y-2 max-w-md">
+        <!-- System messages will be displayed here -->
+    </div>
 
     <!-- Notification Container -->
     <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
@@ -1989,3 +2055,201 @@
     transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease !important;
 }
 </style>
+
+<script>
+// Check Agent Status
+async function checkAgentStatus() {
+    try {
+        const response = await fetch('/agent/status/');
+        const data = await response.json();
+        
+        const statusText = document.getElementById('agentStatusText');
+        
+        if (data.success && data.status === 'active') {
+            updateAgentStatusIndicators('active');
+            if (statusText) statusText.textContent = 'نشط';
+        } else {
+            updateAgentStatusIndicators('inactive');
+            if (statusText) statusText.textContent = 'غير نشط';
+            showSystemMessage('الوكيل الذكي غير نشط. يرجى التحقق من الإعدادات.', 'warning', 5000);
+        }
+    } catch (error) {
+        console.error('Error checking agent status:', error);
+        updateAgentStatusIndicators('error');
+        const statusText = document.getElementById('agentStatusText');
+        if (statusText) statusText.textContent = 'خطأ';
+        showSystemMessage('خطأ في التحقق من حالة الوكيل الذكي.', 'error', 5000);
+    }
+}
+
+// Toggle Agent Dropdown
+function toggleAgentDropdown() {
+    const dropdown = document.getElementById('agentDropdownMenu');
+    const arrow = document.getElementById('agentDropdownArrow');
+    
+    if (dropdown.classList.contains('opacity-0')) {
+        dropdown.classList.remove('opacity-0', 'invisible');
+        dropdown.classList.add('opacity-100', 'visible');
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        dropdown.classList.add('opacity-0', 'invisible');
+        dropdown.classList.remove('opacity-100', 'visible');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const agentDropdown = document.getElementById('agentDropdown');
+    const agentDropdownMenu = document.getElementById('agentDropdownMenu');
+    
+    if (agentDropdown && !agentDropdown.contains(event.target)) {
+        agentDropdownMenu.classList.add('opacity-0', 'invisible');
+        agentDropdownMenu.classList.remove('opacity-100', 'visible');
+        document.getElementById('agentDropdownArrow').style.transform = 'rotate(0deg)';
+    }
+});
+
+// Update agent status indicators
+function updateAgentStatusIndicators(status) {
+    const indicators = document.querySelectorAll('#agentStatus, #agentStatusSmall');
+    indicators.forEach(indicator => {
+        if (status === 'active') {
+            indicator.className = 'w-2 h-2 rounded-full bg-green-500';
+            indicator.title = 'الوكيل الذكي نشط';
+        } else if (status === 'inactive') {
+            indicator.className = 'w-2 h-2 rounded-full bg-red-500';
+            indicator.title = 'الوكيل الذكي غير نشط';
+        } else {
+            indicator.className = 'w-2 h-2 rounded-full bg-yellow-500';
+            indicator.title = 'خطأ في التحقق من حالة الوكيل';
+        }
+    });
+}
+
+// System Messages Functions
+function showSystemMessage(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('systemMessagesContainer');
+    if (!container) return;
+    
+    const messageId = 'msg_' + Date.now();
+    const bgColor = type === 'error' ? 'bg-red-50' : 
+                   type === 'warning' ? 'bg-yellow-50' : 
+                   type === 'success' ? 'bg-green-50' : 'bg-blue-50';
+    
+    const borderColor = type === 'error' ? 'border-red-200' : 
+                       type === 'warning' ? 'border-yellow-200' : 
+                       type === 'success' ? 'border-green-200' : 'border-blue-200';
+    
+    const textColor = type === 'error' ? 'text-red-800' : 
+                     type === 'warning' ? 'text-yellow-800' : 
+                     type === 'success' ? 'text-green-800' : 'text-blue-800';
+    
+    const icon = type === 'error' ? 'fas fa-exclamation-circle' : 
+                type === 'warning' ? 'fas fa-exclamation-triangle' : 
+                type === 'success' ? 'fas fa-check-circle' : 'fas fa-info-circle';
+    
+    const messageElement = document.createElement('div');
+    messageElement.id = messageId;
+    messageElement.className = `${bgColor} ${borderColor} border rounded-lg p-4 shadow-lg transform transition-all duration-300 translate-x-[-100%] opacity-0`;
+    
+    messageElement.innerHTML = `
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="${icon} ${textColor}"></i>
+            </div>
+            <div class="mr-3 flex-1">
+                <p class="text-sm font-medium ${textColor}">${message}</p>
+            </div>
+            <div class="flex-shrink-0">
+                <button onclick="hideSystemMessage('${messageId}')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(messageElement);
+    
+    // Animate in
+    setTimeout(() => {
+        messageElement.classList.remove('translate-x-[-100%]', 'opacity-0');
+        messageElement.classList.add('translate-x-0', 'opacity-100');
+    }, 100);
+    
+    // Auto hide after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            hideSystemMessage(messageId);
+        }, duration);
+    }
+}
+
+function hideSystemMessage(messageId) {
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) return;
+    
+    messageElement.classList.add('translate-x-[-100%]', 'opacity-0');
+    
+    setTimeout(() => {
+        if (messageElement.parentNode) {
+            messageElement.parentNode.removeChild(messageElement);
+        }
+    }, 300);
+}
+
+function clearAllSystemMessages() {
+    const container = document.getElementById('systemMessagesContainer');
+    if (container) {
+        container.innerHTML = '';
+    }
+}
+
+// Enhanced error handling for fetch requests
+function handleFetchError(error, context = '') {
+    console.error(`Error in ${context}:`, error);
+    
+    let errorMessage = 'حدث خطأ غير متوقع';
+    
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'خطأ في الاتصال بالخادم. تأكد من اتصال الإنترنت.';
+    } else if (error.message.includes('404')) {
+        errorMessage = 'الصفحة المطلوبة غير موجودة.';
+    } else if (error.message.includes('500')) {
+        errorMessage = 'خطأ في الخادم. يرجى المحاولة لاحقاً.';
+    } else if (error.message.includes('403')) {
+        errorMessage = 'ليس لديك صلاحية للوصول إلى هذا المورد.';
+    }
+    
+    showSystemMessage(errorMessage, 'error', 8000);
+}
+
+// Global error handler
+window.addEventListener('error', function(event) {
+    console.error('Global error:', event.error);
+    showSystemMessage('حدث خطأ في النظام. يرجى تحديث الصفحة.', 'error', 10000);
+});
+
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    showSystemMessage('حدث خطأ في معالجة الطلب. يرجى المحاولة مرة أخرى.', 'error', 8000);
+});
+
+// Check agent status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Only check agent status if user is superuser and elements exist
+    if (document.getElementById('agentStatus') && document.getElementById('agentStatusSmall')) {
+        checkAgentStatus();
+        // Check every 30 seconds
+        setInterval(checkAgentStatus, 30000);
+    }
+    
+    // Show system messages from Django messages framework
+    {% if messages %}
+        {% for message in messages %}
+            showSystemMessage('{{ message|escapejs }}', '{{ message.tags }}', 5000);
+        {% endfor %}
+    {% endif %}
+});
+</script>

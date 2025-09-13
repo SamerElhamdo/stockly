@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إعدادات الوكيل الذكي{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">إعدادات الوكيل الذكي</h1>
+                    <p class="text-gray-600">إدارة إعدادات الوكيل الذكي للواتساب</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 space-x-reverse">
+                <a href="{% url 'conversation_history' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-comments ml-2"></i>
+                    تاريخ المحادثات
+                </a>
+                <a href="{% url 'test_agent' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                    <i class="fas fa-flask ml-2"></i>
+                    اختبار الوكيل
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- WhatsApp Webhook URL -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    رابط الواتساب (Webhook URL)
+                </label>
+                <input type="url" name="whatsapp_webhook_url" 
+                       value="{{ settings.whatsapp_webhook_url }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="https://n8n.srv772321.hstgr.cloud/webhook/...">
+                <p class="text-sm text-gray-500 mt-1">رابط إرسال الرسائل عبر الواتساب</p>
+            </div>
+
+            <!-- Gemini API Key -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    مفتاح Gemini API
+                </label>
+                <input type="password" name="gemini_api_key" 
+                       value="{{ settings.gemini_api_key }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="أدخل مفتاح Gemini API">
+                <p class="text-sm text-gray-500 mt-1">مفتاح API للذكاء الاصطناعي من Google</p>
+            </div>
+
+            <!-- Settings Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Active Status -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-800">تفعيل الوكيل</h3>
+                        <p class="text-sm text-gray-600">تفعيل/إلغاء تفعيل الوكيل الذكي</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" 
+                               {% if settings.is_active %}checked{% endif %}
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <!-- Confirmation Required -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <h3 class="font-medium text-gray-800">يتطلب تأكيد</h3>
+                        <p class="text-sm text-gray-600">طلب تأكيد للعمليات الحساسة</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="confirmation_required" 
+                               {% if settings.confirmation_required %}checked{% endif %}
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Max Conversation History -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    عدد الرسائل المحفوظة
+                </label>
+                <input type="number" name="max_conversation_history" 
+                       value="{{ settings.max_conversation_history }}"
+                       min="5" max="100"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">عدد الرسائل المحفوظة في ذاكرة المحادثة (5-100)</p>
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex justify-end">
+                <button type="submit" 
+                        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-save ml-2"></i>
+                    حفظ الإعدادات
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Instructions -->
+    <div class="mt-6 bg-blue-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-blue-800 mb-4">
+            <i class="fas fa-info-circle ml-2"></i>
+            تعليمات الإعداد
+        </h3>
+        <div class="space-y-3 text-sm text-blue-700">
+            <div>
+                <strong>1. رابط الواتساب:</strong> يجب أن يكون رابط صحيح لإرسال الرسائل عبر الواتساب
+            </div>
+            <div>
+                <strong>2. مفتاح Gemini API:</strong> احصل على مفتاح من 
+                <a href="https://makersuite.google.com/app/apikey" target="_blank" class="underline">
+                    Google AI Studio
+                </a>
+            </div>
+            <div>
+                <strong>3. API Endpoint:</strong> استخدم 
+                <code class="bg-blue-100 px-2 py-1 rounded">/agent/process-message/</code>
+                لمعالجة الرسائل
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

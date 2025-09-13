@@ -443,3 +443,65 @@ class CustomerBalance(models.Model):
         self.balance = self.total_invoiced - self.total_paid - self.total_returns
         self.save()
         return self.balance
+
+class Conversation(models.Model):
+    """نموذج المحادثات مع الوكيل الذكي"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
+    phone_number = models.CharField(max_length=20, verbose_name='رقم الهاتف')
+    message = models.TextField(verbose_name='الرسالة')
+    response = models.TextField(verbose_name='الرد')
+    tool_used = models.CharField(max_length=100, blank=True, null=True, verbose_name='الأداة المستخدمة')
+    is_confirmation = models.BooleanField(default=False, verbose_name='رسالة تأكيد')
+    confirmation_data = models.JSONField(blank=True, null=True, verbose_name='بيانات التأكيد')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    
+    class Meta:
+        verbose_name = 'محادثة'
+        verbose_name_plural = 'المحادثات'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"محادثة {self.phone_number} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+class AgentSettings(models.Model):
+    """إعدادات الوكيل الذكي"""
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, verbose_name='الشركة')
+    whatsapp_webhook_url = models.URLField(verbose_name='رابط الواتساب')
+    gemini_api_key = models.CharField(max_length=500, verbose_name='مفتاح Gemini API')
+    is_active = models.BooleanField(default=True, verbose_name='نشط')
+    max_conversation_history = models.IntegerField(default=20, verbose_name='عدد الرسائل المحفوظة')
+    confirmation_required = models.BooleanField(default=True, verbose_name='يتطلب تأكيد للعمليات الحساسة')
+    custom_system_message = models.TextField(blank=True, null=True, verbose_name='النظام المسج المخصص')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    
+    class Meta:
+        verbose_name = 'إعدادات الوكيل'
+        verbose_name_plural = 'إعدادات الوكيل'
+
+class Agent(models.Model):
+    """نموذج الوكيل الذكي للادمن"""
+    name = models.CharField(max_length=100, verbose_name="اسم الوكيل")
+    whatsapp_webhook_url = models.URLField(max_length=500, verbose_name="رابط الويب هوك")
+    gemini_api_key = models.CharField(max_length=200, verbose_name="مفتاح Gemini API")
+    is_active = models.BooleanField(default=True, verbose_name="نشط")
+    is_primary = models.BooleanField(default=False, verbose_name="وكيل رئيسي")
+    max_conversation_history = models.IntegerField(default=20, verbose_name="حد المحادثة")
+    confirmation_required = models.BooleanField(default=True, verbose_name="يتطلب تأكيد")
+    custom_system_message = models.TextField(blank=True, verbose_name="رسالة النظام المخصصة")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "الوكيل الذكي"
+        verbose_name_plural = "الوكلاء الذكيون"
+        ordering = ['-is_primary', 'name']
+    
+    def __str__(self):
+        return f"{self.name} {'(رئيسي)' if self.is_primary else ''}"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one primary agent
+        if self.is_primary:
+            Agent.objects.filter(is_primary=True).update(is_primary=False)
+        super().save(*args, **kwargs)

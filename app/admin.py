@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification, Return, ReturnItem, Payment, CustomerBalance
+from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, Conversation, AgentSettings, Agent
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -160,4 +160,61 @@ class CustomerBalanceAdmin(admin.ModelAdmin):
         ('الحسابات', {
             'fields': ('total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated')
         }),
+    )
+
+@admin.register(Conversation)
+class ConversationAdmin(admin.ModelAdmin):
+    list_display = ('phone_number', 'company', 'tool_used', 'is_confirmation', 'created_at')
+    list_filter = ('company', 'is_confirmation', 'created_at')
+    search_fields = ('phone_number', 'message', 'response')
+    readonly_fields = ('created_at',)
+    fieldsets = (
+        ('معلومات المحادثة', {
+            'fields': ('company', 'phone_number', 'created_at')
+        }),
+        ('الرسالة والرد', {
+            'fields': ('message', 'response')
+        }),
+        ('تفاصيل الأداة', {
+            'fields': ('tool_used', 'is_confirmation', 'confirmation_data')
+        }),
+    )
+
+@admin.register(AgentSettings)
+class AgentSettingsAdmin(admin.ModelAdmin):
+    list_display = ('company', 'is_active', 'max_conversation_history', 'confirmation_required', 'updated_at')
+    list_filter = ('is_active', 'confirmation_required', 'created_at')
+    search_fields = ('company__name',)
+    fieldsets = (
+        ('معلومات الشركة', {
+            'fields': ('company',)
+        }),
+        ('إعدادات الواتساب', {
+            'fields': ('whatsapp_webhook_url',)
+        }),
+        ('إعدادات الذكاء الاصطناعي', {
+            'fields': ('gemini_api_key', 'custom_system_message')
+        }),
+        ('إعدادات النظام', {
+            'fields': ('is_active', 'max_conversation_history', 'confirmation_required')
+        }),
+        ('التواريخ', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(Agent)
+class AgentAdmin(admin.ModelAdmin):
+    list_display = ['name', 'is_active', 'is_primary', 'created_at']
+    list_filter = ['is_active', 'is_primary', 'created_at']
+    search_fields = ['name']
+    readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        ('معلومات الوكيل', {'fields': ('name', 'is_active', 'is_primary')}),
+        ('إعدادات الواتساب', {'fields': ('whatsapp_webhook_url',)}),
+        ('إعدادات الذكاء الاصطناعي', {'fields': ('gemini_api_key', 'custom_system_message')}),
+        ('إعدادات عامة', {'fields': ('max_conversation_history', 'confirmation_required')}),
+        ('تواريخ', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )

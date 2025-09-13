@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تاريخ المحادثات{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-comments text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">تاريخ المحادثات</h1>
+                    <p class="text-gray-600">عرض جميع المحادثات مع الوكيل الذكي</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 space-x-reverse">
+                <a href="{% url 'agent_settings' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-cog ml-2"></i>
+                    الإعدادات
+                </a>
+                <a href="{% url 'test_agent' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                    <i class="fas fa-flask ml-2"></i>
+                    اختبار الوكيل
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversations List -->
+    <div class="bg-white rounded-lg shadow-lg">
+        {% if conversations %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                رقم الهاتف
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                الرسالة
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                الرد
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                الأداة
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                نوع
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                التاريخ
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for conversation in conversations %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ conversation.phone_number }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                                <div class="truncate" title="{{ conversation.message }}">
+                                    {{ conversation.message|truncatechars:50 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                                <div class="truncate" title="{{ conversation.response }}">
+                                    {{ conversation.response|truncatechars:50 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if conversation.tool_used %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ conversation.tool_used }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if conversation.is_confirmation %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        <i class="fas fa-question-circle ml-1"></i>
+                                        تأكيد
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-comment ml-1"></i>
+                                        عادي
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ conversation.created_at|date:"Y-m-d H:i" }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-comments text-gray-400 text-6xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">لا توجد محادثات</h3>
+                <p class="text-gray-500">لم يتم إجراء أي محادثات مع الوكيل الذكي بعد</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Statistics -->
+    {% if conversations %}
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-comments text-blue-600 text-2xl"></i>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-500">إجمالي المحادثات</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ conversations|length }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-question-circle text-yellow-600 text-2xl"></i>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-500">رسائل التأكيد</p>
+                    <p class="text-2xl font-semibold text-gray-900">
+                        {% for conv in conversations %}
+                            {% if conv.is_confirmation %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-tools text-green-600 text-2xl"></i>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm font-medium text-gray-500">الأدوات المستخدمة</p>
+                    <p class="text-2xl font-semibold text-gray-900">
+                        {% for conv in conversations %}
+                            {% if conv.tool_used %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

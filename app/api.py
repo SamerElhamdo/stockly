@@ -1144,12 +1144,22 @@ def api_invoice_returnable_items(request, invoice_id):
 # WhatsApp Webhook API
 @api_view(["POST"])
 def api_whatsapp_webhook(request):
-    """Webhook to receive WhatsApp messages and send OTP"""
+    """Webhook to receive WhatsApp messages and process them with the bot"""
     try:
+        from .whatsapp_bot import whatsapp_bot
+        
         data = request.data
         
-        # Extract phone number and message from webhook
-        # This depends on your WhatsApp API provider
+        # Check if this is a webhook from WhatsApp (with entry structure)
+        if 'entry' in data:
+            # Process webhook using the bot
+            success = whatsapp_bot.handle_webhook(data)
+            if success:
+                return Response({"status": "success"})
+            else:
+                return Response({"error": "Failed to process webhook"}, status=500)
+        
+        # Check if this is a direct message (phone and message)
         phone = data.get('phone', '').strip()
         message = data.get('message', '').strip()
         
@@ -1170,11 +1180,8 @@ def api_whatsapp_webhook(request):
             )
             
             # Send OTP via WhatsApp
-            # TODO: Implement actual WhatsApp sending logic
             whatsapp_message = f"رمز التحقق الخاص بك هو: {otp_code}\n\nهذا الرمز صالح لمدة 5 دقائق.\n\nStockly Team"
-            
-            # Here you would send the message via your WhatsApp API
-            print(f"Sending WhatsApp message to {phone}: {whatsapp_message}")
+            whatsapp_bot.send_message(phone, whatsapp_message)
             
             return Response({
                 "success": True,
@@ -1182,9 +1189,14 @@ def api_whatsapp_webhook(request):
                 "session_id": str(otp_record.session_id)
             })
         
+        # Process regular message with the bot
+        response = whatsapp_bot.process_message(phone, message)
+        whatsapp_bot.send_message(phone, response)
+        
         return Response({
             "success": True,
-            "message": "Webhook received"
+            "message": "Message processed",
+            "response": response
         })
         
     except Exception as e:
