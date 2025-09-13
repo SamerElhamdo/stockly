@@ -2,13 +2,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from django.db.models import Count, Sum, Q, Max
+from django.db.models import Count, Q, Sum, Q, Max
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from datetime import datetime, timedelta
-from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, User, OTPVerification, company_queryset, can_manage_company
+from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, User, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, company_queryset, can_manage_company
 from .decorators import api_company_owner_required, api_company_staff_required
 import requests
 import random
@@ -169,6 +169,9 @@ def api_confirm(request, session_id:int):
         inv.status = Invoice.CONFIRMED
         inv.save(update_fields=["status"])
         
+        # Update customer balance after invoice confirmation
+        update_customer_balance(inv.customer, request.user.company)
+        
         return Response({
             "invoice_id": inv.id, 
             "status": inv.status, 
@@ -185,11 +188,27 @@ def api_confirm(request, session_id:int):
 @api_company_staff_required
 def api_customers(request):
     customers = company_queryset(Customer, request.user).annotate(
-        invoices_count=Count('invoices')
+        invoices_count=Count('invoices', distinct=True),
+        returns_count=Count('invoices__returns', filter=Q(invoices__returns__status='approved'), distinct=True)
     ).order_by('-created_at')
+    
+    # Get customer balances and calculate if not exists
+    customer_balances = {}
+    for customer in customers:
+        try:
+            balance = CustomerBalance.objects.get(customer=customer, company=request.user.company)
+            customer_balances[customer.id] = float(balance.balance)
+        except CustomerBalance.DoesNotExist:
+            # Calculate balance if not exists
+            update_customer_balance(customer, request.user.company)
+            balance = CustomerBalance.objects.get(customer=customer, company=request.user.company)
+            customer_balances[customer.id] = float(balance.balance)
+    
     return Response([{
         "id": c.id, "name": c.name, "phone": c.phone, "email": c.email,
         "address": c.address, "invoices_count": c.invoices_count,
+        "returns_count": c.returns_count,
+        "balance": customer_balances.get(c.id, 0.0),
         "last_purchase": None  # Simplified for now
     } for c in customers])
 
@@ -867,6 +886,230 @@ def api_reset_password(request):
         return Response({"error": str(e)}, status=400)
 
 
+# Return Management APIs
+@api_view(["GET"])
+@api_company_staff_required
+def api_returns(request):
+    """Get all returns for the company"""
+    returns = company_queryset(Return, request.user).select_related('original_invoice', 'customer', 'created_by')
+    return Response([{
+        "id": r.id,
+        "return_number": r.return_number,
+        "original_invoice": f"فاتورة #{r.original_invoice.id}",
+        "customer_name": r.customer.name,
+        "status": r.status,
+        "status_display": r.get_status_display(),
+        "total_amount": float(r.total_amount),
+        "return_date": r.return_date.isoformat(),
+        "created_by": r.created_by.username
+    } for r in returns])
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_create_return(request):
+    """Create new return"""
+    try:
+        data = request.data
+        invoice_id = data.get('invoice_id')
+        notes = data.get('notes', '')
+        items = data.get('items', [])
+        
+        if not all([invoice_id, items]):
+            return Response({"error": "جميع الحقول مطلوبة"}, status=400)
+        
+        # Get original invoice
+        try:
+            invoice = company_queryset(Invoice, request.user).get(id=invoice_id)
+        except Invoice.DoesNotExist:
+            return Response({"error": "الفاتورة غير موجودة"}, status=404)
+        
+        # Create return
+        return_obj = Return.objects.create(
+            company=request.user.company,
+            original_invoice=invoice,
+            customer=invoice.customer,
+            notes=notes,
+            created_by=request.user
+        )
+        
+        # Create return items
+        total_amount = 0
+        for item_data in items:
+            original_item_id = item_data.get('original_item_id')
+            qty_returned = item_data.get('qty_returned')
+            
+            try:
+                original_item = InvoiceItem.objects.get(id=original_item_id, invoice=invoice)
+            except InvoiceItem.DoesNotExist:
+                return Response({"error": f"عنصر الفاتورة {original_item_id} غير موجود"}, status=404)
+            
+            # Validate quantity
+            if qty_returned > original_item.qty:
+                return Response({"error": f"الكمية المرتجعة ({qty_returned}) أكبر من الكمية المباعة ({original_item.qty})"}, status=400)
+            
+            return_item = ReturnItem.objects.create(
+                return_obj=return_obj,
+                original_item=original_item,
+                product=original_item.product,
+                qty_returned=qty_returned,
+                unit_price=original_item.price_at_add
+            )
+            
+            total_amount += float(return_item.line_total)
+        
+        return_obj.total_amount = total_amount
+        return_obj.save()
+        
+        return Response({
+            "id": return_obj.id,
+            "return_number": return_obj.return_number,
+            "total_amount": float(return_obj.total_amount),
+            "status": return_obj.status
+        })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_return_details(request, return_id):
+    """Get return details with items"""
+    try:
+        return_obj = company_queryset(Return, request.user).get(id=return_id)
+        items = return_obj.items.all()
+        
+        return Response({
+            "id": return_obj.id,
+            "return_number": return_obj.return_number,
+            "original_invoice": f"فاتورة #{return_obj.original_invoice.id}",
+            "customer_name": return_obj.customer.name,
+            "status": return_obj.status,
+            "status_display": return_obj.get_status_display(),
+            "total_amount": float(return_obj.total_amount),
+            "return_date": return_obj.return_date.isoformat(),
+            "notes": return_obj.notes,
+            "created_by": return_obj.created_by.username,
+            "items": [{
+                "id": item.id,
+                "product_name": item.product.name,
+                "product_sku": item.product.sku,
+                "qty_returned": float(item.qty_returned),
+                "unit_price": float(item.unit_price),
+                "line_total": float(item.line_total)
+            } for item in items]
+        })
+        
+    except Return.DoesNotExist:
+        return Response({"error": "المرتجع غير موجود"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_approve_return(request, return_id):
+    """Approve return and update inventory"""
+    try:
+        return_obj = company_queryset(Return, request.user).get(id=return_id)
+        
+        if return_obj.status != 'pending':
+            return Response({"error": "يمكن الموافقة على المرتجعات المعلقة فقط"}, status=400)
+        
+        # Update return status
+        return_obj.status = 'approved'
+        return_obj.approved_by = request.user
+        return_obj.approved_at = timezone.now()
+        return_obj.save()
+        
+        # Update inventory for each returned item
+        for item in return_obj.items.all():
+            product = item.product
+            product.stock_qty += item.qty_returned
+            product.save()
+        
+        # Update customer balance after return approval
+        update_customer_balance(return_obj.customer, request.user.company)
+        
+        return Response({
+            "message": "تم الموافقة على المرتجع بنجاح",
+            "status": return_obj.status
+        })
+        
+    except Return.DoesNotExist:
+        return Response({"error": "المرتجع غير موجود"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_reject_return(request, return_id):
+    """Reject return"""
+    try:
+        return_obj = company_queryset(Return, request.user).get(id=return_id)
+        
+        if return_obj.status != 'pending':
+            return Response({"error": "يمكن رفض المرتجعات المعلقة فقط"}, status=400)
+        
+        return_obj.status = 'rejected'
+        return_obj.approved_by = request.user
+        return_obj.approved_at = timezone.now()
+        return_obj.save()
+        
+        return Response({
+            "message": "تم رفض المرتجع",
+            "status": return_obj.status
+        })
+        
+    except Return.DoesNotExist:
+        return Response({"error": "المرتجع غير موجود"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_invoice_returnable_items(request, invoice_id):
+    """Get returnable items from an invoice"""
+    try:
+        invoice = company_queryset(Invoice, request.user).get(id=invoice_id)
+        items = invoice.items.all()
+        
+        returnable_items = []
+        for item in items:
+            # Calculate already returned quantity
+            returned_qty = sum(
+                return_item.qty_returned 
+                for return_item in ReturnItem.objects.filter(
+                    original_item=item,
+                    return_obj__status__in=['approved', 'completed']
+                )
+            )
+            
+            available_qty = item.qty - returned_qty
+            
+            if available_qty > 0:
+                returnable_items.append({
+                    "id": item.id,
+                    "product_name": item.product.name,
+                    "product_sku": item.product.sku,
+                    "qty_sold": float(item.qty),
+                    "qty_returned": float(returned_qty),
+                    "qty_available": float(available_qty),
+                    "unit_price": float(item.price_at_add),
+                    "line_total": float(item.line_total)
+                })
+        
+        return Response(returnable_items)
+        
+    except Invoice.DoesNotExist:
+        return Response({"error": "الفاتورة غير موجودة"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
 # WhatsApp Webhook API
 @api_view(["POST"])
 def api_whatsapp_webhook(request):
@@ -967,3 +1210,232 @@ def api_delete_user(request, user_id):
         
     except Exception as e:
         return Response({"error": str(e)}, status=400)
+
+
+# Payment Management APIs
+@api_view(["GET"])
+@api_company_staff_required
+def api_payments(request):
+    """Get all payments for the company"""
+    payments = company_queryset(Payment, request.user).select_related('customer', 'invoice', 'created_by')
+    return Response([{
+        "id": p.id,
+        "customer_id": p.customer.id,
+        "customer_name": p.customer.name,
+        "invoice_id": p.invoice.id if p.invoice else None,
+        "amount": float(p.amount),
+        "payment_method": p.payment_method,
+        "payment_method_display": p.get_payment_method_display(),
+        "payment_date": p.payment_date.isoformat(),
+        "notes": p.notes,
+        "created_by": p.created_by.username
+    } for p in payments])
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_create_payment(request):
+    """Create new payment"""
+    try:
+        data = request.data
+        customer_id = data.get('customer_id')
+        invoice_id = data.get('invoice_id')  # Optional
+        amount = data.get('amount')
+        payment_method = data.get('payment_method', 'cash')
+        notes = data.get('notes', '')
+        
+        if not all([customer_id, amount]):
+            return Response({"error": "معرف العميل والمبلغ مطلوبان"}, status=400)
+        
+        # Get customer
+        try:
+            customer = company_queryset(Customer, request.user).get(id=customer_id)
+        except Customer.DoesNotExist:
+            return Response({"error": "العميل غير موجود"}, status=404)
+        
+        # Get invoice if provided
+        invoice = None
+        if invoice_id:
+            try:
+                invoice = company_queryset(Invoice, request.user).get(id=invoice_id)
+            except Invoice.DoesNotExist:
+                return Response({"error": "الفاتورة غير موجودة"}, status=404)
+        
+        # Create payment
+        payment = Payment.objects.create(
+            company=request.user.company,
+            customer=customer,
+            invoice=invoice,
+            amount=amount,
+            payment_method=payment_method,
+            notes=notes,
+            created_by=request.user
+        )
+        
+        # Update customer balance
+        update_customer_balance(customer, request.user.company)
+        
+        return Response({
+            "id": payment.id,
+            "amount": float(payment.amount),
+            "payment_method": payment.payment_method,
+            "payment_date": payment.payment_date.isoformat()
+        })
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_customer_balances(request):
+    """Get customer balances"""
+    balances = company_queryset(CustomerBalance, request.user).select_related('customer')
+    return Response([{
+        "customer_id": b.customer.id,
+        "customer_name": b.customer.name,
+        "total_invoiced": float(b.total_invoiced),
+        "total_paid": float(b.total_paid),
+        "total_returns": float(b.total_returns),
+        "balance": float(b.balance),
+        "last_updated": b.last_updated.isoformat()
+    } for b in balances])
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_customer_payments(request, customer_id):
+    """Get payments for specific customer"""
+    try:
+        customer = company_queryset(Customer, request.user).get(id=customer_id)
+        payments = company_queryset(Payment, request.user).filter(customer=customer).select_related('invoice', 'created_by')
+        
+        return Response([{
+            "id": p.id,
+            "invoice_id": p.invoice.id if p.invoice else None,
+            "amount": float(p.amount),
+            "payment_method": p.payment_method,
+            "payment_method_display": p.get_payment_method_display(),
+            "payment_date": p.payment_date.isoformat(),
+            "notes": p.notes,
+            "created_by": p.created_by.username
+        } for p in payments])
+        
+    except Customer.DoesNotExist:
+        return Response({"error": "العميل غير موجود"}, status=404)
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_customer_invoices(request, customer_id):
+    """Get invoices for specific customer"""
+    try:
+        customer = company_queryset(Customer, request.user).get(id=customer_id)
+        invoices = company_queryset(Invoice, request.user).filter(customer=customer, status='confirmed').order_by('-created_at')
+        
+        return Response([{
+            "id": inv.id,
+            "invoice_number": f"فاتورة #{inv.id}",
+            "customer_name": inv.customer.name,
+            "total_amount": float(inv.total_amount),
+            "status": inv.status,
+            "status_display": inv.get_status_display(),
+            "created_at": inv.created_at.strftime('%Y-%m-%d %H:%M')
+        } for inv in invoices])
+        
+    except Customer.DoesNotExist:
+        return Response({"error": "العميل غير موجود"}, status=404)
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_invoice_payments(request, invoice_id):
+    """Get payments for specific invoice"""
+    try:
+        invoice = company_queryset(Invoice, request.user).get(id=invoice_id)
+        payments = company_queryset(Payment, request.user).filter(invoice=invoice).select_related('created_by')
+        
+        total_paid = sum(p.amount for p in payments)
+        remaining = float(invoice.total_amount) - float(total_paid)
+        
+        return Response({
+            "invoice_id": invoice.id,
+            "total_amount": float(invoice.total_amount),
+            "total_paid": float(total_paid),
+            "remaining": remaining,
+            "payments": [{
+                "id": p.id,
+                "amount": float(p.amount),
+                "payment_method": p.payment_method,
+                "payment_method_display": p.get_payment_method_display(),
+                "payment_date": p.payment_date.isoformat(),
+                "notes": p.notes,
+                "created_by": p.created_by.username
+            } for p in payments]
+        })
+        
+    except Invoice.DoesNotExist:
+        return Response({"error": "الفاتورة غير موجودة"}, status=404)
+
+
+def update_customer_balance(customer, company):
+    """Update customer balance"""
+    try:
+        balance, created = CustomerBalance.objects.get_or_create(
+            customer=customer,
+            company=company,
+            defaults={
+                'total_invoiced': 0,
+                'total_paid': 0,
+                'total_returns': 0,
+                'balance': 0
+            }
+        )
+        
+        # Calculate totals
+        total_invoiced = sum(inv.total_amount for inv in customer.invoices.filter(company=company, status='confirmed'))
+        total_paid = sum(pay.amount for pay in Payment.objects.filter(customer=customer, company=company))
+        total_returns = sum(ret.total_amount for ret in Return.objects.filter(customer=customer, company=company, status='approved'))
+        
+        balance.total_invoiced = total_invoiced
+        balance.total_paid = total_paid
+        balance.total_returns = total_returns
+        balance.calculate_balance()
+        
+    except Exception as e:
+        print(f"Error updating customer balance: {e}")
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_search_invoices(request):
+    """Search invoices for return creation"""
+    query = request.GET.get('q', '').strip()
+    
+    if not query:
+        return Response([])
+    
+    # Search in confirmed invoices only
+    invoices = company_queryset(Invoice, request.user).filter(
+        status='confirmed',
+        id__icontains=query
+    ).select_related('customer').order_by('-created_at')[:10]
+    
+    # Also search by customer name
+    customer_invoices = company_queryset(Invoice, request.user).filter(
+        status='confirmed',
+        customer__name__icontains=query
+    ).select_related('customer').order_by('-created_at')[:10]
+    
+    # Combine and remove duplicates
+    all_invoices = list(invoices) + list(customer_invoices)
+    unique_invoices = {inv.id: inv for inv in all_invoices}.values()
+    
+    return Response([{
+        "id": inv.id,
+        "invoice_number": f"فاتورة #{inv.id}",
+        "customer_name": inv.customer.name,
+        "total_amount": float(inv.total_amount),
+        "created_at": inv.created_at.strftime('%Y-%m-%d %H:%M'),
+        "status": inv.status,
+        "status_display": inv.get_status_display()
+    } for inv in unique_invoices])

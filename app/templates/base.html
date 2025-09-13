@@ -281,10 +281,25 @@
                             <i class="fas fa-chart-pie ml-2"></i>
                             لوحة التحكم
                         </a>
-                        <a href="{% url 'customers' %}" class="nav-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}">
-                            <i class="fas fa-users ml-2"></i>
-                            العملاء
-                        </a>
+                        <div class="relative" id="customersDropdown">
+                            <button onclick="toggleCustomersDropdown()" class="nav-link {% if request.resolver_match.url_name == 'customers' or request.resolver_match.url_name == 'payments' %}active{% endif %} flex items-center">
+                                <i class="fas fa-users ml-2"></i>
+                                العملاء
+                                <i class="fas fa-chevron-down mr-2 text-xs" id="dropdownArrow"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg opacity-0 invisible transition-all duration-200 z-50" id="customersDropdownMenu">
+                                <div class="py-1">
+                                    <a href="{% url 'customers' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <i class="fas fa-users ml-2"></i>
+                                        إدارة العملاء
+                                    </a>
+                                    <a href="{% url 'payments' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <i class="fas fa-money-bill-wave ml-2"></i>
+                                        صندوق المدفوعات
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                         <a href="{% url 'products' %}" class="nav-link {% if request.resolver_match.url_name == 'products' %}active{% endif %}">
                             <i class="fas fa-box ml-2"></i>
                             المنتجات
@@ -297,6 +312,10 @@
                             <i class="fas fa-file-invoice ml-2"></i>
                             الفواتير
                         </a>
+                    <a href="{% url 'returns' %}" class="nav-link {% if request.resolver_match.url_name == 'returns' %}active{% endif %}">
+                        <i class="fas fa-undo-alt ml-2"></i>
+                        المرتجعات
+                    </a>
                         <a href="{% url 'user_management' %}" class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
                             <i class="fas fa-users ml-2"></i>
                             إدارة المستخدمين
@@ -367,10 +386,16 @@
                 <i class="fas fa-chart-pie ml-2"></i>
                 لوحة التحكم
             </a>
-            <a href="{% url 'customers' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}">
-                <i class="fas fa-users ml-2"></i>
-                العملاء
-            </a>
+            <div class="space-y-2">
+                <a href="{% url 'customers' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}">
+                    <i class="fas fa-users ml-2"></i>
+                    إدارة العملاء
+                </a>
+                <a href="{% url 'payments' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'payments' %}active{% endif %}">
+                    <i class="fas fa-money-bill-wave ml-2"></i>
+                    صندوق المدفوعات
+                </a>
+            </div>
             <a href="{% url 'products' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'products' %}active{% endif %}">
                 <i class="fas fa-box ml-2"></i>
                 المنتجات
@@ -383,6 +408,10 @@
                 <i class="fas fa-file-invoice ml-2"></i>
                 الفواتير
             </a>
+                    <a href="{% url 'returns' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'returns' %}active{% endif %}">
+                        <i class="fas fa-undo-alt ml-2"></i>
+                        المرتجعات
+                    </a>
             <a href="{% url 'user_management' %}" class="mobile-nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
                 <i class="fas fa-users ml-2"></i>
                 إدارة المستخدمين
@@ -403,7 +432,7 @@
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all duration-300">
                 <div class="flex items-center mb-6">
-                    <div id="confirmationIcon" class="w-10 h-10 rounded-lg flex items-center justify-center mr-3">
+                    <div id="confirmationIcon" class="w-10 h-10 rounded-lg flex items-center justify-center ml-3">
                         <i class="fas fa-question-circle text-white"></i>
                     </div>
                     <h3 id="confirmationTitle" class="text-lg font-semibold text-gray-900 dark:text-white font-cairo">تأكيد العملية</h3>
@@ -573,7 +602,7 @@
                 };
                 
                 const config = configs[type] || configs.warning;
-                iconEl.className = `w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${config.bg}`;
+                iconEl.className = `w-10 h-10 rounded-lg flex items-center justify-center ml-3 ${config.bg}`;
                 iconEl.innerHTML = `<i class="${config.icon} text-white"></i>`;
                 confirmBtn.className = config.btnClass;
                 
@@ -880,6 +909,42 @@
         window.downloadQR = downloadQR;
         window.printQR = printQR;
         window.checkQRCodeLibrary = checkQRCodeLibrary;
+        
+        // Customers Dropdown System
+        function toggleCustomersDropdown() {
+            const dropdown = document.getElementById('customersDropdownMenu');
+            const arrow = document.getElementById('dropdownArrow');
+            
+            if (dropdown.classList.contains('opacity-0')) {
+                // Show dropdown
+                dropdown.classList.remove('opacity-0', 'invisible');
+                dropdown.classList.add('opacity-100', 'visible');
+                arrow.classList.add('rotate-180');
+            } else {
+                // Hide dropdown
+                dropdown.classList.add('opacity-0', 'invisible');
+                dropdown.classList.remove('opacity-100', 'visible');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+        
+        function initCustomersDropdown() {
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                const dropdown = document.getElementById('customersDropdown');
+                const dropdownMenu = document.getElementById('customersDropdownMenu');
+                const arrow = document.getElementById('dropdownArrow');
+                
+                if (!dropdown.contains(e.target)) {
+                    dropdownMenu.classList.add('opacity-0', 'invisible');
+                    dropdownMenu.classList.remove('opacity-100', 'visible');
+                    arrow.classList.remove('rotate-180');
+                }
+            });
+        }
+        
+        window.toggleCustomersDropdown = toggleCustomersDropdown;
+        window.initCustomersDropdown = initCustomersDropdown;
         window.toggleUserMenu = toggleUserMenu;
         window.queueNotification = queueNotification;
         window.playNotificationSound = playNotificationSound;
@@ -1131,6 +1196,9 @@
             setTimeout(() => {
                 PageLoader.hide();
             }, 500);
+            
+            // Initialize customers dropdown
+            initCustomersDropdown();
         });
         
         // Show loader on page unload
@@ -1756,6 +1824,21 @@
     color: #60a5fa !important; /* dark:text-primary-400 */
     background-color: rgba(30, 58, 138, 0.2) !important; /* dark:bg-primary-900/20 */
     border-right-color: #60a5fa !important; /* dark:border-primary-400 */
+}
+
+/* Dropdown styles */
+.group:hover .group-hover\:opacity-100 {
+    opacity: 1 !important;
+}
+
+.group:hover .group-hover\:visible {
+    visibility: visible !important;
+}
+
+/* Arrow rotation */
+.rotate-180 {
+    transform: rotate(180deg) !important;
+    transition: transform 0.2s ease !important;
 }
 
 /* Modal Button System */

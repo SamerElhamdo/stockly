@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification
+from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification, Return, ReturnItem, Payment, CustomerBalance
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -91,3 +91,62 @@ class OTPVerificationAdmin(admin.ModelAdmin):
         return obj.is_expired()
     is_expired_display.short_description = 'منتهي الصلاحية'
     is_expired_display.boolean = True
+
+
+@admin.register(Return)
+class ReturnAdmin(admin.ModelAdmin):
+    list_display = ('return_number', 'original_invoice', 'customer', 'status', 'total_amount', 'return_date', 'created_by')
+    list_filter = ('company', 'status', 'return_date', 'created_by')
+    search_fields = ('return_number', 'original_invoice__invoice_number', 'customer__name')
+    readonly_fields = ('return_number', 'return_date', 'total_amount', 'approved_at')
+    fieldsets = (
+        ('معلومات أساسية', {
+            'fields': ('company', 'original_invoice', 'customer', 'return_number', 'return_date')
+        }),
+        ('تفاصيل المرتجع', {
+            'fields': ('notes', 'total_amount', 'status')
+        }),
+        ('معلومات الموافقة', {
+            'fields': ('created_by', 'approved_by', 'approved_at')
+        }),
+    )
+
+
+@admin.register(ReturnItem)
+class ReturnItemAdmin(admin.ModelAdmin):
+    list_display = ('return_obj', 'product', 'qty_returned', 'unit_price', 'line_total', 'created_at')
+    list_filter = ('return_obj__company', 'product__category', 'created_at')
+    search_fields = ('product__name', 'return_obj__return_number')
+    readonly_fields = ('line_total', 'created_at')
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ('customer', 'invoice', 'amount', 'payment_method', 'payment_date', 'created_by')
+    list_filter = ('company', 'payment_method', 'payment_date', 'created_by')
+    search_fields = ('customer__name', 'invoice__id', 'notes')
+    readonly_fields = ('payment_date',)
+    fieldsets = (
+        ('معلومات الدفع', {
+            'fields': ('company', 'customer', 'invoice', 'amount', 'payment_method')
+        }),
+        ('تفاصيل إضافية', {
+            'fields': ('notes', 'created_by', 'payment_date')
+        }),
+    )
+
+
+@admin.register(CustomerBalance)
+class CustomerBalanceAdmin(admin.ModelAdmin):
+    list_display = ('customer', 'total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated')
+    list_filter = ('company', 'last_updated')
+    search_fields = ('customer__name',)
+    readonly_fields = ('balance', 'last_updated')
+    fieldsets = (
+        ('معلومات العميل', {
+            'fields': ('company', 'customer')
+        }),
+        ('الحسابات', {
+            'fields': ('total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated')
+        }),
+    )

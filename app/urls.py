@@ -6,7 +6,9 @@ from .api import (api_products, api_invoice_session, api_get_invoice, api_add_it
                   api_update_category, api_update_product, api_update_customer,
                   api_register_company, api_register_staff, api_company_users,
                   api_send_otp, api_verify_otp, api_whatsapp_webhook, api_delete_user,
-                  api_get_token, api_reset_password)
+                  api_get_token, api_reset_password, api_returns, api_create_return, 
+                  api_return_details, api_approve_return, api_reject_return, api_invoice_returnable_items,
+                  api_payments, api_create_payment, api_customer_balances, api_customer_payments, api_customer_invoices, api_invoice_payments, api_search_invoices)
 from . import views
 
 urlpatterns = [
@@ -56,6 +58,23 @@ urlpatterns = [
   
   # Auth Token
   path('api/get-token/', api_get_token),
+  
+  # Return Management
+  path('api/returns/', api_returns),
+  path('api/returns/create/', api_create_return),
+  path('api/returns/<int:return_id>/', api_return_details),
+  path('api/returns/<int:return_id>/approve/', api_approve_return),
+  path('api/returns/<int:return_id>/reject/', api_reject_return),
+  path('api/invoices/<int:invoice_id>/returnable-items/', api_invoice_returnable_items),
+  
+  # Payment Management
+  path('api/payments/', api_payments),
+  path('api/payments/create/', api_create_payment),
+  path('api/customer-balances/', api_customer_balances),
+  path('api/customers/<int:customer_id>/payments/', api_customer_payments),
+  path('api/customers/<int:customer_id>/invoices/', api_customer_invoices),
+    path('api/invoices/<int:invoice_id>/payments/', api_invoice_payments),
+    path('api/search-invoices/', api_search_invoices),
 
   # Dashboard Pages
   path('', views.dashboard, name='dashboard'),
@@ -64,6 +83,9 @@ urlpatterns = [
   path('categories/', views.categories, name='categories'),
   path('invoices/', views.invoices, name='invoices'),
   path('invoice/<int:session_id>/', views.invoice_page, name='invoice_page'),
+  path('returns/', views.returns, name='returns'),
+  path('returns/<int:return_id>/', views.return_details, name='return_details'),
+  path('payments/', views.payments, name='payments'),
   
   # PDF Generation
   path('invoice/<int:invoice_id>/pdf/', views.invoice_pdf, name='invoice_pdf'),

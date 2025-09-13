@@ -1,0 +1,525 @@
+{% extends 'base.html' %}
+
+{% block title %}صندوق المدفوعات - Stockly{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">صندوق المدفوعات</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">إدارة مدفوعات العملاء والمستحقات</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <select id="customerFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                <option value="">جميع العملاء</option>
+            </select>
+            <button onclick="showAddPaymentModal()" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة دفعة جديدة
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-money-bill-wave text-green-600 dark:text-green-400"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">إجمالي المدفوع</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalPaid">0.00 $</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">إجمالي المستحقات</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalOutstanding">0.00 $</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-file-invoice text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">إجمالي الفواتير</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalInvoiced">0.00 $</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-undo text-yellow-600 dark:text-yellow-400"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">إجمالي المرتجعات</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalReturns">0.00 $</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Balances Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">أرصدة العملاء</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">العميل</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">إجمالي الفواتير</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">إجمالي المدفوع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">إجمالي المرتجعات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الرصيد</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="balancesTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-4"></i>
+                            <p class="mt-2">جاري التحميل...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Payments Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">آخر المدفوعات</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">العميل</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الفاتورة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">المبلغ</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">طريقة الدفع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentsTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-4"></i>
+                            <p class="mt-2">جاري التحميل...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Payment Modal -->
+<div id="addPaymentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">إضافة دفعة جديدة</h3>
+                <button onclick="closeAddPaymentModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="addPaymentForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">العميل *</label>
+                        <select id="customerSelect" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">اختر العميل</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الفاتورة (اختياري)</label>
+                        <select id="invoiceSelect" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">اختر الفاتورة (اختياري)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">المبلغ *</label>
+                        <input type="number" id="paymentAmount" step="0.01" min="0" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">طريقة الدفع *</label>
+                        <select id="paymentMethod" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="cash">نقداً</option>
+                            <option value="bank_transfer">تحويل بنكي</option>
+                            <option value="check">شيك</option>
+                            <option value="credit_card">بطاقة ائتمان</option>
+                            <option value="other">أخرى</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ملاحظات</label>
+                        <textarea id="paymentNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddPaymentModal()" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-md">
+                        إلغاء
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
+                        إضافة الدفعة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let balancesData = [];
+let paymentsData = [];
+let customersData = [];
+let invoicesData = [];
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadBalances();
+    loadPayments();
+    loadCustomers();
+    setupCustomerFilter();
+});
+
+// Load customer balances
+async function loadBalances() {
+    try {
+        const response = await fetch('/api/customer-balances/', {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (response.ok) {
+            balancesData = await response.json();
+            displayBalances(balancesData);
+            updateStats();
+        } else {
+            showNotification('خطأ في تحميل أرصدة العملاء', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading balances:', error);
+        showNotification('خطأ في الاتصال بالخادم', 'error');
+    }
+}
+
+// Load payments
+async function loadPayments() {
+    try {
+        const response = await fetch('/api/payments/', {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (response.ok) {
+            paymentsData = await response.json();
+            displayPayments(paymentsData);
+        } else {
+            showNotification('خطأ في تحميل المدفوعات', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading payments:', error);
+        showNotification('خطأ في الاتصال بالخادم', 'error');
+    }
+}
+
+// Load customers for payment modal
+async function loadCustomers() {
+    try {
+        const response = await fetch('/api/customers/', {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (response.ok) {
+            customersData = await response.json();
+            populateCustomerSelect();
+        }
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
+// Load invoices for selected customer
+async function loadInvoicesForCustomer(customerId) {
+    try {
+        const response = await fetch(`/api/customers/${customerId}/invoices/`, {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (response.ok) {
+            invoicesData = await response.json();
+            populateInvoiceSelect();
+        }
+    } catch (error) {
+        console.error('Error loading invoices:', error);
+    }
+}
+
+// Display balances
+function displayBalances(balances) {
+    const tbody = document.getElementById('balancesTableBody');
+    
+    if (balances.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-users text-4xl mb-4 text-gray-400"></i>
+                    <p class="mt-2">لا توجد أرصدة حالياً</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = balances.map(balance => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">${balance.customer_name}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-white">${balance.total_invoiced.toFixed(2)} $</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-green-600 dark:text-green-400">+${balance.total_paid.toFixed(2)} $</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-red-600 dark:text-red-400">-${balance.total_returns.toFixed(2)} $</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${balance.balance > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'}">
+                    ${balance.balance.toFixed(2)} $
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="viewCustomerPayments(${balance.customer_id})" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                    <i class="fas fa-eye ml-1"></i>عرض المدفوعات
+                </button>
+            </td>
+        </tr>
+    `);
+}
+
+// Display payments
+function displayPayments(payments) {
+    const tbody = document.getElementById('paymentsTableBody');
+    
+    if (payments.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-money-bill-wave text-4xl mb-4 text-gray-400"></i>
+                    <p class="mt-2">لا توجد مدفوعات حالياً</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = payments.map(payment => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">${payment.customer_name}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-white">${payment.invoice_id ? `فاتورة #${payment.invoice_id}` : 'دفعة عامة'}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium ${payment.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                    ${payment.amount >= 0 ? '+' : ''}${payment.amount.toFixed(2)} $
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                    ${payment.payment_method_display}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-white">${formatDate(payment.payment_date)}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500 dark:text-gray-400">${payment.notes || '-'}</div>
+            </td>
+        </tr>
+    `);
+}
+
+// Update stats
+function updateStats(balances = balancesData) {
+    const totalPaid = balances.reduce((sum, balance) => sum + balance.total_paid, 0);
+    const totalOutstanding = balances.reduce((sum, balance) => sum + Math.max(0, balance.balance), 0);
+    const totalInvoiced = balances.reduce((sum, balance) => sum + balance.total_invoiced, 0);
+    const totalReturns = balances.reduce((sum, balance) => sum + balance.total_returns, 0);
+    
+    document.getElementById('totalPaid').textContent = totalPaid.toFixed(2) + ' $';
+    document.getElementById('totalOutstanding').textContent = totalOutstanding.toFixed(2) + ' $';
+    document.getElementById('totalInvoiced').textContent = totalInvoiced.toFixed(2) + ' $';
+    document.getElementById('totalReturns').textContent = totalReturns.toFixed(2) + ' $';
+}
+
+// Populate customer select
+function populateCustomerSelect() {
+    const select = document.getElementById('customerSelect');
+    select.innerHTML = '<option value="">اختر العميل</option>';
+    
+    customersData.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer.id;
+        option.textContent = `${customer.name} (${customer.balance ? customer.balance.toFixed(2) : '0.00'} $)`;
+        select.appendChild(option);
+    });
+}
+
+// Setup customer filter
+function setupCustomerFilter() {
+    const filterSelect = document.getElementById('customerFilter');
+    
+    // Populate filter dropdown
+    customersData.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer.id;
+        option.textContent = `${customer.name} (${customer.balance ? customer.balance.toFixed(2) : '0.00'} $)`;
+        filterSelect.appendChild(option);
+    });
+    
+    // Add event listener for filtering
+    filterSelect.addEventListener('change', function() {
+        const customerId = this.value;
+        filterPaymentsByCustomer(customerId);
+        filterBalancesByCustomer(customerId);
+    });
+}
+
+// Filter payments by customer
+function filterPaymentsByCustomer(customerId) {
+    const filteredPayments = customerId ? 
+        paymentsData.filter(payment => payment.customer_id == customerId) : 
+        paymentsData;
+    displayPayments(filteredPayments);
+}
+
+// Filter balances by customer
+function filterBalancesByCustomer(customerId) {
+    const filteredBalances = customerId ? 
+        balancesData.filter(balance => balance.customer_id == customerId) : 
+        balancesData;
+    displayBalances(filteredBalances);
+    updateStats(filteredBalances);
+}
+
+// Populate invoice select
+function populateInvoiceSelect() {
+    const select = document.getElementById('invoiceSelect');
+    select.innerHTML = '<option value="">اختر الفاتورة (اختياري)</option>';
+    
+    invoicesData.forEach(invoice => {
+        const option = document.createElement('option');
+        option.value = invoice.id;
+        option.textContent = `فاتورة #${invoice.id} (${invoice.total_amount.toFixed(2)} $)`;
+        select.appendChild(option);
+    });
+}
+
+// Handle customer selection change
+document.getElementById('customerSelect').addEventListener('change', function() {
+    const customerId = this.value;
+    if (customerId) {
+        loadInvoicesForCustomer(customerId);
+    } else {
+        document.getElementById('invoiceSelect').innerHTML = '<option value="">اختر الفاتورة (اختياري)</option>';
+    }
+});
+
+// Show add payment modal
+function showAddPaymentModal() {
+    document.getElementById('addPaymentModal').classList.remove('hidden');
+}
+
+// Close add payment modal
+function closeAddPaymentModal() {
+    document.getElementById('addPaymentModal').classList.add('hidden');
+    document.getElementById('addPaymentForm').reset();
+}
+
+// Add payment form submission
+document.getElementById('addPaymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        customer_id: document.getElementById('customerSelect').value,
+        invoice_id: document.getElementById('invoiceSelect').value || null,
+        amount: document.getElementById('paymentAmount').value,
+        payment_method: document.getElementById('paymentMethod').value,
+        notes: document.getElementById('paymentNotes').value
+    };
+    
+    try {
+        const response = await fetch('/api/payments/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            showNotification('تم إضافة الدفعة بنجاح', 'success');
+            closeAddPaymentModal();
+            loadBalances();
+            loadPayments();
+        } else {
+            const error = await response.json();
+            showNotification(error.error || 'خطأ في إضافة الدفعة', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding payment:', error);
+        showNotification('خطأ في الاتصال بالخادم', 'error');
+    }
+});
+
+// View customer payments
+function viewCustomerPayments(customerId) {
+    // This would open a modal or navigate to customer payments page
+    showNotification('عرض مدفوعات العميل - قيد التطوير', 'info');
+}
+
+// Utility functions
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-SA');
+}
+</script>
+{% endblock %}

@@ -218,6 +218,88 @@ class InvoiceItem(models.Model):
         return f"{self.product.name} x {self.qty} = {self.line_total}"
 
 
+class Return(models.Model):
+    """نموذج المرتجع"""
+    RETURN_STATUS_CHOICES = [
+        ('pending', 'في الانتظار'),
+        ('approved', 'موافق عليه'),
+        ('rejected', 'مرفوض'),
+        ('completed', 'مكتمل'),
+    ]
+    
+    # معلومات أساسية
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
+    original_invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='returns', verbose_name='الفاتورة الأصلية')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='العميل')
+    
+    # معلومات المرتجع
+    return_number = models.CharField(max_length=50, unique=True, verbose_name='رقم المرتجع')
+    return_date = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ المرتجع')
+    status = models.CharField(max_length=20, choices=RETURN_STATUS_CHOICES, default='pending', verbose_name='الحالة')
+    
+    # معلومات إضافية
+    notes = models.TextField(blank=True, verbose_name='ملاحظات')
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='المبلغ الإجمالي')
+    
+    # معلومات المستخدم
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='أنشأ بواسطة')
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_returns', verbose_name='وافق عليه')
+    approved_at = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ الموافقة')
+    
+    class Meta:
+        verbose_name = 'مرتجع'
+        verbose_name_plural = 'المرتجعات'
+        ordering = ['-return_date']
+    
+    def __str__(self):
+        return f"مرتجع #{self.return_number} - {self.original_invoice.invoice_number}"
+    
+    def save(self, *args, **kwargs):
+        if not self.return_number:
+            # إنشاء رقم مرتجع تلقائي
+            last_return = Return.objects.filter(company=self.company).order_by('-id').first()
+            if last_return and last_return.return_number:
+                try:
+                    last_num = int(last_return.return_number.split('-')[-1])
+                    new_num = last_num + 1
+                except (ValueError, IndexError):
+                    new_num = 1
+            else:
+                new_num = 1
+            
+            self.return_number = f"RET-{self.company.code}-{new_num:04d}"
+        
+        super().save(*args, **kwargs)
+
+
+class ReturnItem(models.Model):
+    """عناصر المرتجع"""
+    return_obj = models.ForeignKey(Return, on_delete=models.CASCADE, related_name='items', verbose_name='المرتجع')
+    original_item = models.ForeignKey(InvoiceItem, on_delete=models.CASCADE, verbose_name='العنصر الأصلي')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='المنتج')
+    qty_returned = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='الكمية المرتجعة')
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='سعر الوحدة')
+    line_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='المجموع')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    
+    class Meta:
+        verbose_name = 'عنصر المرتجع'
+        verbose_name_plural = 'عناصر المرتجع'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.product.name} x {self.qty_returned} = {self.line_total}"
+    
+    def save(self, *args, **kwargs):
+        # حساب المجموع
+        self.line_total = self.qty_returned * self.unit_price
+        super().save(*args, **kwargs)
+        
+        # تحديث المجموع الإجمالي للمرتجع
+        self.return_obj.total_amount = sum(item.line_total for item in self.return_obj.items.all())
+        self.return_obj.save(update_fields=['total_amount'])
+
+
 # Helper Functions for Multi-Tenant Support
 def company_queryset(model, user):
     """
@@ -302,3 +384,56 @@ class OTPVerification(models.Model):
             return 0
         remaining = self.expires_at - timezone.now()
         return int(remaining.total_seconds())
+
+
+class Payment(models.Model):
+    """نموذج الدفع"""
+    PAYMENT_METHODS = [
+        ('cash', 'نقداً'),
+        ('bank_transfer', 'تحويل بنكي'),
+        ('check', 'شيك'),
+        ('credit_card', 'بطاقة ائتمان'),
+        ('other', 'أخرى'),
+    ]
+    
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='العميل')
+    invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments', verbose_name='الفاتورة (اختياري)')
+    amount = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='المبلغ')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='cash', verbose_name='طريقة الدفع')
+    payment_date = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الدفع')
+    notes = models.TextField(blank=True, verbose_name='ملاحظات')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='أنشأ بواسطة')
+    
+    class Meta:
+        verbose_name = 'دفعة'
+        verbose_name_plural = 'الدفعات'
+        ordering = ['-payment_date']
+    
+    def __str__(self):
+        return f"دفعة {self.amount} $ - {self.customer.name}"
+
+
+class CustomerBalance(models.Model):
+    """رصيد العميل"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, unique=True, verbose_name='العميل')
+    total_invoiced = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='إجمالي الفواتير')
+    total_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='إجمالي المدفوع')
+    total_returns = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='إجمالي المرتجعات')
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='الرصيد')
+    last_updated = models.DateTimeField(auto_now=True, verbose_name='آخر تحديث')
+    
+    class Meta:
+        verbose_name = 'رصيد العميل'
+        verbose_name_plural = 'أرصدة العملاء'
+        ordering = ['-balance']
+    
+    def __str__(self):
+        return f"{self.customer.name} - {self.balance} $"
+    
+    def calculate_balance(self):
+        """حساب الرصيد"""
+        self.balance = self.total_invoiced - self.total_paid - self.total_returns
+        self.save()
+        return self.balance

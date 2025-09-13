@@ -341,3 +341,21 @@ def register_company(request):
 def register_staff(request):
     """Legacy staff registration view - redirects to auth"""
     return redirect('auth')
+
+
+@company_staff_required
+def returns(request):
+    """Returns management page"""
+    return render(request, 'returns.html')
+
+
+@company_staff_required
+def return_details(request, return_id):
+    """Return details page"""
+    return render(request, 'return_details.html', {'return_id': return_id})
+
+
+@company_staff_required
+def payments(request):
+    """Payments page"""
+    return render(request, 'payments.html')
