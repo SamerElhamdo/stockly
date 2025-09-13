@@ -158,10 +158,70 @@
                         <option value="">اختر الفئة</option>
                     </select>
                 </div>
+                <!-- التسعير الأساسي -->
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">السعر *</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">سعر البيع الأساسي *</label>
                     <input id="productPrice" type="number" step="0.01" required
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="0.00">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">السعر الأساسي للمنتج</p>
+                </div>
+
+                <!-- خيارات التسعير المتقدمة -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">خيارات التسعير المتقدمة</h4>
+                        <button type="button" id="toggleAdvancedPricing" 
+                                class="text-xs text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 flex items-center">
+                            <i class="fas fa-chevron-down ml-1" id="pricingToggleIcon"></i>
+                            <span id="pricingToggleText">إظهار الخيارات المتقدمة</span>
+                        </button>
+                    </div>
+                    
+                    <div id="advancedPricingOptions" class="hidden space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- سعر التكلفة -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر التكلفة</label>
+                                <input id="productCostPrice" type="number" step="0.01"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                       placeholder="0.00">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">تكلفة شراء المنتج</p>
+                            </div>
+                            
+                            <!-- سعر البيع بالجملة -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر البيع بالجملة</label>
+                                <input id="productWholesalePrice" type="number" step="0.01"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                       placeholder="0.00">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سعر البيع بكميات كبيرة</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- سعر البيع بالمفرق -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                    سعر البيع بالمفرق
+                                    <span class="text-xs text-blue-600 dark:text-blue-400">(مرتبط بالسعر الأساسي)</span>
+                                </label>
+                                <input id="productRetailPrice" type="number" step="0.01" readonly
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                                       placeholder="0.00">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم تحديثه تلقائياً مع السعر الأساسي</p>
+                            </div>
+                            
+                            <!-- هامش الربح -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">هامش الربح (%)</label>
+                                <input id="productProfitMargin" type="number" step="0.01" readonly
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                                       placeholder="0.00">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">محسوب تلقائياً</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الوحدة</label>
@@ -335,11 +395,55 @@ function checkLowStock(products) {
 
 function showAddProductModal() {
     document.getElementById('addProductModal').classList.remove('hidden');
+    
+    // Set initial retail price to match basic price when modal opens
+    const basicPriceField = document.getElementById('productPrice');
+    const retailPriceField = document.getElementById('productRetailPrice');
+    
+    if (basicPriceField && retailPriceField) {
+        // Remove existing event listener to prevent duplicates
+        basicPriceField.removeEventListener('input', updateRetailPrice);
+        
+        // Add new event listener
+        basicPriceField.addEventListener('input', updateRetailPrice);
+    }
+}
+
+function updateRetailPrice() {
+    const basicPrice = parseFloat(this.value) || 0;
+    const retailPriceField = document.getElementById('productRetailPrice');
+    if (retailPriceField && basicPrice > 0) {
+        retailPriceField.value = basicPrice;
+    }
+}
+
+function updateEditRetailPrice() {
+    const basicPrice = parseFloat(this.value) || 0;
+    const retailPriceField = document.getElementById('editProductRetailPrice');
+    if (retailPriceField && basicPrice > 0) {
+        retailPriceField.value = basicPrice;
+    }
 }
 
 function closeAddProductModal() {
     document.getElementById('addProductModal').classList.add('hidden');
     document.getElementById('addProductForm').reset();
+    
+    // Hide advanced pricing options
+    document.getElementById('advancedPricingOptions').classList.add('hidden');
+    document.getElementById('pricingToggleIcon').classList.remove('fa-chevron-up');
+    document.getElementById('pricingToggleIcon').classList.add('fa-chevron-down');
+    document.getElementById('pricingToggleText').textContent = 'إظهار الخيارات المتقدمة';
+    
+    // Reset profit margin and retail price
+    document.getElementById('productProfitMargin').value = '';
+    document.getElementById('productRetailPrice').value = '';
+    
+    // Remove event listeners to prevent duplicates
+    const basicPriceField = document.getElementById('productPrice');
+    if (basicPriceField) {
+        basicPriceField.removeEventListener('input', updateRetailPrice);
+    }
 }
 
 async function addProduct(event) {
@@ -352,7 +456,11 @@ async function addProduct(event) {
         stock_qty: parseInt(document.getElementById('productStock').value),
         unit: document.getElementById('productUnit').value,
         measurement: document.getElementById('productMeasurement').value,
-        description: document.getElementById('productDescription').value
+        description: document.getElementById('productDescription').value,
+        // Advanced pricing fields
+        cost_price: parseFloat(document.getElementById('productCostPrice').value) || null,
+        wholesale_price: parseFloat(document.getElementById('productWholesalePrice').value) || null,
+        retail_price: parseFloat(document.getElementById('productPrice').value) || null // Linked to basic price
     };
     
     // Add SKU only if provided and valid
@@ -525,12 +633,72 @@ function showEditProductModal(product) {
                                 </select>
                             </div>
                             
+                            <!-- التسعير الأساسي -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-dollar-sign ml-2"></i>السعر *
+                                    <i class="fas fa-dollar-sign ml-2"></i>سعر البيع الأساسي *
                                 </label>
                                 <input type="number" id="editProductPrice" value="${product.price}" step="0.01" required
-                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                       placeholder="0.00">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">السعر الأساسي للمنتج</p>
+                            </div>
+
+                            <!-- خيارات التسعير المتقدمة -->
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">خيارات التسعير المتقدمة</h4>
+                                    <button type="button" id="editToggleAdvancedPricing" 
+                                            class="text-xs text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 flex items-center">
+                                        <i class="fas fa-chevron-down ml-1" id="editPricingToggleIcon"></i>
+                                        <span id="editPricingToggleText">إظهار الخيارات المتقدمة</span>
+                                    </button>
+                                </div>
+                                
+                                <div id="editAdvancedPricingOptions" class="hidden space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- سعر التكلفة -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر التكلفة</label>
+                                            <input id="editProductCostPrice" type="number" step="0.01" value="${product.cost_price || ''}"
+                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                                   placeholder="0.00">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">تكلفة شراء المنتج</p>
+                                        </div>
+                                        
+                                        <!-- سعر البيع بالجملة -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر البيع بالجملة</label>
+                                            <input id="editProductWholesalePrice" type="number" step="0.01" value="${product.wholesale_price || ''}"
+                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                                                   placeholder="0.00">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سعر البيع بكميات كبيرة</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- سعر البيع بالمفرق -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                                سعر البيع بالمفرق
+                                                <span class="text-xs text-blue-600 dark:text-blue-400">(مرتبط بالسعر الأساسي)</span>
+                                            </label>
+                                            <input id="editProductRetailPrice" type="number" step="0.01" value="${product.retail_price || product.price || ''}"
+                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                                                   placeholder="0.00" readonly>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم تحديثه تلقائياً مع السعر الأساسي</p>
+                                        </div>
+                                        
+                                        <!-- هامش الربح -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">هامش الربح (%)</label>
+                                            <input id="editProductProfitMargin" type="number" step="0.01" readonly
+                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                                                   placeholder="0.00">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">محسوب تلقائياً</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div>
@@ -599,24 +767,37 @@ function showEditProductModal(product) {
     // Add modal to page
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // Load categories
-    loadCategoriesForEdit();
-    
-    // Set current values
-    setTimeout(() => {
-        // Set category
-        if (product.category_id) {
-            document.getElementById('editProductCategory').value = product.category_id;
-        }
-        
-        // Set unit
-        if (product.unit) {
-            document.getElementById('editProductUnit').value = product.unit;
-        }
-    }, 100);
+    // Load categories and set values
+    loadCategoriesForEdit().then(() => {
+        // Set current values after categories are loaded
+        setTimeout(() => {
+            // Set category
+            if (product.category_id) {
+                console.log('Setting category_id:', product.category_id);
+                document.getElementById('editProductCategory').value = product.category_id;
+            }
+            
+            // Set unit
+            if (product.unit) {
+                document.getElementById('editProductUnit').value = product.unit;
+            }
+        }, 100);
+    });
     
     // Show modal
     document.getElementById('editProductModal').classList.remove('hidden');
+    
+    // Setup advanced pricing toggle for edit modal
+    setupEditAdvancedPricing();
+    
+    // Set initial retail price to match basic price
+    setTimeout(() => {
+        const basicPrice = parseFloat(product.price) || 0;
+        const retailPriceField = document.getElementById('editProductRetailPrice');
+        if (retailPriceField && basicPrice > 0) {
+            retailPriceField.value = basicPrice;
+        }
+    }, 100);
 }
 
 async function loadCategoriesForEdit() {
@@ -631,14 +812,23 @@ async function loadCategoriesForEdit() {
         const select = document.getElementById('editProductCategory');
         select.innerHTML = '<option value="">اختر الفئة</option>' + 
             categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+        
+        return categories; // Return categories for further use
     } catch (error) {
         console.error('Error loading categories:', error);
+        return [];
     }
 }
 
 function closeEditProductModal() {
     const modal = document.getElementById('editProductModal');
     if (modal) {
+        // Remove event listeners before removing modal
+        const editSellingPrice = document.getElementById('editProductPrice');
+        if (editSellingPrice) {
+            editSellingPrice.removeEventListener('input', updateEditRetailPrice);
+        }
+        
         modal.remove();
     }
 }
@@ -659,7 +849,11 @@ async function updateProduct() {
         stock_qty: parseInt(document.getElementById('editProductStock').value),
         unit: document.getElementById('editProductUnit').value,
         measurement: document.getElementById('editProductMeasurement').value,
-        description: document.getElementById('editProductDescription').value
+        description: document.getElementById('editProductDescription').value,
+        // Advanced pricing fields
+        cost_price: parseFloat(document.getElementById('editProductCostPrice').value) || null,
+        wholesale_price: parseFloat(document.getElementById('editProductWholesalePrice').value) || null,
+        retail_price: parseFloat(document.getElementById('editProductPrice').value) || null // Linked to basic price
     };
     
     try {
@@ -747,6 +941,115 @@ async function deleteProduct(productId) {
             console.error('Error deleting product:', error);
             showNotification('❌ حدث خطأ في حذف المنتج', 'error');
         }
+    }
+}
+
+// Toggle advanced pricing options
+document.getElementById('toggleAdvancedPricing').addEventListener('click', function() {
+    const options = document.getElementById('advancedPricingOptions');
+    const icon = document.getElementById('pricingToggleIcon');
+    const text = document.getElementById('pricingToggleText');
+    
+    if (options.classList.contains('hidden')) {
+        options.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        text.textContent = 'إخفاء الخيارات المتقدمة';
+    } else {
+        options.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        text.textContent = 'إظهار الخيارات المتقدمة';
+    }
+});
+
+// Calculate profit margin automatically
+function calculateProfitMargin() {
+    const costPrice = parseFloat(document.getElementById('productCostPrice').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('productPrice').value) || 0;
+    
+    if (costPrice > 0 && sellingPrice > 0) {
+        const profitMargin = ((sellingPrice - costPrice) / costPrice) * 100;
+        document.getElementById('productProfitMargin').value = profitMargin.toFixed(2);
+    } else {
+        document.getElementById('productProfitMargin').value = '';
+    }
+}
+
+// Add event listeners for profit margin calculation
+document.getElementById('productCostPrice').addEventListener('input', calculateProfitMargin);
+document.getElementById('productPrice').addEventListener('input', calculateProfitMargin);
+
+// Link retail price to basic price
+document.getElementById('productPrice').addEventListener('input', function() {
+    const basicPrice = parseFloat(this.value) || 0;
+    const retailPriceField = document.getElementById('productRetailPrice');
+    if (retailPriceField && basicPrice > 0) {
+        retailPriceField.value = basicPrice;
+    }
+});
+
+// Setup advanced pricing toggle for edit modal
+function setupEditAdvancedPricing() {
+    const toggleBtn = document.getElementById('editToggleAdvancedPricing');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const options = document.getElementById('editAdvancedPricingOptions');
+            const icon = document.getElementById('editPricingToggleIcon');
+            const text = document.getElementById('editPricingToggleText');
+            
+            if (options.classList.contains('hidden')) {
+                options.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                text.textContent = 'إخفاء الخيارات المتقدمة';
+            } else {
+                options.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                text.textContent = 'إظهار الخيارات المتقدمة';
+            }
+        });
+    }
+    
+    // Setup profit margin calculation for edit modal
+    const editCostPrice = document.getElementById('editProductCostPrice');
+    const editSellingPrice = document.getElementById('editProductPrice');
+    const editRetailPrice = document.getElementById('editProductRetailPrice');
+    
+    if (editCostPrice && editSellingPrice) {
+        editCostPrice.addEventListener('input', calculateEditProfitMargin);
+        editSellingPrice.addEventListener('input', calculateEditProfitMargin);
+        
+        // Link retail price to basic price in edit modal
+        editSellingPrice.addEventListener('input', updateEditRetailPrice);
+        
+        // Calculate initial profit margin
+        calculateEditProfitMargin();
+        
+        // Set initial retail price to match basic price
+        const basicPrice = parseFloat(editSellingPrice.value) || 0;
+        if (editRetailPrice && basicPrice > 0) {
+            editRetailPrice.value = basicPrice;
+        }
+    }
+    
+    // Remove event listeners to prevent duplicates
+    if (editSellingPrice) {
+        editSellingPrice.removeEventListener('input', updateEditRetailPrice);
+    }
+}
+
+// Calculate profit margin for edit modal
+function calculateEditProfitMargin() {
+    const costPrice = parseFloat(document.getElementById('editProductCostPrice').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('editProductPrice').value) || 0;
+    
+    if (costPrice > 0 && sellingPrice > 0) {
+        const profitMargin = ((sellingPrice - costPrice) / costPrice) * 100;
+        document.getElementById('editProductProfitMargin').value = profitMargin.toFixed(2);
+    } else {
+        document.getElementById('editProductProfitMargin').value = '';
     }
 }
 

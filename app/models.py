@@ -139,6 +139,12 @@ class Product(models.Model):
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='piece', blank=True, null=True, help_text='وحدة القياس', verbose_name='الوحدة')
     measurement = models.CharField(max_length=100, blank=True, null=True, help_text='القياس (اختياري)', verbose_name='القياس')
     description = models.TextField(blank=True, null=True, help_text='وصف المنتج (اختياري)', verbose_name='الوصف')
+    
+    # Advanced pricing fields
+    cost_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text='سعر التكلفة', verbose_name='سعر التكلفة')
+    wholesale_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text='سعر البيع بالجملة', verbose_name='سعر البيع بالجملة')
+    retail_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text='سعر البيع بالمفرق', verbose_name='سعر البيع بالمفرق')
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     
     def generate_sku(self):

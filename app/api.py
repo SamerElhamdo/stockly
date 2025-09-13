@@ -25,11 +25,15 @@ def api_products(request):
     if q: qs = qs.filter(name__icontains=q) | qs.filter(sku__icontains=q)
     return Response([{
         "id":p.id,"sku":p.sku,"name":p.name,"price":float(p.price),"stock_qty":p.stock_qty,
+        "category_id":p.category.id if p.category else None,
         "category_name":p.category.name if p.category else None,
         "unit":p.unit,
         "unit_display":p.get_unit_display() if p.unit else None,
         "measurement":p.measurement,
-        "description":p.description
+        "description":p.description,
+        "cost_price":float(p.cost_price) if p.cost_price else None,
+        "wholesale_price":float(p.wholesale_price) if p.wholesale_price else None,
+        "retail_price":float(p.retail_price) if p.retail_price else None
     } for p in qs[:50]])
 
 @api_view(["POST"])
@@ -254,6 +258,11 @@ def api_add_product(request):
     measurement = request.data.get("measurement", "")
     description = request.data.get("description", "")
     
+    # Advanced pricing fields
+    cost_price = request.data.get("cost_price")
+    wholesale_price = request.data.get("wholesale_price")
+    retail_price = request.data.get("retail_price")
+    
     if not all([name, category_id, price, stock_qty]):
         return Response({"error": "missing_fields"}, status=400)
     
@@ -285,6 +294,14 @@ def api_add_product(request):
         if description:
             product_data["description"] = description
             
+        # Add advanced pricing fields if provided
+        if cost_price is not None and cost_price != "":
+            product_data["cost_price"] = float(cost_price)
+        if wholesale_price is not None and wholesale_price != "":
+            product_data["wholesale_price"] = float(wholesale_price)
+        if retail_price is not None and retail_price != "":
+            product_data["retail_price"] = float(retail_price)
+            
         product = Product.objects.create(**product_data)
         
         return Response({
@@ -294,7 +311,10 @@ def api_add_product(request):
             "unit": product.unit,
             "unit_display": product.get_unit_display(),
             "measurement": product.measurement,
-            "description": product.description
+            "description": product.description,
+            "cost_price": float(product.cost_price) if product.cost_price else None,
+            "wholesale_price": float(product.wholesale_price) if product.wholesale_price else None,
+            "retail_price": float(product.retail_price) if product.retail_price else None
         })
     except Category.DoesNotExist:
         return Response({"error": "category_not_found"}, status=404)
@@ -463,6 +483,14 @@ def api_update_product(request, product_id):
             product.measurement = data.get('measurement', product.measurement)
         if 'description' in data:
             product.description = data.get('description', product.description)
+            
+        # Update advanced pricing fields
+        if 'cost_price' in data:
+            product.cost_price = data.get('cost_price', product.cost_price)
+        if 'wholesale_price' in data:
+            product.wholesale_price = data.get('wholesale_price', product.wholesale_price)
+        if 'retail_price' in data:
+            product.retail_price = data.get('retail_price', product.retail_price)
         
         # Update category if provided
         if 'category_id' in data:
@@ -486,6 +514,9 @@ def api_update_product(request, product_id):
                 "unit_display": product.get_unit_display() if product.unit else None,
                 "measurement": product.measurement,
                 "description": product.description,
+                "cost_price": float(product.cost_price) if product.cost_price else None,
+                "wholesale_price": float(product.wholesale_price) if product.wholesale_price else None,
+                "retail_price": float(product.retail_price) if product.retail_price else None,
                 "category": {
                     "id": product.category.id,
                     "name": product.category.name

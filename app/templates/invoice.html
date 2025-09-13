@@ -161,7 +161,7 @@ async function loadInvoice() {
         document.getElementById('customerPhone').textContent = inv.customer.phone || '-';
         
         // Update invoice date
-        document.getElementById('invoiceDate').textContent = new Date(inv.created_at).toLocaleDateString('ar-SA');
+        document.getElementById('invoiceDate').textContent = new Date(inv.created_at).toLocaleDateString('en-GB');
         
         // Update status
         const statusElement = document.getElementById('invoiceStatus');

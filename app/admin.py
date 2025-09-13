@@ -40,10 +40,21 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'sku', 'category', 'price', 'stock_qty')
-    list_filter = ('category',)
+    list_display = ('name', 'sku', 'category', 'price', 'cost_price', 'wholesale_price', 'retail_price', 'stock_qty')
+    list_filter = ('category', 'unit')
     search_fields = ('name', 'sku')
     ordering = ('name',)
+    fieldsets = (
+        ('معلومات أساسية', {
+            'fields': ('company', 'name', 'sku', 'category', 'unit', 'measurement', 'description')
+        }),
+        ('التسعير', {
+            'fields': ('price', 'cost_price', 'wholesale_price', 'retail_price')
+        }),
+        ('المخزون', {
+            'fields': ('stock_qty', 'qr_code')
+        }),
+    )
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
