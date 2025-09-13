@@ -113,12 +113,12 @@ def invoice_page(request, session_id):
 @company_owner_required
 def user_management(request):
     # Show only users from the same company, excluding superuser
-    if request.user.is_superuser:
-        # Superuser can see all users except other superusers
-        users = User.objects.filter(account_type__in=['company_owner', 'company_staff']).order_by('-created_at')
-    else:
-        # Company admin can only see users from their company
+    # All users (including superuser) can only see users from their company
+    if request.user.company:
         users = User.objects.filter(company=request.user.company).order_by('-created_at')
+    else:
+        # If user has no company (superuser without company), show empty list
+        users = User.objects.none()
     
     return render(request, 'user_management.html', {'users': users})
 
