@@ -147,7 +147,7 @@ def conversation_history(request):
         })
 
 @login_required
-def test_agent(request):
+def test_agent(request):            
     # Only superuser can access test agent
     if not request.user.is_superuser:
         messages.error(request, 'ليس لديك صلاحية للوصول إلى اختبار الوكيل')
