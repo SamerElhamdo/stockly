@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional
 from django.db.models import Q
 from app.models import (
     User, Company, Product, Customer, Invoice, Return, Payment, 
-    CustomerBalance, Conversation, Agent
+    CustomerBalance, Conversation, Agent, APIKey
 )
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,36 @@ class AgentManager:
     def get_primary_agent(self) -> Optional[Agent]:
         """الحصول على الوكيل الرئيسي"""
         return Agent.objects.filter(is_active=True, is_primary=True).first()
+    
+    def get_active_api_key(self) -> Optional[APIKey]:
+        """الحصول على مفتاح API نشط مع نظام fallback"""
+        # أولاً: محاولة الحصول على المفتاح الرئيسي
+        primary_key = APIKey.objects.filter(
+            is_active=True, 
+            is_primary=True,
+            provider='gemini'
+        ).first()
+        
+        if primary_key and not primary_key.is_quota_exceeded():
+            return primary_key
+        
+        # ثانياً: البحث عن مفتاح بديل إذا تجاوز المفتاح الرئيسي الحد المسموح
+        fallback_key = APIKey.objects.filter(
+            is_active=True,
+            provider='gemini'
+        ).exclude(id=primary_key.id if primary_key else None).first()
+        
+        if fallback_key and not fallback_key.is_quota_exceeded():
+            logger.info(f"استخدام المفتاح البديل: {fallback_key.name}")
+            return fallback_key
+        
+        # ثالثاً: إذا لم يوجد مفتاح صالح، إرجاع المفتاح الرئيسي حتى لو تجاوز الحد
+        if primary_key:
+            logger.warning(f"استخدام المفتاح الرئيسي رغم تجاوز الحد: {primary_key.name}")
+            return primary_key
+        
+        logger.error("لا يوجد مفتاح API نشط متاح")
+        return None
     
     def get_company_from_phone(self, phone_number: str) -> Optional[Company]:
         """الحصول على الشركة من رقم الهاتف"""
@@ -118,18 +148,20 @@ class AgentManager:
     
     def analyze_message_with_ai(self, message: str, conversation_history: List[Dict], 
                                agent: Agent) -> Dict[str, Any]:
-        """تحليل الرسالة باستخدام الذكاء الاصطناعي"""
+        """تحليل الرسالة باستخدام الذكاء الاصطناعي مع نظام مفاتيح API متعددة"""
         try:
-            if not agent.gemini_api_key or agent.gemini_api_key.strip() == '':
+            # الحصول على مفتاح API نشط
+            api_key_obj = self.get_active_api_key()
+            if not api_key_obj:
                 return {
                     "tool": "unknown",
                     "requires_confirmation": False,
-                    "response": "❌ مفتاح Gemini API غير محدد. يرجى إعداد المفتاح من صفحة إعدادات الوكيل.",
+                    "response": "❌ لا يوجد مفتاح API نشط متاح. يرجى إضافة مفتاح API من لوحة الإدارة.",
                     "confirmation_message": None
                 }
             
             # Configure Gemini
-            genai.configure(api_key=agent.gemini_api_key)
+            genai.configure(api_key=api_key_obj.key)
             model = genai.GenerativeModel('gemini-1.5-flash')
             
             # Prepare context
@@ -190,6 +222,10 @@ class AgentManager:
                 
                 result = json.loads(response_text.strip())
                 logger.info(f"AI Response: {result}")
+                
+                # تحديث عداد الاستخدام
+                api_key_obj.increment_usage()
+                
                 return result
             except json.JSONDecodeError as e:
                 logger.error(f"خطأ في تحليل JSON: {e}")

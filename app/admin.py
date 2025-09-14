@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, Conversation, AgentSettings, Agent
+from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, Conversation, AgentSettings, Agent, APIKey
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -218,3 +218,21 @@ class AgentAdmin(admin.ModelAdmin):
         ('إعدادات عامة', {'fields': ('max_conversation_history', 'confirmation_required')}),
         ('تواريخ', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
+
+@admin.register(APIKey)
+class APIKeyAdmin(admin.ModelAdmin):
+    list_display = ['name', 'provider', 'is_active', 'is_primary', 'usage_count', 'last_used', 'created_at']
+    list_filter = ['provider', 'is_active', 'is_primary', 'created_at']
+    search_fields = ['name', 'key']
+    readonly_fields = ['usage_count', 'last_used', 'created_at', 'updated_at']
+    fieldsets = (
+        ('معلومات المفتاح', {'fields': ('name', 'key', 'provider')}),
+        ('الحالة', {'fields': ('is_active', 'is_primary')}),
+        ('الحدود والاستخدام', {'fields': ('max_requests_per_day', 'usage_count', 'last_used')}),
+        ('التواريخ', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # editing an existing object
+            return self.readonly_fields + ('key',)  # Don't allow editing the key
+        return self.readonly_fields

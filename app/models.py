@@ -505,3 +505,50 @@ class Agent(models.Model):
         if self.is_primary:
             Agent.objects.filter(is_primary=True).update(is_primary=False)
         super().save(*args, **kwargs)
+
+
+class APIKey(models.Model):
+    """نموذج لإدارة مفاتيح API المتعددة للوكيل الذكي"""
+    name = models.CharField(max_length=100, verbose_name="اسم المفتاح")
+    key = models.CharField(max_length=500, verbose_name="مفتاح API")
+    provider = models.CharField(max_length=50, default="gemini", verbose_name="مزود الخدمة")
+    is_active = models.BooleanField(default=True, verbose_name="نشط")
+    is_primary = models.BooleanField(default=False, verbose_name="مفتاح رئيسي")
+    usage_count = models.IntegerField(default=0, verbose_name="عدد الاستخدامات")
+    last_used = models.DateTimeField(null=True, blank=True, verbose_name="آخر استخدام")
+    max_requests_per_day = models.IntegerField(default=1000, verbose_name="الحد الأقصى للطلبات يومياً")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الإنشاء")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاريخ التحديث")
+
+    class Meta:
+        verbose_name = "مفتاح API"
+        verbose_name_plural = "مفاتيح API"
+        ordering = ['-is_primary', '-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({'نشط' if self.is_active else 'غير نشط'})"
+
+    def save(self, *args, **kwargs):
+        # التأكد من وجود مفتاح رئيسي واحد فقط
+        if self.is_primary:
+            APIKey.objects.filter(is_primary=True).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+    def increment_usage(self):
+        """زيادة عداد الاستخدام"""
+        self.usage_count += 1
+        self.last_used = timezone.now()
+        self.save(update_fields=['usage_count', 'last_used'])
+
+    def is_quota_exceeded(self):
+        """التحقق من تجاوز الحد المسموح"""
+        if self.max_requests_per_day <= 0:
+            return False
+        
+        today = timezone.now().date()
+        today_usage = APIKey.objects.filter(
+            id=self.id,
+            last_used__date=today
+        ).first()
+        
+        return self.usage_count >= self.max_requests_per_day

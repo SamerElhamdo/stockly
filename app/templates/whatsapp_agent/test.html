@@ -6,24 +6,24 @@
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
         <div class="flex items-center space-x-4 space-x-reverse">
             <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
                 <i class="fas fa-flask text-white text-xl"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">اختبار الوكيل الذكي</h1>
-                <p class="text-gray-600">اختبر الوكيل الذكي قبل تفعيله - للادمن فقط</p>
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">اختبار الوكيل الذكي</h1>
+                <p class="text-gray-600 dark:text-gray-300">اختبر الوكيل الذكي قبل تفعيله - للادمن فقط</p>
             </div>
         </div>
         
         <!-- Admin Notice -->
-        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <div class="flex items-center">
-                <i class="fas fa-shield-alt text-blue-600 ml-2"></i>
+                <i class="fas fa-shield-alt text-blue-600 dark:text-blue-400 ml-2"></i>
                 <div>
-                    <h3 class="text-sm font-medium text-blue-800">ملاحظة مهمة</h3>
-                    <p class="text-sm text-blue-700 mt-1">
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">ملاحظة مهمة</h3>
+                    <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
                         هذه الصفحة متاحة للادمن فقط. يمكنك اختبار الوكيل الذكي مع أي شركة من الشركات المتاحة.
                     </p>
                 </div>
@@ -32,18 +32,18 @@
     </div>
 
     <!-- Test Form -->
-    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
         <form id="testForm">
             {% csrf_token %}
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Company Selection -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         اختر الشركة
                     </label>
                     <select id="company_select" name="company_select" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             onchange="updatePhoneNumber()" required>
                         <option value="">اختر الشركة...</option>
                         {% for company in companies %}
@@ -56,21 +56,21 @@
 
                 <!-- Phone Number (Auto-filled) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         رقم الهاتف
                     </label>
                     <input type="text" id="phone_number" name="phone_number" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white"
                            placeholder="سيتم ملؤه تلقائياً عند اختيار الشركة" readonly required>
                 </div>
 
                 <!-- Message -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         الرسالة
                     </label>
                     <input type="text" id="message" name="message" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                            placeholder="عرض المنتجات" required>
                 </div>
             </div>

@@ -2,61 +2,123 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from app.models import AgentSettings
+from app.models import AgentSettings, APIKey
 import json
 
 @login_required
 def agent_settings(request):
-    # Only superuser can access agent settings
+    """صفحة إعدادات الوكيل الذكي الموحدة مع إدارة مفاتيح API"""
     if not request.user.is_superuser:
         messages.error(request, 'ليس لديك صلاحية للوصول إلى إعدادات الوكيل الذكي')
         return redirect('dashboard')
-    """صفحة إعدادات الوكيل الذكي"""
+    
     try:
-        # For superuser, we'll use a global settings approach
-        # Get the first company's settings or create default settings
-        from app.models import Company
-        first_company = Company.objects.first()
+        from app.models import Company, Agent
         
-        if not first_company:
-            messages.error(request, 'لا توجد شركات في النظام')
-            return redirect('dashboard')
+        # Get the primary agent
+        primary_agent = Agent.objects.filter(is_primary=True).first()
+        if not primary_agent:
+            # Create a default primary agent if none exists
+            primary_agent = Agent.objects.create(
+                name="الوكيل الرئيسي",
+                whatsapp_webhook_url="https://n8n.srv772321.hstgr.cloud/webhook/whatsapp-msg",
+                gemini_api_key="",
+                is_active=True,
+                is_primary=True,
+                max_conversation_history=20,
+                confirmation_required=True,
+                custom_system_message=""
+            )
         
-        # Get or create agent settings for the first company (global settings)
-        settings, created = AgentSettings.objects.get_or_create(
-            company=first_company,
-            defaults={
-                'whatsapp_webhook_url': 'https://n8n.srv772321.hstgr.cloud/webhook/whatsapp-msg',
-                'gemini_api_key': '',
-                'is_active': True,
-                'max_conversation_history': 20,
-                'confirmation_required': True
-            }
-        )
+        # Get all API keys
+        api_keys = APIKey.objects.all().order_by('-is_primary', '-created_at')
         
         if request.method == 'POST':
-            # Update settings
-            settings.whatsapp_webhook_url = request.POST.get('whatsapp_webhook_url', settings.whatsapp_webhook_url)
-            settings.gemini_api_key = request.POST.get('gemini_api_key', settings.gemini_api_key)
-            settings.is_active = request.POST.get('is_active') == 'on'
-            settings.max_conversation_history = int(request.POST.get('max_conversation_history', 20))
-            settings.confirmation_required = request.POST.get('confirmation_required') == 'on'
-            settings.custom_system_message = request.POST.get('custom_system_message', '')
-            settings.save()
+            action = request.POST.get('action')
             
-            messages.success(request, 'تم حفظ الإعدادات بنجاح')
+            if action == 'update_agent':
+                # Update agent settings
+                primary_agent.whatsapp_webhook_url = request.POST.get('whatsapp_webhook_url', '')
+                primary_agent.is_active = request.POST.get('is_active') == 'on'
+                primary_agent.max_conversation_history = int(request.POST.get('max_conversation_history', 20))
+                primary_agent.confirmation_required = request.POST.get('confirmation_required') == 'on'
+                primary_agent.custom_system_message = request.POST.get('custom_system_message', '')
+                primary_agent.save()
+                messages.success(request, 'تم تحديث إعدادات الوكيل بنجاح')
+            
+            elif action == 'add_api_key':
+                # Add new API key
+                name = request.POST.get('name')
+                key = request.POST.get('key')
+                provider = request.POST.get('provider', 'gemini')
+                is_primary = request.POST.get('is_primary') == 'on'
+                max_requests = int(request.POST.get('max_requests_per_day', 1000))
+                
+                if not name or not key:
+                    messages.error(request, 'اسم المفتاح والمفتاح مطلوبان')
+                else:
+                    try:
+                        APIKey.objects.create(
+                            name=name,
+                            key=key,
+                            provider=provider,
+                            is_primary=is_primary,
+                            max_requests_per_day=max_requests
+                        )
+                        messages.success(request, f'تم إضافة مفتاح API "{name}" بنجاح')
+                    except Exception as e:
+                        messages.error(request, f'خطأ في إضافة المفتاح: {str(e)}')
+            
+            elif action == 'toggle_api_key':
+                # Toggle API key status
+                key_id = request.POST.get('key_id')
+                try:
+                    api_key = APIKey.objects.get(id=key_id)
+                    api_key.is_active = not api_key.is_active
+                    api_key.save()
+                    status = 'نشط' if api_key.is_active else 'غير نشط'
+                    messages.success(request, f'تم تغيير حالة المفتاح إلى {status}')
+                except APIKey.DoesNotExist:
+                    messages.error(request, 'المفتاح غير موجود')
+            
+            elif action == 'set_primary_api_key':
+                # Set primary API key
+                key_id = request.POST.get('key_id')
+                try:
+                    api_key = APIKey.objects.get(id=key_id)
+                    api_key.is_primary = True
+                    api_key.save()
+                    messages.success(request, f'تم تعيين "{api_key.name}" كمفتاح رئيسي')
+                except APIKey.DoesNotExist:
+                    messages.error(request, 'المفتاح غير موجود')
+            
+            elif action == 'delete_api_key':
+                # Delete API key
+                key_id = request.POST.get('key_id')
+                try:
+                    api_key = APIKey.objects.get(id=key_id)
+                    api_key.delete()
+                    messages.success(request, f'تم حذف المفتاح "{api_key.name}"')
+                except APIKey.DoesNotExist:
+                    messages.error(request, 'المفتاح غير موجود')
+            
             return redirect('agent_settings')
         
-        return render(request, 'whatsapp_agent/settings.html', {
-            'settings': settings,
-            'company': first_company
+        # Get all companies for context
+        companies = Company.objects.all().order_by('name')
+        
+        return render(request, 'whatsapp_agent/unified_settings.html', {
+            'agent': primary_agent,
+            'api_keys': api_keys,
+            'companies': companies
         })
         
     except Exception as e:
         messages.error(request, f'خطأ في تحميل الإعدادات: {str(e)}')
-        return render(request, 'whatsapp_agent/settings.html', {
-            'settings': None,
-            'company': None
+        return render(request, 'whatsapp_agent/unified_settings.html', {
+            'agent': None,
+            'api_keys': [],
+            'companies': []
         })
 
 @login_required
@@ -137,3 +199,4 @@ def test_agent(request):
     return render(request, 'whatsapp_agent/test.html', {
         'companies': companies
     })
+

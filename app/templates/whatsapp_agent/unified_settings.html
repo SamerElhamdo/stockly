@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إعدادات الوكيل الذكي{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">إعدادات الوكيل الذكي</h1>
+                    <p class="text-gray-600 dark:text-gray-300">إدارة شامل للوكيل الذكي ومفاتيح API</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 space-x-reverse">
+                <a href="{% url 'test_agent' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                    <i class="fas fa-flask ml-2"></i>
+                    اختبار الوكيل
+                </a>
+                <a href="{% url 'conversation_history' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-comments ml-2"></i>
+                    تاريخ المحادثات
+                </a>
+            </div>
+        </div>
+        
+        <!-- Agent Status -->
+        <div class="mt-4 p-4 {% if agent and agent.is_active %}bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800{% else %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% endif %} rounded-lg">
+            <div class="flex items-center">
+                <i class="fas fa-{% if agent and agent.is_active %}check-circle text-green-600 dark:text-green-400{% else %}times-circle text-red-600 dark:text-red-400{% endif %} ml-2"></i>
+                <div>
+                    <h3 class="text-sm font-medium {% if agent and agent.is_active %}text-green-800 dark:text-green-200{% else %}text-red-800 dark:text-red-200{% endif %}">
+                        حالة الوكيل الذكي
+                    </h3>
+                    <p class="text-sm {% if agent and agent.is_active %}text-green-700 dark:text-green-300{% else %}text-red-700 dark:text-red-300{% endif %} mt-1">
+                        {% if agent and agent.is_active %}
+                            الوكيل يعمل بشكل طبيعي - {{ api_keys|length }} مفتاح API متاح
+                        {% else %}
+                            الوكيل متوقف عن العمل - يرجى التحقق من الإعدادات
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Agent Settings -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <div class="bg-blue-600 text-white px-6 py-4 rounded-t-lg">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-cog ml-2"></i>
+                    إعدادات الوكيل الأساسية
+                </h3>
+            </div>
+            <div class="p-6">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_agent">
+                    
+                    <div class="mb-4">
+                        <label for="whatsapp_webhook_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-link text-blue-500 ml-1"></i>
+                            رابط الويب هوك للواتساب
+                        </label>
+                        <input type="url" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                               id="whatsapp_webhook_url" 
+                               name="whatsapp_webhook_url" 
+                               value="{{ agent.whatsapp_webhook_url|default:'' }}"
+                               placeholder="https://example.com/webhook/whatsapp">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">رابط استقبال وإرسال رسائل الواتساب</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="max_conversation_history" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-history text-yellow-500 ml-1"></i>
+                            عدد الرسائل المحفوظة
+                        </label>
+                        <input type="number" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                               id="max_conversation_history" 
+                               name="max_conversation_history" 
+                               value="{{ agent.max_conversation_history|default:20 }}"
+                               min="5" max="100">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">عدد الرسائل المحفوظة في ذاكرة الوكيل (5-100)</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="custom_system_message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-comment-dots text-green-500 ml-1"></i>
+                            رسالة النظام المخصصة
+                        </label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                                  id="custom_system_message" 
+                                  name="custom_system_message" 
+                                  rows="4"
+                                  placeholder="أدخل رسالة النظام المخصصة للوكيل...">{{ agent.custom_system_message|default:'' }}</textarea>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">رسالة مخصصة لتوجيه سلوك الوكيل</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700" 
+                                   id="is_active" 
+                                   name="is_active"
+                                   {% if agent.is_active %}checked{% endif %}>
+                            <label for="is_active" class="mr-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-power-off text-green-500 ml-1"></i>
+                                تفعيل الوكيل
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700" 
+                                   id="confirmation_required" 
+                                   name="confirmation_required"
+                                   {% if agent.confirmation_required %}checked{% endif %}>
+                            <label for="confirmation_required" class="mr-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-shield-alt text-yellow-500 ml-1"></i>
+                                يتطلب تأكيد للعمليات الحساسة
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium">
+                        <i class="fas fa-save ml-2"></i>
+                        حفظ الإعدادات
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- API Keys Management -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <div class="bg-green-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-key ml-2"></i>
+                    إدارة مفاتيح API
+                </h3>
+                <button type="button" class="bg-white text-green-600 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium" onclick="openModal()">
+                    <i class="fas fa-plus ml-1"></i>
+                    إضافة مفتاح
+                </button>
+            </div>
+            <div class="p-6">
+                {% if api_keys %}
+                    <div class="space-y-4">
+                        {% for key in api_keys %}
+                        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition bg-white dark:bg-gray-700">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3 space-x-reverse">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900 dark:text-white">{{ key.name }}</h4>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ key.provider|upper }}</p>
+                                    </div>
+                                    {% if key.is_primary %}
+                                        <span class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs px-2 py-1 rounded-full">رئيسي</span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex items-center space-x-2 space-x-reverse">
+                                    {% if key.is_active %}
+                                        <span class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded-full">نشط</span>
+                                    {% else %}
+                                        <span class="bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs px-2 py-1 rounded-full">غير نشط</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                    <span>الاستخدام</span>
+                                    <span>{{ key.usage_count }} / {{ key.max_requests_per_day }}</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: {% widthratio key.usage_count key.max_requests_per_day 100 %}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {% if key.last_used %}
+                                        آخر استخدام: {{ key.last_used|date:"Y-m-d H:i" }}
+                                    {% else %}
+                                        لم يُستخدم بعد
+                                    {% endif %}
+                                </div>
+                                <div class="flex space-x-2 space-x-reverse">
+                                    {% if not key.is_primary %}
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="set_primary_api_key">
+                                        <input type="hidden" name="key_id" value="{{ key.id }}">
+                                        <button type="submit" class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-200 p-1 rounded hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition" title="تعيين كرئيسي">
+                                            <i class="fas fa-star text-xs"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    <form method="post" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_api_key">
+                                        <input type="hidden" name="key_id" value="{{ key.id }}">
+                                        <button type="submit" class="{% if key.is_active %}bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500{% else %}bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50{% endif %} p-1 rounded transition" 
+                                                title="{% if key.is_active %}إلغاء تفعيل{% else %}تفعيل{% endif %}">
+                                            <i class="fas fa-{% if key.is_active %}pause{% else %}play{% endif %} text-xs"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="post" class="inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا المفتاح؟')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_api_key">
+                                        <input type="hidden" name="key_id" value="{{ key.id }}">
+                                        <button type="submit" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-200 p-1 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition" title="حذف">
+                                            <i class="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-key text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                        <h4 class="text-gray-500 dark:text-gray-400 mb-2">لا توجد مفاتيح API</h4>
+                        <p class="text-sm text-gray-400 dark:text-gray-500">ابدأ بإضافة مفتاح API جديد للوكيل الذكي</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="bg-indigo-600 text-white px-6 py-4 rounded-t-lg">
+            <h3 class="text-lg font-semibold flex items-center">
+                <i class="fas fa-info-circle ml-2"></i>
+                معلومات النظام
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-building text-blue-600 dark:text-blue-400 text-xl"></i>
+                    </div>
+                    <h4 class="text-2xl font-bold text-gray-800 dark:text-white">{{ companies|length }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">الشركات المسجلة</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-key text-green-600 dark:text-green-400 text-xl"></i>
+                    </div>
+                    <h4 class="text-2xl font-bold text-gray-800 dark:text-white">{{ api_keys|length }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">مفاتيح API</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-comments text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                    </div>
+                    <h4 class="text-2xl font-bold text-gray-800 dark:text-white">{{ agent.max_conversation_history|default:20 }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">المحادثات المحفوظة</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 {% if agent.is_active %}bg-green-100 dark:bg-green-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %} rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-robot {% if agent.is_active %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %} text-xl"></i>
+                    </div>
+                    <h4 class="text-2xl font-bold {% if agent.is_active %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                        {% if agent.is_active %}نشط{% else %}غير نشط{% endif %}
+                    </h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">حالة الوكيل</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add API Key Modal -->
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden" id="addKeyModal">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3">
+            <!-- Modal Header -->
+            <div class="bg-green-600 text-white px-6 py-4 rounded-t-lg flex justify-between items-center">
+                <h3 class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-plus ml-2"></i>
+                    إضافة مفتاح API جديد
+                </h3>
+                <button type="button" class="text-white hover:text-gray-200 text-xl" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <form method="post" class="mt-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_api_key">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="modal_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-tag text-green-500 ml-1"></i>
+                                اسم المفتاح
+                            </label>
+                            <input type="text" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                                   id="modal_name" 
+                                   name="name" 
+                                   required
+                                   placeholder="مثال: Gemini API Key 1">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">اسم وصفي للمفتاح</p>
+                        </div>
+                        <div>
+                            <label for="modal_provider" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-server text-green-500 ml-1"></i>
+                                المزود
+                            </label>
+                            <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                                    id="modal_provider" 
+                                    name="provider">
+                                <option value="gemini" selected>Gemini (Google)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">مزود خدمة الذكاء الاصطناعي</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="modal_key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-key text-green-500 ml-1"></i>
+                            مفتاح API
+                        </label>
+                        <input type="text" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                               id="modal_key" 
+                               name="key" 
+                               required
+                               placeholder="أدخل مفتاح API الخاص بـ Gemini">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">مفتاح API الخاص بخدمة Gemini من Google</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="modal_max_requests" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-chart-line text-green-500 ml-1"></i>
+                                الحد الأقصى للطلبات يومياً
+                            </label>
+                            <input type="number" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                                   id="modal_max_requests" 
+                                   name="max_requests_per_day" 
+                                   value="1000" 
+                                   min="1"
+                                   placeholder="1000">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">عدد الطلبات المسموح بها يومياً</p>
+                        </div>
+                        <div class="flex items-center justify-center">
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700" 
+                                       id="modal_is_primary" 
+                                       name="is_primary">
+                                <label for="modal_is_primary" class="mr-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <i class="fas fa-star text-yellow-500 ml-1"></i>
+                                    تعيين كمفتاح رئيسي
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-lg flex justify-end space-x-3 space-x-reverse">
+                    <button type="button" 
+                            class="px-4 py-2 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition" 
+                            onclick="closeModal()">
+                        إلغاء
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-plus ml-1"></i>
+                        إضافة المفتاح
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.badge-sm {
+    font-size: 0.7em;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    background-color: #28a745;
+    transition: width 0.3s ease;
+}
+
+.btn-group-vertical .btn {
+    margin-bottom: 2px;
+}
+
+@media (max-width: 768px) {
+    .btn-group-vertical {
+        display: flex;
+        flex-direction: row;
+    }
+    
+    .btn-group-vertical .btn {
+        margin-right: 2px;
+        margin-bottom: 0;
+    }
+}
+</style>
+
+<script>
+// Modal functions
+function openModal() {
+    document.getElementById('addKeyModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('addKeyModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    // Clear form
+    document.getElementById('modal_name').value = '';
+    document.getElementById('modal_key').value = '';
+    document.getElementById('modal_max_requests').value = '1000';
+    document.getElementById('modal_is_primary').checked = false;
+}
+
+// Close modal when clicking outside
+document.getElementById('addKeyModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+$(document).ready(function() {
+    // Auto-refresh every 30 seconds to update usage counts
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+    
+    // Form validation
+    $('form').on('submit', function(e) {
+        const action = $(this).find('input[name="action"]').val();
+        
+        if (action === 'add_api_key') {
+            const name = $('#modal_name').val().trim();
+            const key = $('#modal_key').val().trim();
+            
+            if (!name || !key) {
+                e.preventDefault();
+                alert('اسم المفتاح ومفتاح API مطلوبان');
+                return false;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
