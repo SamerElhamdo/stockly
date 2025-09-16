@@ -93,7 +93,7 @@ settings_local.py
 *.db
 *.sqlite
 *.sqlite3
-
+**/migrations/*
 # ===========================================
 # IDE and Editor files
 # ===========================================
