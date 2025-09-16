@@ -90,6 +90,7 @@ class Customer(models.Model):
     phone = models.CharField(max_length=32, blank=True, null=True, verbose_name='رقم الهاتف')
     email = models.EmailField(blank=True, null=True, verbose_name='البريد الإلكتروني')
     address = models.TextField(blank=True, null=True, verbose_name='العنوان')
+    archived = models.BooleanField(default=False, verbose_name='مؤرشف')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     
     class Meta:

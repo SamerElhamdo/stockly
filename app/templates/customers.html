@@ -300,10 +300,10 @@ async function loadCustomers() {
                             <i class="fas fa-edit text-xs mb-0.5 action-icon"></i>
                             <span class="text-xs action-text">تعديل</span>
                         </button>
-                        <button onclick="deleteCustomer(${customer.id})" 
+                        <button onclick="archiveCustomer(${customer.id})" 
                                 class="flex flex-col items-center p-1.5 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors duration-200 group action-button">
-                            <i class="fas fa-trash text-xs mb-0.5 action-icon"></i>
-                            <span class="text-xs action-text">حذف</span>
+                            <i class="fas fa-archive text-xs mb-0.5 action-icon"></i>
+                            <span class="text-xs action-text">أرشفة</span>
                         </button>
                     </div>
                 </td>
@@ -362,44 +362,299 @@ function searchCustomers() {
     console.log('Searching for:', query);
 }
 
-function viewCustomer(customerId) {
-    // Implement view customer functionality
-    console.log('Viewing customer:', customerId);
+async function viewCustomer(customerId) {
+    try {
+        // Get customer data
+        const res = await fetch(`/api/customers/${customerId}/invoices/`, {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (!res.ok) {
+            showNotification('❌ فشل في تحميل بيانات العميل', 'error');
+            return;
+        }
+        
+        const invoices = await res.json();
+        
+        // Get customer basic info from the current customers list
+        const customers = await fetch('/api/customers/', {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        }).then(r => r.json());
+        
+        const customer = customers.find(c => c.id === customerId);
+        if (!customer) {
+            showNotification('❌ العميل غير موجود', 'error');
+            return;
+        }
+        
+        // Create view modal
+        const modalHtml = `
+        <div id="viewCustomerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 backdrop-blur-sm">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">تفاصيل العميل</h3>
+                            <button onclick="closeViewCustomerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">الاسم</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.name}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">الهاتف</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.phone || '-'}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">البريد الإلكتروني</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.email || '-'}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">العنوان</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.address || '-'}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">المستحقات</label>
+                                    <p class="mt-1 text-sm font-semibold ${customer.balance > 0 ? 'text-red-600' : 'text-green-600'}">
+                                        ${customer.balance ? customer.balance.toFixed(2) : '0.00'} $
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">عدد الفواتير</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.invoices_count || 0}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">عدد المرتجعات</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.returns_count || 0}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">آخر عملية شراء</label>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">${customer.last_purchase || '-'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${invoices.length > 0 ? `
+                        <div class="mt-6">
+                            <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">الفواتير الأخيرة</h4>
+                            <div class="space-y-2 max-h-40 overflow-y-auto">
+                                ${invoices.slice(0, 5).map(invoice => `
+                                    <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white">فاتورة #${invoice.id}</span>
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">${invoice.total_amount.toFixed(2)} $</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">${invoice.created_at}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button onclick="closeViewCustomerModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                إغلاق
+                            </button>
+                            <button onclick="editCustomer(${customerId})" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md">
+                                <i class="fas fa-edit ml-2"></i>تعديل
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } catch (error) {
+        console.error('Error viewing customer:', error);
+        showNotification('❌ حدث خطأ في عرض بيانات العميل', 'error');
+    }
 }
 
-function editCustomer(customerId) {
-    // Implement edit customer functionality
-    console.log('Editing customer:', customerId);
+function closeViewCustomerModal() {
+    const modal = document.getElementById('viewCustomerModal');
+    if (modal) modal.remove();
 }
 
-async function deleteCustomer(customerId) {
+async function editCustomer(customerId) {
+    try {
+        // Close view modal if open
+        closeViewCustomerModal();
+        
+        // Get customer data
+        const res = await fetch('/api/customers/', {
+            headers: {
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (!res.ok) {
+            showNotification('❌ فشل في تحميل بيانات العميل', 'error');
+            return;
+        }
+        
+        const customers = await res.json();
+        const customer = customers.find(c => c.id === customerId);
+        
+        if (!customer) {
+            showNotification('❌ العميل غير موجود', 'error');
+            return;
+        }
+        
+        // Create edit modal
+        const modalHtml = `
+        <div id="editCustomerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 backdrop-blur-sm">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">تعديل العميل</h3>
+                        <button onclick="closeEditCustomerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="editCustomerForm">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الاسم *</label>
+                                <input id="editCustomerName" type="text" required value="${customer.name}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الهاتف</label>
+                                <input id="editCustomerPhone" type="tel" value="${customer.phone || ''}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">البريد الإلكتروني</label>
+                                <input id="editCustomerEmail" type="email" value="${customer.email || ''}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">العنوان</label>
+                                <textarea id="editCustomerAddress" rows="3"
+                                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">${customer.address || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" onclick="closeEditCustomerModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                إلغاء
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md">
+                                <i class="fas fa-save ml-2"></i>حفظ التعديلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>`;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Add form event listener
+        document.getElementById('editCustomerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateCustomer(customerId);
+        });
+        
+    } catch (error) {
+        console.error('Error editing customer:', error);
+        showNotification('❌ حدث خطأ في تحميل بيانات العميل', 'error');
+    }
+}
+
+function closeEditCustomerModal() {
+    const modal = document.getElementById('editCustomerModal');
+    if (modal) modal.remove();
+}
+
+async function updateCustomer(customerId) {
+    const formData = {
+        name: document.getElementById('editCustomerName').value.trim(),
+        phone: document.getElementById('editCustomerPhone').value.trim(),
+        email: document.getElementById('editCustomerEmail').value.trim(),
+        address: document.getElementById('editCustomerAddress').value.trim()
+    };
+    
+    if (!formData.name) {
+        showNotification('❌ اسم العميل مطلوب', 'error');
+        return;
+    }
+    
+    try {
+        PageLoader.show('جاري حفظ التعديلات...');
+        
+        const res = await fetch(`/api/customers/${customerId}/update/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        PageLoader.hide();
+        
+        if (res.ok) {
+            closeEditCustomerModal();
+            loadCustomers();
+            showNotification('✅ تم تحديث بيانات العميل بنجاح', 'success');
+        } else {
+            const error = await res.json().catch(() => ({}));
+            showNotification('❌ فشل تحديث العميل' + (error.error ? `: ${error.error}` : ''), 'error');
+        }
+    } catch (error) {
+        PageLoader.hide();
+        console.error('Error updating customer:', error);
+        showNotification('❌ حدث خطأ أثناء التحديث', 'error');
+    }
+}
+
+async function archiveCustomer(customerId) {
     const confirmed = await showConfirmation(
-        'حذف العميل',
-        'هل أنت متأكد من حذف هذا العميل؟ لا يمكن التراجع عن هذا الإجراء.',
-        'حذف',
+        'أرشفة العميل',
+        'هل تريد أرشفة هذا العميل؟ سيتم إخفاؤه من القائمة ولن يؤثر ذلك على الفواتير السابقة.',
+        'أرشفة',
         'إلغاء',
-        'danger'
+        'warning'
     );
     
-    if (confirmed) {
-        try {
-            const res = await fetch(`/api/customers/${customerId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': 'Token ' + localStorage.getItem('authToken')
-                }
-            });
-            
-            if (res.ok) {
-                loadCustomers();
-                showNotification('🗑️ تم حذف العميل بنجاح', 'success');
-            } else {
-                showNotification('❌ حدث خطأ في حذف العميل', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting customer:', error);
-            showNotification('❌ حدث خطأ في حذف العميل', 'error');
+    if (!confirmed) return;
+    
+    try {
+        PageLoader.show('جاري أرشفة العميل...');
+        const res = await fetch(`/api/customers/${customerId}/archive/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            },
+            body: JSON.stringify({ archived: true })
+        });
+        
+        PageLoader.hide();
+        if (res.ok) {
+            showNotification('📦 تم أرشفة العميل بنجاح', 'success');
+            loadCustomers();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showNotification('❌ فشل أرشفة العميل' + (err.error ? `: ${err.error}` : ''), 'error');
         }
+    } catch (error) {
+        PageLoader.hide();
+        console.error('Error archiving customer:', error);
+        showNotification('❌ حدث خطأ أثناء الأرشفة', 'error');
     }
 }
 

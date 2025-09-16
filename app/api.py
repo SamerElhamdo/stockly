@@ -191,7 +191,7 @@ def api_confirm(request, session_id:int):
 @api_view(["GET"])
 @api_company_staff_required
 def api_customers(request):
-    customers = company_queryset(Customer, request.user).annotate(
+    customers = company_queryset(Customer, request.user).filter(archived=False).annotate(
         invoices_count=Count('invoices', distinct=True),
         returns_count=Count('invoices__returns', filter=Q(invoices__returns__status='approved'), distinct=True)
     ).order_by('-created_at')
@@ -389,16 +389,18 @@ def api_archive_product(request, product_id):
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
-@api_view(["DELETE"])
+@api_view(["POST"])
 @api_company_owner_required
-def api_delete_customer(request, customer_id):
-    # Check if user is company owner (only owners can delete customers)
+def api_archive_customer(request, customer_id):
+    # Only company owners can archive customers
     if request.user.account_type != 'company_owner':
-        return Response({"error": "Only company owners can delete customers"}, status=403)
+        return Response({"error": "Only company owners can archive customers"}, status=403)
     try:
         customer = company_queryset(Customer, request.user).get(id=customer_id)
-        customer.delete()
-        return Response({"success": True})
+        archive = request.data.get('archived', True)
+        customer.archived = bool(archive)
+        customer.save(update_fields=["archived"])
+        return Response({"success": True, "archived": customer.archived})
     except Customer.DoesNotExist:
         return Response({"error": "customer_not_found"}, status=404)
     except Exception as e:
