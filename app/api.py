@@ -445,7 +445,6 @@ def api_update_category(request, category_id):
         data = request.data
         
         category.name = data.get('name', category.name)
-        category.description = data.get('description', category.description)
         category.save()
         
         return Response({
@@ -453,7 +452,6 @@ def api_update_category(request, category_id):
             "category": {
                 "id": category.id,
                 "name": category.name,
-                "description": category.description,
                 "products_count": category.products.count()
             }
         })
