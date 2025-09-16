@@ -42,90 +42,7 @@ def api_superuser_required(view_func):
 
 # ==================== COMPANY MANAGEMENT ====================
 
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_companies(request):
-    """Get all companies in the system (superuser only)"""
-    companies = Company.objects.all().order_by('name')
-    return Response([{
-        "id": c.id,
-        "name": c.name,
-        "code": c.code,
-        "email": c.email,
-        "phone": c.phone,
-        "address": c.address,
-        "is_active": c.is_active,
-        "phone_verified": c.phone_verified,
-        "created_at": c.created_at.isoformat(),
-        "users_count": c.users.count(),
-        "products_count": c.products.count(),
-        "invoices_count": c.invoices.count()
-    } for c in companies])
-
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_details(request, company_id):
-    """Get detailed information about a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        
-        # Get company statistics
-        total_products = company.products.count()
-        total_customers = company.customers.count()
-        total_invoices = company.invoices.count()
-        total_sales = company.invoices.filter(status='confirmed').aggregate(
-            total=Sum('total_amount'))['total'] or 0
-        
-        return Response({
-            "id": company.id,
-            "name": company.name,
-            "code": company.code,
-            "email": company.email,
-            "phone": company.phone,
-            "address": company.address,
-            "is_active": company.is_active,
-            "phone_verified": company.phone_verified,
-            "created_at": company.created_at.isoformat(),
-            "statistics": {
-                "total_products": total_products,
-                "total_customers": total_customers,
-                "total_invoices": total_invoices,
-                "total_sales": float(total_sales)
-            }
-        })
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
-
 # ==================== PRODUCTS MANAGEMENT ====================
-
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_products(request, company_id):
-    """Get all products for a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        products = company.products.select_related('category').filter(archived=False)
-        
-        return Response([{
-            "id": p.id,
-            "sku": p.sku,
-            "name": p.name,
-            "price": float(p.price),
-            "stock_qty": p.stock_qty,
-            "category_id": p.category.id if p.category else None,
-            "category_name": p.category.name if p.category else None,
-            "unit": p.unit,
-            "unit_display": p.get_unit_display() if p.unit else None,
-            "measurement": p.measurement,
-            "description": p.description,
-            "cost_price": float(p.cost_price) if p.cost_price else None,
-            "wholesale_price": float(p.wholesale_price) if p.wholesale_price else None,
-            "retail_price": float(p.retail_price) if p.retail_price else None,
-            "archived": p.archived,
-            "company": company.name
-        } for p in products])
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
 
 @api_view(["GET"])
 @api_superuser_required
@@ -163,53 +80,7 @@ def admin_search_products(request):
 
 # ==================== CUSTOMERS MANAGEMENT ====================
 
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_customers(request, company_id):
-    """Get all customers for a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        customers = company.customers.filter(archived=False).annotate(
-            invoices_count=Count('invoices', distinct=True),
-            returns_count=Count('invoices__returns', filter=Q(invoices__returns__status='approved'), distinct=True)
-        ).order_by('-created_at')
-        
-        return Response([{
-            "id": c.id,
-            "name": c.name,
-            "phone": c.phone,
-            "email": c.email,
-            "address": c.address,
-            "invoices_count": c.invoices_count,
-            "returns_count": c.returns_count,
-            "archived": c.archived,
-            "company": company.name
-        } for c in customers])
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
-
 # ==================== INVOICES MANAGEMENT ====================
-
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_invoices(request, company_id):
-    """Get all invoices for a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        invoices = company.invoices.select_related('customer').order_by('-created_at')
-        
-        return Response([{
-            "id": inv.id,
-            "customer_name": inv.customer.name,
-            "customer_id": inv.customer.id,
-            "total_amount": float(inv.total_amount),
-            "status": inv.status,
-            "status_display": inv.get_status_display(),
-            "created_at": inv.created_at.isoformat(),
-            "company": company.name
-        } for inv in invoices])
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
 
 @api_view(["GET"])
 @api_superuser_required
@@ -249,82 +120,9 @@ def admin_get_invoice_details(request, invoice_id):
 
 # ==================== RETURNS MANAGEMENT ====================
 
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_returns(request, company_id):
-    """Get all returns for a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        returns = Return.objects.filter(company=company).select_related('original_invoice', 'customer', 'created_by')
-        
-        return Response([{
-            "id": r.id,
-            "return_number": r.return_number,
-            "original_invoice": f"فاتورة #{r.original_invoice.id}",
-            "customer_name": r.customer.name,
-            "status": r.status,
-            "status_display": r.get_status_display(),
-            "total_amount": float(r.total_amount),
-            "return_date": r.return_date.isoformat(),
-            "created_by": r.created_by.username,
-            "company": company.name
-        } for r in returns])
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
-
 # ==================== PAYMENTS MANAGEMENT ====================
 
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_payments(request, company_id):
-    """Get all payments for a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        payments = Payment.objects.filter(company=company).select_related('customer', 'invoice', 'created_by')
-        
-        return Response([{
-            "id": p.id,
-            "customer_id": p.customer.id,
-            "customer_name": p.customer.name,
-            "invoice_id": p.invoice.id if p.invoice else None,
-            "amount": float(p.amount),
-            "payment_method": p.payment_method,
-            "payment_method_display": p.get_payment_method_display(),
-            "payment_date": p.payment_date.isoformat(),
-            "notes": p.notes,
-            "created_by": p.created_by.username,
-            "company": company.name
-        } for p in payments])
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
-
 # ==================== USERS MANAGEMENT ====================
-
-@api_view(["GET"])
-@api_superuser_required
-def admin_get_company_users(request, company_id):
-    """Get all users for a specific company (superuser only)"""
-    try:
-        company = Company.objects.get(id=company_id)
-        users = company.users.all().order_by('-created_at')
-        
-        return Response([{
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "phone": user.phone,
-            "account_type": user.account_type,
-            "role": user.role,
-            "is_active": user.is_active,
-            "is_staff": user.is_staff,
-            "created_at": user.created_at.isoformat(),
-            "last_login": user.last_login.isoformat() if user.last_login else None,
-            "company": company.name
-        } for user in users])
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
 
 # ==================== SYSTEM STATISTICS ====================
 
@@ -364,12 +162,257 @@ def admin_system_stats(request):
 
 # ==================== CATEGORIES MANAGEMENT ====================
 
+# ==================== PHONE-BASED ENDPOINTS ====================
+
 @api_view(["GET"])
 @api_superuser_required
-def admin_get_company_categories(request, company_id):
-    """Get all categories for a specific company (superuser only)"""
+def admin_get_company_by_phone(request):
+    """Get company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
     try:
-        company = Company.objects.get(id=company_id)
+        company = Company.objects.get(phone=clean_phone)
+        return Response({
+            "id": company.id,
+            "name": company.name,
+            "code": company.code,
+            "email": company.email,
+            "phone": company.phone,
+            "address": company.address,
+            "is_active": company.is_active,
+            "phone_verified": company.phone_verified,
+            "created_at": company.created_at.isoformat(),
+            "users_count": company.users.count(),
+            "products_count": company.products.count(),
+            "invoices_count": company.invoices.count()
+        })
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+    except Company.MultipleObjectsReturned:
+        return Response({"error": "Multiple companies found with this phone number"}, status=400)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_products_by_phone(request):
+    """Get all products for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        products = company.products.select_related('category').filter(archived=False)
+        
+        return Response([{
+            "id": p.id,
+            "sku": p.sku,
+            "name": p.name,
+            "price": float(p.price),
+            "stock_qty": p.stock_qty,
+            "category_id": p.category.id if p.category else None,
+            "category_name": p.category.name if p.category else None,
+            "unit": p.unit,
+            "unit_display": p.get_unit_display() if p.unit else None,
+            "measurement": p.measurement,
+            "description": p.description,
+            "cost_price": float(p.cost_price) if p.cost_price else None,
+            "wholesale_price": float(p.wholesale_price) if p.wholesale_price else None,
+            "retail_price": float(p.retail_price) if p.retail_price else None,
+            "archived": p.archived,
+            "company": company.name,
+            "company_phone": company.phone
+        } for p in products])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_customers_by_phone(request):
+    """Get all customers for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        customers = company.customers.filter(archived=False).annotate(
+            invoices_count=Count('invoices', distinct=True),
+            returns_count=Count('invoices__returns', filter=Q(invoices__returns__status='approved'), distinct=True)
+        ).order_by('-created_at')
+        
+        return Response([{
+            "id": c.id,
+            "name": c.name,
+            "phone": c.phone,
+            "email": c.email,
+            "address": c.address,
+            "invoices_count": c.invoices_count,
+            "returns_count": c.returns_count,
+            "archived": c.archived,
+            "company": company.name,
+            "company_phone": company.phone
+        } for c in customers])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_invoices_by_phone(request):
+    """Get all invoices for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        invoices = company.invoices.select_related('customer').order_by('-created_at')
+        
+        return Response([{
+            "id": inv.id,
+            "customer_name": inv.customer.name,
+            "customer_id": inv.customer.id,
+            "total_amount": float(inv.total_amount),
+            "status": inv.status,
+            "status_display": inv.get_status_display(),
+            "created_at": inv.created_at.isoformat(),
+            "company": company.name,
+            "company_phone": company.phone
+        } for inv in invoices])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_returns_by_phone(request):
+    """Get all returns for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        returns = Return.objects.filter(company=company).select_related('original_invoice', 'customer', 'created_by')
+        
+        return Response([{
+            "id": r.id,
+            "return_number": r.return_number,
+            "original_invoice": f"فاتورة #{r.original_invoice.id}",
+            "customer_name": r.customer.name,
+            "status": r.status,
+            "status_display": r.get_status_display(),
+            "total_amount": float(r.total_amount),
+            "return_date": r.return_date.isoformat(),
+            "created_by": r.created_by.username,
+            "company": company.name,
+            "company_phone": company.phone
+        } for r in returns])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_payments_by_phone(request):
+    """Get all payments for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        payments = Payment.objects.filter(company=company).select_related('customer', 'invoice', 'created_by')
+        
+        return Response([{
+            "id": p.id,
+            "customer_id": p.customer.id,
+            "customer_name": p.customer.name,
+            "invoice_id": p.invoice.id if p.invoice else None,
+            "amount": float(p.amount),
+            "payment_method": p.payment_method,
+            "payment_method_display": p.get_payment_method_display(),
+            "payment_date": p.payment_date.isoformat(),
+            "notes": p.notes,
+            "created_by": p.created_by.username,
+            "company": company.name,
+            "company_phone": company.phone
+        } for p in payments])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_users_by_phone(request):
+    """Get all users for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        users = company.users.all().order_by('-created_at')
+        
+        return Response([{
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "account_type": user.account_type,
+            "role": user.role,
+            "is_active": user.is_active,
+            "is_staff": user.is_staff,
+            "created_at": user.created_at.isoformat(),
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+            "company": company.name,
+            "company_phone": company.phone
+        } for user in users])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_categories_by_phone(request):
+    """Get all categories for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
         categories = company.categories.all()
         
         return Response([{
@@ -378,7 +421,8 @@ def admin_get_company_categories(request, company_id):
             "parent_id": c.parent.id if c.parent else None,
             "parent_name": c.parent.name if c.parent else None,
             "products_count": c.products.count(),
-            "company": company.name
+            "company": company.name,
+            "company_phone": company.phone
         } for c in categories])
     except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
+        return Response({"error": "Company not found with this phone number"}, status=404)
