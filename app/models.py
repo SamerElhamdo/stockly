@@ -131,7 +131,7 @@ class Product(models.Model):
     name = models.CharField(max_length=256, verbose_name='اسم المنتج')
     sku = models.CharField(max_length=64, blank=True, null=True, verbose_name='رمز المنتج')
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products', verbose_name='الفئة')
-    price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='السعر')
+    price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='السعر')
     stock_qty = models.IntegerField(default=0, verbose_name='الكمية في المخزون')
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, verbose_name='رمز QR')
     
@@ -141,9 +141,9 @@ class Product(models.Model):
     description = models.TextField(blank=True, null=True, help_text='وصف المنتج (اختياري)', verbose_name='الوصف')
     
     # Advanced pricing fields
-    cost_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text='سعر التكلفة', verbose_name='سعر التكلفة')
-    wholesale_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text='سعر البيع بالجملة', verbose_name='سعر البيع بالجملة')
-    retail_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, help_text='سعر البيع بالمفرق', verbose_name='سعر البيع بالمفرق')
+    cost_price = models.DecimalField(max_digits=12, decimal_places=4, blank=True, null=True, help_text='سعر التكلفة', verbose_name='سعر التكلفة')
+    wholesale_price = models.DecimalField(max_digits=12, decimal_places=4, blank=True, null=True, help_text='سعر البيع بالجملة', verbose_name='سعر البيع بالجملة')
+    retail_price = models.DecimalField(max_digits=12, decimal_places=4, blank=True, null=True, help_text='سعر البيع بالمفرق', verbose_name='سعر البيع بالمفرق')
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     
@@ -194,7 +194,7 @@ class Invoice(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='invoices', verbose_name='العميل')
     status = models.CharField(max_length=16, choices=STATUS, default=DRAFT, verbose_name='الحالة')
     created_at = models.DateTimeField(default=timezone.now, verbose_name='تاريخ الإنشاء')
-    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='المبلغ الإجمالي')
+    total_amount = models.DecimalField(max_digits=14, decimal_places=4, default=0, verbose_name='المبلغ الإجمالي')
     
     class Meta:
         verbose_name = 'فاتورة'
@@ -207,8 +207,8 @@ class Invoice(models.Model):
 class InvoiceItem(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items', verbose_name='الفاتورة')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name='المنتج')
-    qty = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='الكمية')
-    price_at_add = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='السعر عند الإضافة')
+    qty = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='الكمية')
+    price_at_add = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='السعر عند الإضافة')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     
     class Meta:
@@ -245,7 +245,7 @@ class Return(models.Model):
     
     # معلومات إضافية
     notes = models.TextField(blank=True, verbose_name='ملاحظات')
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='المبلغ الإجمالي')
+    total_amount = models.DecimalField(max_digits=10, decimal_places=4, default=0, verbose_name='المبلغ الإجمالي')
     
     # معلومات المستخدم
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='أنشأ بواسطة')
@@ -283,9 +283,9 @@ class ReturnItem(models.Model):
     return_obj = models.ForeignKey(Return, on_delete=models.CASCADE, related_name='items', verbose_name='المرتجع')
     original_item = models.ForeignKey(InvoiceItem, on_delete=models.CASCADE, verbose_name='العنصر الأصلي')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='المنتج')
-    qty_returned = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='الكمية المرتجعة')
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='سعر الوحدة')
-    line_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='المجموع')
+    qty_returned = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='الكمية المرتجعة')
+    unit_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='سعر الوحدة')
+    line_total = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='المجموع')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     
     class Meta:
@@ -405,7 +405,7 @@ class Payment(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='العميل')
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments', verbose_name='الفاتورة (اختياري)')
-    amount = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='المبلغ')
+    amount = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='المبلغ')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, default='cash', verbose_name='طريقة الدفع')
     payment_date = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الدفع')
     notes = models.TextField(blank=True, verbose_name='ملاحظات')
@@ -424,10 +424,10 @@ class CustomerBalance(models.Model):
     """رصيد العميل"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, unique=True, verbose_name='العميل')
-    total_invoiced = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='إجمالي الفواتير')
-    total_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='إجمالي المدفوع')
-    total_returns = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='إجمالي المرتجعات')
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='الرصيد')
+    total_invoiced = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي الفواتير')
+    total_paid = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي المدفوع')
+    total_returns = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي المرتجعات')
+    balance = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='الرصيد')
     last_updated = models.DateTimeField(auto_now=True, verbose_name='آخر تحديث')
     
     class Meta:

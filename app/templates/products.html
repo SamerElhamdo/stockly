@@ -161,9 +161,9 @@
                 <!-- التسعير الأساسي -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">سعر البيع الأساسي *</label>
-                    <input id="productPrice" type="number" step="0.01" required
+                    <input id="productPrice" type="number" step="0.0001" required
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                           placeholder="0.00">
+                           placeholder="0.0000">
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">السعر الأساسي للمنتج</p>
                 </div>
 
@@ -183,18 +183,18 @@
                             <!-- سعر التكلفة -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر التكلفة</label>
-                                <input id="productCostPrice" type="number" step="0.01"
+                                <input id="productCostPrice" type="number" step="0.0001"
                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                                       placeholder="0.00">
+                                       placeholder="0.0000">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">تكلفة شراء المنتج</p>
                             </div>
                             
                             <!-- سعر البيع بالجملة -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر البيع بالجملة</label>
-                                <input id="productWholesalePrice" type="number" step="0.01"
+                                <input id="productWholesalePrice" type="number" step="0.0001"
                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                                       placeholder="0.00">
+                                       placeholder="0.0000">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سعر البيع بكميات كبيرة</p>
                             </div>
                         </div>
@@ -206,18 +206,18 @@
                                     سعر البيع بالمفرق
                                     <span class="text-xs text-blue-600 dark:text-blue-400">(مرتبط بالسعر الأساسي)</span>
                                 </label>
-                                <input id="productRetailPrice" type="number" step="0.01" readonly
+                                <input id="productRetailPrice" type="number" step="0.0001" readonly
                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
-                                       placeholder="0.00">
+                                       placeholder="0.0000">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم تحديثه تلقائياً مع السعر الأساسي</p>
                             </div>
                             
                             <!-- هامش الربح -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">هامش الربح (%)</label>
-                                <input id="productProfitMargin" type="number" step="0.01" readonly
+                                <input id="productProfitMargin" type="number" step="0.0001" readonly
                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
-                                       placeholder="0.00">
+                                       placeholder="0.0000">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">محسوب تلقائياً</p>
                             </div>
                         </div>
@@ -638,9 +638,9 @@ function showEditProductModal(product) {
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-dollar-sign ml-2"></i>سعر البيع الأساسي *
                                 </label>
-                                <input type="number" id="editProductPrice" value="${product.price}" step="0.01" required
+                                <input type="number" id="editProductPrice" value="${product.price}" step="0.0001" required
                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                                       placeholder="0.00">
+                                       placeholder="0.0000">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">السعر الأساسي للمنتج</p>
                             </div>
 
@@ -660,18 +660,18 @@ function showEditProductModal(product) {
                                         <!-- سعر التكلفة -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر التكلفة</label>
-                                            <input id="editProductCostPrice" type="number" step="0.01" value="${product.cost_price || ''}"
+                                            <input id="editProductCostPrice" type="number" step="0.0001" value="${product.cost_price || ''}"
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                                                   placeholder="0.00">
+                                                   placeholder="0.0000">
                                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">تكلفة شراء المنتج</p>
                                         </div>
                                         
                                         <!-- سعر البيع بالجملة -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">سعر البيع بالجملة</label>
-                                            <input id="editProductWholesalePrice" type="number" step="0.01" value="${product.wholesale_price || ''}"
+                                            <input id="editProductWholesalePrice" type="number" step="0.0001" value="${product.wholesale_price || ''}"
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                                                   placeholder="0.00">
+                                                   placeholder="0.0000">
                                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سعر البيع بكميات كبيرة</p>
                                         </div>
                                     </div>
@@ -683,18 +683,18 @@ function showEditProductModal(product) {
                                                 سعر البيع بالمفرق
                                                 <span class="text-xs text-blue-600 dark:text-blue-400">(مرتبط بالسعر الأساسي)</span>
                                             </label>
-                                            <input id="editProductRetailPrice" type="number" step="0.01" value="${product.retail_price || product.price || ''}"
+                                            <input id="editProductRetailPrice" type="number" step="0.0001" value="${product.retail_price || product.price || ''}"
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
-                                                   placeholder="0.00" readonly>
+                                                   placeholder="0.0000" readonly>
                                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم تحديثه تلقائياً مع السعر الأساسي</p>
                                         </div>
                                         
                                         <!-- هامش الربح -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">هامش الربح (%)</label>
-                                            <input id="editProductProfitMargin" type="number" step="0.01" readonly
+                                            <input id="editProductProfitMargin" type="number" step="0.0001" readonly
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
-                                                   placeholder="0.00">
+                                                   placeholder="0.0000">
                                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">محسوب تلقائياً</p>
                                         </div>
                                     </div>
