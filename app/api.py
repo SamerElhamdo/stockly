@@ -9,6 +9,8 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from datetime import datetime, timedelta
 from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, User, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, company_queryset, can_manage_company
+from django.http import HttpResponse
+import csv, io, zipfile, json
 from .decorators import api_company_owner_required, api_company_staff_required
 import requests
 import random
@@ -1204,6 +1206,281 @@ def api_get_token(request):
             "token": token.key,
             "created": created
         })
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+# Backup/Restore APIs
+@api_view(["GET"])
+@api_company_owner_required
+def api_backup_export(request):
+    """Export key tables for the user's company as CSV files inside a ZIP."""
+    try:
+        if not can_manage_company(request.user):
+            return Response({"error": "Unauthorized"}, status=403)
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+            company = request.user.company
+
+            def write_csv(filename, fieldnames, rows_iter):
+                csv_buf = io.StringIO()
+                writer = csv.DictWriter(csv_buf, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in rows_iter:
+                    writer.writerow(row)
+                zf.writestr(filename, csv_buf.getvalue())
+
+            # Customers
+            customers = company_queryset(Customer, request.user)
+            write_csv(
+                'customers.csv',
+                ['external_id', 'name', 'phone', 'email', 'address', 'archived', 'created_at'],
+                ({
+                    'external_id': str(getattr(c, 'external_id', '')),
+                    'name': c.name,
+                    'phone': c.phone or '',
+                    'email': c.email or '',
+                    'address': c.address or '',
+                    'archived': int(bool(getattr(c, 'archived', False))),
+                    'created_at': c.created_at.isoformat(),
+                } for c in customers)
+            )
+
+            # Categories
+            categories = company_queryset(Category, request.user)
+            write_csv(
+                'categories.csv',
+                ['external_id', 'name', 'parent_external_id', 'created_at'],
+                ({
+                    'external_id': str(getattr(cat, 'external_id', '')),
+                    'name': cat.name,
+                    'parent_external_id': str(getattr(cat.parent, 'external_id', '')) if cat.parent else '',
+                    'created_at': cat.created_at.isoformat(),
+                } for cat in categories)
+            )
+
+            # Products
+            products = company_queryset(Product, request.user)
+            write_csv(
+                'products.csv',
+                ['external_id','sku','name','category_external_id','category_name','price','stock_qty','unit','measurement','description','cost_price','wholesale_price','retail_price','archived','created_at'],
+                ({
+                    'external_id': str(getattr(p, 'external_id', '')),
+                    'sku': p.sku or '',
+                    'name': p.name,
+                    'category_external_id': str(getattr(p.category, 'external_id', '')) if p.category else '',
+                    'category_name': p.category.name if p.category else '',
+                    'price': p.price,
+                    'stock_qty': p.stock_qty,
+                    'unit': p.unit or '',
+                    'measurement': p.measurement or '',
+                    'description': p.description or '',
+                    'cost_price': p.cost_price or '',
+                    'wholesale_price': p.wholesale_price or '',
+                    'retail_price': p.retail_price or '',
+                    'archived': int(bool(getattr(p, 'archived', False))),
+                    'created_at': p.created_at.isoformat(),
+                } for p in products)
+            )
+
+            # Invoices
+            invoices = company_queryset(Invoice, request.user)
+            write_csv(
+                'invoices.csv',
+                ['external_id','customer_external_id','status','created_at','total_amount'],
+                ({
+                    'external_id': str(getattr(inv, 'external_id', '')),
+                    'customer_external_id': str(getattr(inv.customer, 'external_id', '')),
+                    'status': inv.status,
+                    'created_at': inv.created_at.isoformat(),
+                    'total_amount': inv.total_amount,
+                } for inv in invoices)
+            )
+
+            # Invoice Items
+            items = InvoiceItem.objects.filter(invoice__company=request.user.company)
+            write_csv(
+                'invoice_items.csv',
+                ['external_id','invoice_external_id','product_external_id','qty','price_at_add','created_at'],
+                ({
+                    'external_id': str(getattr(it, 'external_id', '')),
+                    'invoice_external_id': str(getattr(it.invoice, 'external_id', '')),
+                    'product_external_id': str(getattr(it.product, 'external_id', '')),
+                    'qty': it.qty,
+                    'price_at_add': it.price_at_add,
+                    'created_at': it.created_at.isoformat(),
+                } for it in items)
+            )
+
+            # Payments
+            pays = company_queryset(Payment, request.user)
+            write_csv(
+                'payments.csv',
+                ['external_id','customer_external_id','invoice_external_id','amount','payment_method','payment_date','notes','created_by_id'],
+                ({
+                    'external_id': str(getattr(p, 'external_id', '')),
+                    'customer_external_id': str(getattr(p.customer, 'external_id', '')),
+                    'invoice_external_id': str(getattr(p.invoice, 'external_id', '')) if p.invoice else '',
+                    'amount': p.amount,
+                    'payment_method': p.payment_method,
+                    'payment_date': p.payment_date.isoformat(),
+                    'notes': p.notes or '',
+                    'created_by_id': p.created_by.id,
+                } for p in pays)
+            )
+
+        buffer.seek(0)
+        resp = HttpResponse(buffer.read(), content_type='application/zip')
+        resp['Content-Disposition'] = 'attachment; filename="stockly_backup.zip"'
+        return resp
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_backup_restore(request):
+    """Restore from uploaded zip (preferred) or single CSV. Requires confirm=true."""
+    try:
+        if not can_manage_company(request.user):
+            return Response({"error": "Unauthorized"}, status=403)
+
+        confirm = str(request.data.get('confirm', '')).lower() in ['1','true','yes']
+        if not confirm:
+            return Response({"error": "confirm_required"}, status=400)
+
+        if 'file' not in request.FILES:
+            return Response({"error": "file_required"}, status=400)
+
+        upl = request.FILES['file']
+        name = upl.name.lower()
+        company = request.user.company
+
+        # We'll cache parsed CSVs when restoring from zip to allow FK remapping
+        parsed_csv = {}
+
+        def process_csv(file_like, filename, preloaded_rows=None, category_map=None):
+            decoded = io.StringIO(file_like.read().decode('utf-8')) if hasattr(file_like, 'read') else io.StringIO(file_like)
+            reader = csv.DictReader(decoded) if preloaded_rows is None else preloaded_rows
+            count = 0
+            if filename == 'customers.csv':
+                for row in (reader or []):
+                    Customer.objects.update_or_create(
+                        company=company, external_id=row.get('external_id') or uuid.uuid4(),
+                        defaults={
+                            'name': row.get('name','').strip(),
+                            'phone': row.get('phone','') or None,
+                            'email': row.get('email','') or None,
+                            'address': row.get('address','') or '',
+                            'archived': str(row.get('archived','0')) in ['1','true','True']
+                        }
+                    )
+                    count += 1
+            elif filename == 'categories.csv':
+                # Build or update categories by external_id and map external_id->id
+                id_map = {}
+                for row in (reader or []):
+                    cat, _ = Category.objects.update_or_create(
+                        company=company, external_id=row.get('external_id') or uuid.uuid4(),
+                        defaults={'name': row.get('name','').strip()}
+                    )
+                    # Parent linkage by parent_external_id if provided
+                    parent_ext = (row.get('parent_external_id') or '').strip()
+                    if parent_ext:
+                        try:
+                            parent = Category.objects.get(company=company, external_id=parent_ext)
+                            if cat.parent_id != parent.id:
+                                cat.parent = parent
+                                cat.save(update_fields=['parent'])
+                        except Category.DoesNotExist:
+                            pass
+                    id_map[str(cat.external_id)] = cat.id
+                    count += 1
+                return {"filename": filename, "imported": count, "category_map": id_map}
+            elif filename == 'products.csv':
+                cats_by_name = {c.name: c for c in Category.objects.filter(company=company)}
+                for row in (reader or []):
+                    # Resolve category: prefer by category_external_id, then by category_name, else fallback
+                    category = None
+                    cat_ext = (row.get('category_external_id') or '').strip()
+                    if cat_ext and category_map:
+                        try:
+                            mapped_id = category_map.get(cat_ext) or Category.objects.get(company=company, external_id=cat_ext).id
+                            category = Category.objects.get(id=mapped_id, company=company)
+                        except Exception:
+                            category = None
+                    if not category:
+                        cat_name = row.get('category_name') or ''
+                        cat_name = cat_name.strip()
+                        if cat_name:
+                            category = cats_by_name.get(cat_name)
+                            if not category:
+                                category = Category.objects.create(company=company, name=cat_name)
+                                cats_by_name[cat_name] = category
+                    if not category:
+                        # As a last resort, put into a fallback category
+                        fallback, _ = Category.objects.get_or_create(company=company, name='Uncategorized')
+                        category = fallback
+
+                    # Prefer external_id for identity, fallback to SKU within company
+                    identity_kwargs = {}
+                    prod_ext = (row.get('external_id') or '').strip()
+                    if prod_ext:
+                        identity_kwargs['external_id'] = prod_ext
+                    else:
+                        identity_kwargs['sku'] = (row.get('sku') or '').strip() or None
+
+                    Product.objects.update_or_create(
+                        company=company, **identity_kwargs,
+                        defaults={
+                            'name': row.get('name','').strip(),
+                            'category': category,
+                            'price': row.get('price') or 0,
+                            'stock_qty': int(row.get('stock_qty') or 0),
+                            'unit': row.get('unit') or None,
+                            'measurement': row.get('measurement') or None,
+                            'description': row.get('description') or None,
+                            'cost_price': row.get('cost_price') or None,
+                            'wholesale_price': row.get('wholesale_price') or None,
+                            'retail_price': row.get('retail_price') or None,
+                            'archived': str(row.get('archived','0')) in ['1','true','True']
+                        }
+                    )
+                    count += 1
+            return {"filename": filename, "imported": count}
+
+        results = []
+        if name.endswith('.zip'):
+            data = upl.read()
+            with zipfile.ZipFile(io.BytesIO(data), 'r') as zf:
+                # Preload CSV readers to allow multiple passes
+                files = {}
+                for member in zf.infolist():
+                    fname = member.filename.split('/')[-1].lower()
+                    if fname in ['customers.csv','categories.csv','products.csv']:
+                        with zf.open(member) as f:
+                            text = f.read().decode('utf-8')
+                            files[fname] = list(csv.DictReader(io.StringIO(text)))
+                # Process in dependency order: customers -> categories -> products
+                if 'customers.csv' in files:
+                    results.append(process_csv(None, 'customers.csv', preloaded_rows=files['customers.csv']))
+                category_map = None
+                if 'categories.csv' in files:
+                    cat_result = process_csv(None, 'categories.csv', preloaded_rows=files['categories.csv'])
+                    results.append({k:v for k,v in cat_result.items() if k != 'category_map'})
+                    category_map = cat_result.get('category_map', {})
+                if 'products.csv' in files:
+                    results.append(process_csv(None, 'products.csv', preloaded_rows=files['products.csv'], category_map=category_map))
+        elif name.endswith('.csv'):
+            # Guess type from filename
+            fname = name.split('/')[-1]
+            # For single CSV import, no FK mapping available; products will try by category_name or fallback
+            results.append(process_csv(upl, fname))
+        else:
+            return Response({"error": "unsupported_file_type"}, status=400)
+
+        return Response({"success": True, "results": results})
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 

@@ -85,6 +85,7 @@ class User(AbstractUser):
         return self.account_type == 'company_staff'
 
 class Customer(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='customers', verbose_name='الشركة')
     name = models.CharField(max_length=256, verbose_name='اسم العميل')
     phone = models.CharField(max_length=32, blank=True, null=True, verbose_name='رقم الهاتف')
@@ -102,6 +103,7 @@ class Customer(models.Model):
         return f"{self.name} ({self.company.name})"
 
 class Category(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='categories', verbose_name='الشركة')
     name = models.CharField(max_length=128, verbose_name='اسم الفئة')
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, verbose_name='الفئة الأب')
@@ -116,6 +118,7 @@ class Category(models.Model):
         return f"{self.name} ({self.company.name})"
 
 class Product(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     UNIT_CHOICES = [
         ('piece', 'عدد'),
         ('meter', 'متر'),
@@ -189,6 +192,7 @@ class Product(models.Model):
         return f"{self.sku} - {self.name}{unit_display}{measurement_display}"
 
 class Invoice(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     DRAFT, CONFIRMED, CANCELLED = 'draft','confirmed','cancelled'
     STATUS = [(DRAFT,'Draft'),(CONFIRMED,'Confirmed'),(CANCELLED,'Cancelled')]
     
@@ -207,6 +211,7 @@ class Invoice(models.Model):
         return f"فاتورة #{self.id} - {self.customer.name} ({self.company.name})"
 
 class InvoiceItem(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items', verbose_name='الفاتورة')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, verbose_name='المنتج')
     qty = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='الكمية')
@@ -227,6 +232,7 @@ class InvoiceItem(models.Model):
 
 
 class Return(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     """نموذج المرتجع"""
     RETURN_STATUS_CHOICES = [
         ('pending', 'في الانتظار'),
@@ -281,6 +287,7 @@ class Return(models.Model):
 
 
 class ReturnItem(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     """عناصر المرتجع"""
     return_obj = models.ForeignKey(Return, on_delete=models.CASCADE, related_name='items', verbose_name='المرتجع')
     original_item = models.ForeignKey(InvoiceItem, on_delete=models.CASCADE, verbose_name='العنصر الأصلي')
@@ -395,6 +402,7 @@ class OTPVerification(models.Model):
 
 
 class Payment(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     """نموذج الدفع"""
     PAYMENT_METHODS = [
         ('cash', 'نقداً'),
@@ -423,6 +431,7 @@ class Payment(models.Model):
 
 
 class CustomerBalance(models.Model):
+    external_id = models.UUIDField(null=True, blank=True, unique=True, editable=False, db_index=True, verbose_name='المعرف الخارجي')
     """رصيد العميل"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='الشركة')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, unique=True, verbose_name='العميل')

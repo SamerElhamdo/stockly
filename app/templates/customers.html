@@ -632,22 +632,22 @@ async function archiveCustomer(customerId) {
     
     if (!confirmed) return;
     
-    try {
+        try {
         PageLoader.show('جاري أرشفة العميل...');
         const res = await fetch(`/api/customers/${customerId}/archive/`, {
             method: 'POST',
-            headers: {
+                headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Token ' + localStorage.getItem('authToken')
+                    'Authorization': 'Token ' + localStorage.getItem('authToken')
             },
             body: JSON.stringify({ archived: true })
-        });
-        
+            });
+            
         PageLoader.hide();
-        if (res.ok) {
+            if (res.ok) {
             showNotification('📦 تم أرشفة العميل بنجاح', 'success');
-            loadCustomers();
-        } else {
+                loadCustomers();
+            } else {
             const err = await res.json().catch(() => ({}));
             showNotification('❌ فشل أرشفة العميل' + (err.error ? `: ${err.error}` : ''), 'error');
         }

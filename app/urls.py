@@ -8,7 +8,7 @@ from .api import (api_products, api_invoice_session, api_get_invoice, api_add_it
                   api_send_otp, api_verify_otp, api_whatsapp_webhook, api_delete_user,
                   api_get_token, api_reset_password, api_returns, api_create_return, 
                   api_return_details, api_approve_return, api_reject_return, api_invoice_returnable_items,
-                  api_payments, api_create_payment, api_customer_balances, api_customer_payments, api_customer_invoices, api_invoice_payments, api_search_invoices, api_archive_product, api_archive_customer)
+                  api_payments, api_create_payment, api_customer_balances, api_customer_payments, api_customer_invoices, api_invoice_payments, api_search_invoices, api_archive_product, api_archive_customer, api_backup_export, api_backup_restore)
 from . import views
 
 urlpatterns = [
@@ -58,6 +58,9 @@ urlpatterns = [
   
   # Auth Token
   path('api/get-token/', api_get_token),
+  # Backup/Restore
+  path('api/backup/export/', api_backup_export),
+  path('api/backup/restore/', api_backup_restore),
   
   # Return Management
   path('api/returns/', api_returns),
