@@ -139,6 +139,7 @@ class Product(models.Model):
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='piece', blank=True, null=True, help_text='وحدة القياس', verbose_name='الوحدة')
     measurement = models.CharField(max_length=100, blank=True, null=True, help_text='القياس (اختياري)', verbose_name='القياس')
     description = models.TextField(blank=True, null=True, help_text='وصف المنتج (اختياري)', verbose_name='الوصف')
+    archived = models.BooleanField(default=False, verbose_name='مؤرشف')
     
     # Advanced pricing fields
     cost_price = models.DecimalField(max_digits=12, decimal_places=4, blank=True, null=True, help_text='سعر التكلفة', verbose_name='سعر التكلفة')

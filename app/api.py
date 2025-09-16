@@ -21,7 +21,7 @@ def api_products(request):
         return Response({"error": "Unauthorized"}, status=403)
     
     q = request.GET.get("query","")
-    qs = company_queryset(Product, request.user).select_related('category')
+    qs = company_queryset(Product, request.user).select_related('category').filter(archived=False)
     if q: qs = qs.filter(name__icontains=q) | qs.filter(sku__icontains=q)
     return Response([{
         "id":p.id,"sku":p.sku,"name":p.name,"price":float(p.price),"stock_qty":p.stock_qty,
@@ -372,16 +372,18 @@ def api_delete_category(request, category_id):
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
-@api_view(["DELETE"])
+@api_view(["POST"])
 @api_company_owner_required
-def api_delete_product(request, product_id):
-    # Check if user is company owner (only owners can delete products)
+def api_archive_product(request, product_id):
+    # Only company owners can archive products
     if request.user.account_type != 'company_owner':
-        return Response({"error": "Only company owners can delete products"}, status=403)
+        return Response({"error": "Only company owners can archive products"}, status=403)
     try:
         product = company_queryset(Product, request.user).get(id=product_id)
-        product.delete()
-        return Response({"success": True})
+        archive = request.data.get('archived', True)
+        product.archived = bool(archive)
+        product.save(update_fields=["archived"])
+        return Response({"success": True, "archived": product.archived})
     except Product.DoesNotExist:
         return Response({"error": "product_not_found"}, status=404)
     except Exception as e:

@@ -337,8 +337,8 @@ async function loadProducts() {
                     <button onclick="editProduct(${product.id})" class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 ml-3">
                         <i class="fas fa-edit ml-1"></i>تعديل
                     </button>
-                    <button onclick="deleteProduct(${product.id})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                        <i class="fas fa-trash ml-1"></i>حذف
+                    <button onclick="archiveProduct(${product.id})" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                        <i class="fas fa-archive ml-1"></i>أرشفة
                     </button>
                 </td>
             </tr>
@@ -914,33 +914,43 @@ function generateQR(productId) {
 }
 
 async function deleteProduct(productId) {
+    // Deprecated: replaced by archiveProduct
+}
+
+async function archiveProduct(productId) {
     const confirmed = await showConfirmation(
-        'حذف المنتج',
-        'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.',
-        'حذف',
+        'أرشفة المنتج',
+        'هل تريد أرشفة هذا المنتج؟ سيتم إخفاؤه من القائمة ولن يؤثر ذلك على الفواتير السابقة.',
+        'أرشفة',
         'إلغاء',
-        'danger'
+        'warning'
     );
     
-    if (confirmed) {
-        try {
-            const res = await fetch(`/api/products/${productId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': 'Token ' + localStorage.getItem('authToken')
-                }
-            });
-            
-            if (res.ok) {
-                loadProducts();
-                showNotification('🗑️ تم حذف المنتج بنجاح', 'success');
-            } else {
-                showNotification('❌ حدث خطأ في حذف المنتج', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting product:', error);
-            showNotification('❌ حدث خطأ في حذف المنتج', 'error');
+    if (!confirmed) return;
+    
+    try {
+        PageLoader.show('جاري أرشفة المنتج...');
+        const res = await fetch(`/api/products/${productId}/archive/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Token ' + localStorage.getItem('authToken')
+            },
+            body: JSON.stringify({ archived: true })
+        });
+        
+        PageLoader.hide();
+        if (res.ok) {
+            showNotification('📦 تم أرشفة المنتج بنجاح', 'success');
+            loadProducts();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showNotification('❌ فشل أرشفة المنتج' + (err.error ? `: ${err.error}` : ''), 'error');
         }
+    } catch (error) {
+        PageLoader.hide();
+        console.error('Error archiving product:', error);
+        showNotification('❌ حدث خطأ أثناء الأرشفة', 'error');
     }
 }
 
