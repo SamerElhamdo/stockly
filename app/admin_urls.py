@@ -10,26 +10,26 @@ from .admin_api import (
 
 urlpatterns = [
     # System Management
-    path('admin/system/stats/', admin_system_stats, name='admin_system_stats'),
+    path('system/stats/', admin_system_stats, name='admin_system_stats'),
     
     # Products Search
-    path('admin/products/search/', admin_search_products, name='admin_search_products'),
+    path('products/search/', admin_search_products, name='admin_search_products'),
     
     # Invoice Details
-    path('admin/invoices/<int:invoice_id>/', admin_get_invoice_details, name='admin_get_invoice_details'),
+    path('invoices/<int:invoice_id>/', admin_get_invoice_details, name='admin_get_invoice_details'),
     
     # Phone-based endpoints
-    path('admin/company/by-phone/', admin_get_company_by_phone, name='admin_get_company_by_phone'),
-    path('admin/company/products/by-phone/', admin_get_company_products_by_phone, name='admin_get_company_products_by_phone'),
-    path('admin/company/customers/by-phone/', admin_get_company_customers_by_phone, name='admin_get_company_customers_by_phone'),
-    path('admin/company/invoices/by-phone/', admin_get_company_invoices_by_phone, name='admin_get_company_invoices_by_phone'),
-    path('admin/company/returns/by-phone/', admin_get_company_returns_by_phone, name='admin_get_company_returns_by_phone'),
-    path('admin/company/payments/by-phone/', admin_get_company_payments_by_phone, name='admin_get_company_payments_by_phone'),
-    path('admin/company/users/by-phone/', admin_get_company_users_by_phone, name='admin_get_company_users_by_phone'),
-    path('admin/company/categories/by-phone/', admin_get_company_categories_by_phone, name='admin_get_company_categories_by_phone'),
+    path('company/by-phone/', admin_get_company_by_phone, name='admin_get_company_by_phone'),
+    path('company/products/by-phone/', admin_get_company_products_by_phone, name='admin_get_company_products_by_phone'),
+    path('company/customers/by-phone/', admin_get_company_customers_by_phone, name='admin_get_company_customers_by_phone'),
+    path('company/invoices/by-phone/', admin_get_company_invoices_by_phone, name='admin_get_company_invoices_by_phone'),
+    path('company/returns/by-phone/', admin_get_company_returns_by_phone, name='admin_get_company_returns_by_phone'),
+    path('company/payments/by-phone/', admin_get_company_payments_by_phone, name='admin_get_company_payments_by_phone'),
+    path('company/users/by-phone/', admin_get_company_users_by_phone, name='admin_get_company_users_by_phone'),
+    path('company/categories/by-phone/', admin_get_company_categories_by_phone, name='admin_get_company_categories_by_phone'),
 
     # Create by phone (POST)
-    path('admin/company/category/add/', admin_add_category_by_phone, name='admin_add_category_by_phone'),
-    path('admin/company/product/add/', admin_add_product_by_phone, name='admin_add_product_by_phone'),
-    path('admin/company/customer/add/', admin_add_customer_by_phone, name='admin_add_customer_by_phone'),
+    path('company/category/add/', admin_add_category_by_phone, name='admin_add_category_by_phone'),
+    path('company/product/add/', admin_add_product_by_phone, name='admin_add_product_by_phone'),
+    path('company/customer/add/', admin_add_customer_by_phone, name='admin_add_customer_by_phone'),
 ]
