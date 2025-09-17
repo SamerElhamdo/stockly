@@ -4,7 +4,8 @@ from .admin_api import (
     admin_get_company_by_phone, admin_get_company_products_by_phone,
     admin_get_company_customers_by_phone, admin_get_company_invoices_by_phone,
     admin_get_company_returns_by_phone, admin_get_company_payments_by_phone,
-    admin_get_company_users_by_phone, admin_get_company_categories_by_phone
+    admin_get_company_users_by_phone, admin_get_company_categories_by_phone,
+    admin_add_category_by_phone, admin_add_product_by_phone, admin_add_customer_by_phone
 )
 
 urlpatterns = [
@@ -26,4 +27,9 @@ urlpatterns = [
     path('admin/company/payments/by-phone/', admin_get_company_payments_by_phone, name='admin_get_company_payments_by_phone'),
     path('admin/company/users/by-phone/', admin_get_company_users_by_phone, name='admin_get_company_users_by_phone'),
     path('admin/company/categories/by-phone/', admin_get_company_categories_by_phone, name='admin_get_company_categories_by_phone'),
+
+    # Create by phone (POST)
+    path('admin/company/category/add/', admin_add_category_by_phone, name='admin_add_category_by_phone'),
+    path('admin/company/product/add/', admin_add_product_by_phone, name='admin_add_product_by_phone'),
+    path('admin/company/customer/add/', admin_add_customer_by_phone, name='admin_add_customer_by_phone'),
 ]

@@ -164,6 +164,134 @@ def admin_system_stats(request):
 
 # ==================== PHONE-BASED ENDPOINTS ====================
 
+@api_view(["POST"])
+@api_superuser_required
+def admin_add_category_by_phone(request):
+    """Add category for a company by phone number (superuser only)"""
+    phone = str(request.data.get('phone', '')).strip()
+    name = str(request.data.get('name', '')).strip()
+    parent_id = request.data.get('parent_id')
+    parent_name = str(request.data.get('parent_name', '')).strip()
+
+    if not phone or not name:
+        return Response({"error": "phone_and_name_required"}, status=400)
+
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "company_not_found"}, status=404)
+
+    parent = None
+    if parent_id:
+        try:
+            parent = Category.objects.get(id=parent_id, company=company)
+        except Category.DoesNotExist:
+            return Response({"error": "parent_category_not_found"}, status=404)
+    elif parent_name:
+        parent = Category.objects.filter(company=company, name__iexact=parent_name).first()
+
+    category = Category.objects.create(company=company, name=name, parent=parent)
+    return Response({
+        "id": category.id,
+        "name": category.name,
+        "parent_id": category.parent.id if category.parent else None,
+        "company": company.name
+    }, status=201)
+
+@api_view(["POST"])
+@api_superuser_required
+def admin_add_product_by_phone(request):
+    """Add product for a company by phone number (superuser only)"""
+    data = request.data
+    phone = str(data.get('phone', '')).strip()
+    name = str(data.get('name', '')).strip()
+    price = data.get('price')
+    stock_qty = data.get('stock_qty')
+    category_id = data.get('category_id')
+    category_name = str(data.get('category_name', '')).strip()
+
+    if not phone or not name or price is None or stock_qty is None:
+        return Response({"error": "missing_required_fields"}, status=400)
+
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "company_not_found"}, status=404)
+
+    category = None
+    if category_id:
+        try:
+            category = Category.objects.get(id=category_id, company=company)
+        except Category.DoesNotExist:
+            return Response({"error": "category_not_found"}, status=404)
+    elif category_name:
+        category = Category.objects.filter(company=company, name__iexact=category_name).first()
+
+    product_data = {
+        "company": company,
+        "name": name,
+        "price": float(price),
+        "stock_qty": int(stock_qty)
+    }
+    if category:
+        product_data["category"] = category
+
+    # Optional fields
+    for opt in ["sku", "unit", "measurement", "description"]:
+        if data.get(opt) not in [None, ""]:
+            product_data[opt] = data.get(opt)
+    for opt_num in ["cost_price", "wholesale_price", "retail_price"]:
+        if data.get(opt_num) not in [None, ""]:
+            product_data[opt_num] = float(data.get(opt_num))
+
+    product = Product.objects.create(**product_data)
+    return Response({
+        "id": product.id,
+        "name": product.name,
+        "sku": product.sku,
+        "price": float(product.price),
+        "stock_qty": product.stock_qty,
+        "category": {"id": product.category.id, "name": product.category.name} if product.category else None,
+        "company": company.name
+    }, status=201)
+
+@api_view(["POST"])
+@api_superuser_required
+def admin_add_customer_by_phone(request):
+    """Add customer for a company by phone number (superuser only)"""
+    data = request.data
+    phone = str(data.get('phone', '')).strip()
+    name = str(data.get('name', '')).strip()
+
+    if not phone or not name:
+        return Response({"error": "phone_and_name_required"}, status=400)
+
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "company_not_found"}, status=404)
+
+    customer = Customer.objects.create(
+        company=company,
+        name=name,
+        phone=str(data.get('customer_phone', '')).strip(),
+        email=str(data.get('email', '')).strip(),
+        address=str(data.get('address', '')).strip()
+    )
+    return Response({
+        "id": customer.id,
+        "name": customer.name,
+        "phone": customer.phone,
+        "email": customer.email,
+        "company": company.name
+    }, status=201)
+
 @api_view(["GET"])
 @api_superuser_required
 def admin_get_company_by_phone(request):
