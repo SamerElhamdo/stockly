@@ -212,33 +212,50 @@ def admin_add_product_by_phone(request):
     category_id = data.get('category_id')
     category_name = str(data.get('category_name', '')).strip()
 
+    # Print received data for debugging
+    print(f"[DEBUG] Received data: {data}")
+    print(f"[DEBUG] Phone: {phone}, Name: {name}, Price: {price}, Stock: {stock_qty}")
+    print(f"[DEBUG] Category ID: {category_id}, Category Name: {category_name}")
+
     if not phone or not name or price is None or stock_qty is None:
         return Response({"error": "missing_required_fields"}, status=400)
 
     clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    print(f"[DEBUG] Clean phone: {clean_phone}")
 
     try:
         company = Company.objects.get(phone=clean_phone)
+        print(f"[DEBUG] Found company: {company.name} (ID: {company.id})")
     except Company.DoesNotExist:
+        print(f"[DEBUG] Company not found with phone: {clean_phone}")
         return Response({"error": "company_not_found"}, status=404)
 
     category = None
     if category_id:
         try:
             category = Category.objects.get(id=category_id, company=company)
+            print(f"[DEBUG] Found category by ID: {category.name} (ID: {category.id})")
         except Category.DoesNotExist:
+            print(f"[DEBUG] Category not found with ID: {category_id}")
             return Response({"error": "category_not_found"}, status=404)
     elif category_name:
         category = Category.objects.filter(company=company, name__iexact=category_name).first()
+        if category:
+            print(f"[DEBUG] Found category by name: {category.name} (ID: {category.id})")
+        else:
+            print(f"[DEBUG] Category not found with name: {category_name}")
+            return Response({"error": "category_not_found"}, status=404)
+    else:
+        print(f"[DEBUG] No category specified - category is required")
+        return Response({"error": "category_required"}, status=400)
 
     product_data = {
         "company": company,
         "name": name,
         "price": float(price),
-        "stock_qty": int(stock_qty)
+        "stock_qty": int(stock_qty),
+        "category": category  # Category is required
     }
-    if category:
-        product_data["category"] = category
 
     # Optional fields
     for opt in ["sku", "unit", "measurement", "description"]:
@@ -248,16 +265,24 @@ def admin_add_product_by_phone(request):
         if data.get(opt_num) not in [None, ""]:
             product_data[opt_num] = float(data.get(opt_num))
 
-    product = Product.objects.create(**product_data)
-    return Response({
-        "id": product.id,
-        "name": product.name,
-        "sku": product.sku,
-        "price": float(product.price),
-        "stock_qty": product.stock_qty,
-        "category": {"id": product.category.id, "name": product.category.name} if product.category else None,
-        "company": company.name
-    }, status=201)
+    print(f"[DEBUG] Product data to create: {product_data}")
+
+    try:
+        product = Product.objects.create(**product_data)
+        print(f"[DEBUG] Product created successfully with ID: {product.id}")
+        return Response({
+            "id": product.id,
+            "name": product.name,
+            "sku": product.sku,
+            "price": float(product.price),
+            "stock_qty": product.stock_qty,
+            "category": {"id": product.category.id, "name": product.category.name} if product.category else None,
+            "company": company.name
+        }, status=201)
+    except Exception as e:
+        print(f"[ERROR] Failed to create product: {str(e)}")
+        print(f"[ERROR] Product data was: {product_data}")
+        return Response({"error": f"Failed to create product: {str(e)}"}, status=500)
 
 @api_view(["POST"])
 @api_superuser_required
