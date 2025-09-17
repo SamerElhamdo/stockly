@@ -44,6 +44,56 @@ def api_superuser_required(view_func):
 
 # ==================== PRODUCTS MANAGEMENT ====================
 
+@api_view(["POST"])
+@api_superuser_required
+def admin_create_product(request):
+    """Create a new product (superuser only)"""
+    data = request.data
+    
+    required_fields = ['company_id', 'name', 'category_id', 'price']
+    for field in required_fields:
+        if field not in data:
+            return Response({"error": f"{field} is required"}, status=400)
+    
+    try:
+        company = Company.objects.get(id=data['company_id'])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found"}, status=404)
+    
+    try:
+        category = Category.objects.get(id=data['category_id'], company=company)
+    except Category.DoesNotExist:
+        return Response({"error": "Category not found or does not belong to the company"}, status=404)
+    
+    product = Product(
+        company=company,
+        name=data['name'],
+        category=category,
+        price=data['price'],
+        stock_qty=data.get('stock_qty', 0),
+        unit=data.get('unit'),
+        measurement=data.get('measurement'),
+        description=data.get('description'),
+        cost_price=data.get('cost_price'),
+        wholesale_price=data.get('wholesale_price'),
+        retail_price=data.get('retail_price'),
+        sku=data.get('sku')  # Will auto-generate if not provided
+    )
+    
+    try:
+        product.save()
+        return Response({
+            "id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "price": float(product.price),
+            "stock_qty": product.stock_qty,
+            "category_name": product.category.name,
+            "company": product.company.name
+        }, status=201)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
 @api_view(["GET"])
 @api_superuser_required
 def admin_search_products(request):
@@ -79,6 +129,45 @@ def admin_search_products(request):
     } for p in products[:50]])
 
 # ==================== CUSTOMERS MANAGEMENT ====================
+
+@api_view(["POST"])
+@api_superuser_required
+def admin_create_customer(request):
+    """Create a new customer (superuser only)"""
+    data = request.data
+    
+    required_fields = ['company_id', 'name']
+    for field in required_fields:
+        if field not in data:
+            return Response({"error": f"{field} is required"}, status=400)
+    
+    try:
+        company = Company.objects.get(id=data['company_id'])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found"}, status=404)
+    
+    customer = Customer(
+        company=company,
+        name=data['name'],
+        phone=data.get('phone'),
+        email=data.get('email'),
+        address=data.get('address'),
+        archived=data.get('archived', False)
+    )
+    
+    try:
+        customer.save()
+        return Response({
+            "id": customer.id,
+            "name": customer.name,
+            "phone": customer.phone,
+            "email": customer.email,
+            "address": customer.address,
+            "archived": customer.archived,
+            "company": customer.company.name
+        }, status=201)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
 
 # ==================== INVOICES MANAGEMENT ====================
 
@@ -161,6 +250,47 @@ def admin_system_stats(request):
     })
 
 # ==================== CATEGORIES MANAGEMENT ====================
+
+@api_view(["POST"])
+@api_superuser_required
+def admin_create_category(request):
+    """Create a new category (superuser only)"""
+    data = request.data
+    
+    required_fields = ['company_id', 'name']
+    for field in required_fields:
+        if field not in data:
+            return Response({"error": f"{field} is required"}, status=400)
+    
+    try:
+        company = Company.objects.get(id=data['company_id'])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found"}, status=404)
+    
+    parent = None
+    if 'parent_id' in data and data['parent_id']:
+        try:
+            parent = Category.objects.get(id=data['parent_id'], company=company)
+        except Category.DoesNotExist:
+            return Response({"error": "Parent category not found or does not belong to the company"}, status=404)
+    
+    category = Category(
+        company=company,
+        name=data['name'],
+        parent=parent
+    )
+    
+    try:
+        category.save()
+        return Response({
+            "id": category.id,
+            "name": category.name,
+            "parent_id": category.parent.id if category.parent else None,
+            "parent_name": category.parent.name if category.parent else None,
+            "company": category.company.name
+        }, status=201)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
 
 # ==================== PHONE-BASED ENDPOINTS ====================
 
