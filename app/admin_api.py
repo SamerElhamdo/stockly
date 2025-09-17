@@ -49,16 +49,19 @@ def api_superuser_required(view_func):
 def admin_create_product(request):
     """Create a new product (superuser only)"""
     data = request.data
-    
-    required_fields = ['company_id', 'name', 'category_id', 'price']
+
+    required_fields = ['phone', 'name', 'category_id', 'price']
     for field in required_fields:
         if field not in data:
             return Response({"error": f"{field} is required"}, status=400)
-    
+
+    # Clean phone number
+    clean_phone = data['phone'].replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
     try:
-        company = Company.objects.get(id=data['company_id'])
+        company = Company.objects.get(phone=clean_phone)
     except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
+        return Response({"error": "Company not found with this phone number"}, status=404)
     
     try:
         category = Category.objects.get(id=data['category_id'], company=company)
@@ -135,16 +138,19 @@ def admin_search_products(request):
 def admin_create_customer(request):
     """Create a new customer (superuser only)"""
     data = request.data
-    
-    required_fields = ['company_id', 'name']
+
+    required_fields = ['phone', 'name']
     for field in required_fields:
         if field not in data:
             return Response({"error": f"{field} is required"}, status=400)
-    
+
+    # Clean phone number
+    clean_phone = data['phone'].replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
     try:
-        company = Company.objects.get(id=data['company_id'])
+        company = Company.objects.get(phone=clean_phone)
     except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
+        return Response({"error": "Company not found with this phone number"}, status=404)
     
     customer = Customer(
         company=company,
@@ -256,16 +262,19 @@ def admin_system_stats(request):
 def admin_create_category(request):
     """Create a new category (superuser only)"""
     data = request.data
-    
-    required_fields = ['company_id', 'name']
+
+    required_fields = ['phone', 'name']
     for field in required_fields:
         if field not in data:
             return Response({"error": f"{field} is required"}, status=400)
-    
+
+    # Clean phone number
+    clean_phone = data['phone'].replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
     try:
-        company = Company.objects.get(id=data['company_id'])
+        company = Company.objects.get(phone=clean_phone)
     except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
+        return Response({"error": "Company not found with this phone number"}, status=404)
     
     parent = None
     if 'parent_id' in data and data['parent_id']:
