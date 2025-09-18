@@ -584,7 +584,7 @@ def admin_get_company_categories_by_phone(request):
 @api_superuser_required
 def admin_api_docs(request):
     """Get documentation for all admin API endpoints (superuser only)"""
-    base_url = "/api-admin/"
+    base_url = "https://stockly.encryptosystem.com/api-admin/"
     docs = {
         "api_documentation": {
             "description": "Documentation for all admin API endpoints. All endpoints require superuser authentication via Token header.",
