@@ -5,7 +5,8 @@ from .admin_api import (
     admin_get_company_customers_by_phone, admin_get_company_invoices_by_phone,
     admin_get_company_returns_by_phone, admin_get_company_payments_by_phone,
     admin_get_company_users_by_phone, admin_get_company_categories_by_phone,
-    admin_add_category_by_phone, admin_add_product_by_phone, admin_add_customer_by_phone
+    admin_add_category_by_phone, admin_add_product_by_phone, admin_add_customer_by_phone,
+    admin_api_docs
 )
 
 urlpatterns = [
@@ -17,6 +18,9 @@ urlpatterns = [
     
     # Invoice Details
     path('invoices/<int:invoice_id>/', admin_get_invoice_details, name='admin_get_invoice_details'),
+
+    # AIP documentation
+    path('docs/', admin_api_docs, name='admin_api_docs'),
     
     # Phone-based endpoints
     path('company/by-phone/', admin_get_company_by_phone, name='admin_get_company_by_phone'),

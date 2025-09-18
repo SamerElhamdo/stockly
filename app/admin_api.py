@@ -557,17 +557,17 @@ def admin_get_company_users_by_phone(request):
 def admin_get_company_categories_by_phone(request):
     """Get all categories for a company by phone number (superuser only)"""
     phone = request.GET.get('phone', '').strip()
-    
+
     if not phone:
         return Response({"error": "Phone number is required"}, status=400)
-    
+
     # Clean phone number
     clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-    
+
     try:
         company = Company.objects.get(phone=clean_phone)
         categories = company.categories.all()
-        
+
         return Response([{
             "id": c.id,
             "name": c.name,
@@ -579,3 +579,130 @@ def admin_get_company_categories_by_phone(request):
         } for c in categories])
     except Company.DoesNotExist:
         return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_api_docs(request):
+    """Get documentation for all admin API endpoints (superuser only)"""
+    base_url = "/api-admin/"
+    docs = {
+        "api_documentation": {
+            "description": "Documentation for all admin API endpoints. All endpoints require superuser authentication via Token header.",
+            "authentication": "Use 'Authorization: Token <your_token>' in headers. User must be superuser.",
+            "endpoints": {
+                f"{base_url}system/stats/": {
+                    "method": "GET",
+                    "description": "Get system-wide statistics including companies, users, products, etc.",
+                    "parameters": {
+                        "required": [],
+                        "optional": []
+                    }
+                },
+                f"{base_url}products/search/": {
+                    "method": "GET",
+                    "description": "Search products across all companies or filter by company.",
+                    "parameters": {
+                        "required": [],
+                        "optional": ["query", "company_id"]
+                    }
+                },
+                f"{base_url}invoices/<int:invoice_id>/": {
+                    "method": "GET",
+                    "description": "Get detailed information about a specific invoice.",
+                    "parameters": {
+                        "required": ["invoice_id"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/by-phone/": {
+                    "method": "GET",
+                    "description": "Get company information by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/products/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all products for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/customers/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all customers for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/invoices/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all invoices for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/returns/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all returns for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/payments/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all payments for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/users/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all users for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/categories/by-phone/": {
+                    "method": "GET",
+                    "description": "Get all categories for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/category/add/": {
+                    "method": "POST",
+                    "description": "Add a new category for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone", "name"],
+                        "optional": ["parent_id", "parent_name"]
+                    }
+                },
+                f"{base_url}company/product/add/": {
+                    "method": "POST",
+                    "description": "Add a new product for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone", "name", "price", "stock_qty", "category_id or category_name"],
+                        "optional": ["sku", "unit", "measurement", "description", "cost_price", "wholesale_price", "retail_price"]
+                    }
+                },
+                f"{base_url}company/customer/add/": {
+                    "method": "POST",
+                    "description": "Add a new customer for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone", "name"],
+                        "optional": ["customer_phone", "email", "address"]
+                    }
+                }
+            }
+        }
+    }
+    return Response(docs)
