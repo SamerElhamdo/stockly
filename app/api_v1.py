@@ -3,16 +3,17 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.db import transaction
 from django.db.models import Sum
 
 from .models import (
-    Company, User, Category, Product, Customer,
+    Company, CompanyProfile, User, Category, Product, Customer,
     Invoice, InvoiceItem, Return, ReturnItem, Payment,
     CustomerBalance, company_queryset
 )
 from .serializers import (
-    CompanySerializer, UserSerializer, CategorySerializer, ProductSerializer,
+    CompanySerializer, CompanyProfileSerializer, UserSerializer, CategorySerializer, ProductSerializer,
     CustomerSerializer, InvoiceSerializer, InvoiceItemSerializer,
     ReturnSerializer, ReturnItemSerializer, PaymentSerializer,
     CustomerBalanceSerializer
@@ -37,6 +38,45 @@ class CompanyScopedQuerysetMixin:
             except Exception:
                 pass
         serializer.save(company=company)
+
+
+class CompanyProfileViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+    serializer_class = CompanyProfileSerializer
+    queryset = CompanyProfile.objects.select_related('company')
+    permission_classes = [ReadOnlyOrOwner]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        company = getattr(self.request.user, 'company', None)
+        if self.request.user.is_superuser and not company:
+            return qs
+        if company:
+            return qs.filter(company=company)
+        return qs.none()
+
+    def get_object(self):
+        pk = self.kwargs.get(self.lookup_field or 'pk')
+        queryset = self.get_queryset()
+        if pk is not None:
+            return queryset.get(pk=pk)
+        company = getattr(self.request.user, 'company', None)
+        if company:
+            profile, _ = CompanyProfile.objects.get_or_create(company=company)
+            return profile
+        raise PermissionDenied('لا يوجد ملف مرتبط بالمستخدم الحالي')
+
+    def list(self, request, *args, **kwargs):
+        profile = self.get_object()
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class CategoryViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
