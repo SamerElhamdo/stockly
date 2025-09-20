@@ -4,11 +4,15 @@ import { Button } from '../ui/custom-button';
 import { 
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
-  BellIcon
+  BellIcon,
+  SunIcon,
+  MoonIcon
 } from '@heroicons/react/24/outline';
+import { useTheme } from 'next-themes';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="bg-card border-b border-border px-6 py-4">
@@ -22,6 +26,19 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon">
             <BellIcon className="h-5 w-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle theme"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <SunIcon className="h-5 w-5" />
+            ) : (
+              <MoonIcon className="h-5 w-5" />
+            )}
           </Button>
           
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted">
