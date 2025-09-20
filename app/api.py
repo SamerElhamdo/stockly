@@ -227,6 +227,10 @@ def api_add_customer(request):
     if not name:
         return Response({"error": "name_required"}, status=400)
     
+    # check if customer already exists
+    if Customer.objects.filter(company=request.user.company, name=name, archived=False).exists():
+        return Response({"error": "customer_already_exists"}, status=400)
+    
     customer = Customer.objects.create(
         company=request.user.company,
         name=name,
