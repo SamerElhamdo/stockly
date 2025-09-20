@@ -9,6 +9,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   XCircleIcon,
+  PrinterIcon,
 } from '@heroicons/react/24/outline';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
@@ -29,23 +30,7 @@ interface ApiInvoiceItem {
   qty: string | number;
   price_at_add: string | number;
   line_total: string | number;
-}
-
-interface ApiInvoice {
-  id: number;
-  customer: number;
-  customer_name: string;
-  status: 'draft' | 'confirmed' | 'cancelled';
-  created_at: string;
-  total_amount: string | number;
-  items?: ApiInvoiceItem[];
-}
-
-interface ApiCustomerOption {
-  id: number;
-  name: string;
-}
-
+  
 const statusConfigMap: Record<ApiInvoice['status'], { text: string; color: string; icon: typeof CheckCircleIcon }> = {
   draft: { text: 'مسودة', color: 'text-warning bg-warning-light', icon: ClockIcon },
   confirmed: { text: 'مؤكدة', color: 'text-primary bg-primary-light', icon: CheckCircleIcon },
@@ -66,6 +51,7 @@ export const Invoices: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerSearchKeyword, setCustomerSearchKeyword] = useState('');
+
 
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: ['invoices', statusFilter, page],
@@ -91,59 +77,6 @@ export const Invoices: React.FC = () => {
     },
     enabled: createDialogOpen,
     keepPreviousData: true,
-  });
-
-  const list = data?.results || [];
-  const total = data?.count ?? list.length;
-  const hasNext = Boolean(data?.next);
-  const hasPrev = Boolean(data?.previous);
-
-  const filteredInvoices = useMemo(() => {
-    if (!searchKeyword) return list;
-    const keyword = searchKeyword.trim().toLowerCase();
-    if (!keyword) return list;
-    return list.filter((invoice) => {
-      const idMatch = String(invoice.id).includes(keyword);
-      const customerMatch = invoice.customer_name?.toLowerCase().includes(keyword);
-      return idMatch || customerMatch;
-    });
-  }, [list, searchKeyword]);
-
-  const stats = useMemo(() => {
-    return filteredInvoices.reduce(
-      (acc, invoice) => {
-        const totalAmount = typeof invoice.total_amount === 'string'
-          ? parseFloat(invoice.total_amount)
-          : Number(invoice.total_amount || 0);
-        acc.totalAmount += Number.isNaN(totalAmount) ? 0 : totalAmount;
-        acc.count += 1;
-        acc.statusCount[invoice.status] = (acc.statusCount[invoice.status] || 0) + 1;
-        return acc;
-      },
-      { count: 0, totalAmount: 0, statusCount: { draft: 0, confirmed: 0, cancelled: 0 } as Record<ApiInvoice['status'], number> }
-    );
-  }, [filteredInvoices]);
-
-  const createInvoiceMutation = useMutation({
-    mutationFn: async ({ customerId }: { customerId: number }) => {
-      const res = await apiClient.post(endpoints.invoices, { customer: customerId });
-      return res.data as ApiInvoice;
-    },
-    onSuccess: (invoice) => {
-      toast({ title: 'تم إنشاء الفاتورة', description: `تم إنشاء فاتورة برقم #${invoice.id}` });
-      setCreateDialogOpen(false);
-      setSelectedCustomer('');
-      setCustomerSearch('');
-      setCustomerSearchKeyword('');
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-    },
-    onError: (err: any) => {
-      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء الفاتورة';
-      toast({ title: 'خطأ', description: message, variant: 'destructive' });
-    },
-  });
-
-  const customerOptions = customerOptionsData?.results || [];
 
   return (
     <div className="space-y-6">
@@ -296,9 +229,7 @@ export const Invoices: React.FC = () => {
                 filteredInvoices.map((invoice, index) => {
                   const statusConfig = statusConfigMap[invoice.status];
                   const StatusIcon = statusConfig.icon;
-                  const amount = typeof invoice.total_amount === 'string'
-                    ? parseFloat(invoice.total_amount)
-                    : Number(invoice.total_amount || 0);
+
                   const itemsCount = invoice.items?.length ?? 0;
 
                   return (
@@ -353,109 +284,6 @@ export const Invoices: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">الإجمالي: {total.toLocaleString()} فاتورة</div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hasPrev || page === 1}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            السابق
-          </Button>
-          <span className="text-sm text-muted-foreground">صفحة {page}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hasNext}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            التالي
-          </Button>
-        </div>
-      </div>
-
-      {/* Invoice Details Dialog */}
-      <Dialog
-        open={detailDialogOpen}
-        onOpenChange={(open) => {
-          setDetailDialogOpen(open);
-          if (!open) {
-            setSelectedInvoice(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل الفاتورة</DialogTitle>
-          </DialogHeader>
-          {selectedInvoice ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">رقم الفاتورة</p>
-                  <p className="text-foreground font-medium">#{selectedInvoice.id}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">العميل</p>
-                  <p className="text-foreground font-medium">{selectedInvoice.customer_name}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">الحالة</p>
-                  <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${statusConfigMap[selectedInvoice.status].color}`}>
-                    {statusConfigMap[selectedInvoice.status].text}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">التاريخ</p>
-                  <p className="text-foreground font-medium">
-                    {new Date(selectedInvoice.created_at).toLocaleString('ar')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="border border-border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-right py-3 px-4">المنتج</th>
-                      <th className="text-right py-3 px-4">الكمية</th>
-                      <th className="text-right py-3 px-4">السعر</th>
-                      <th className="text-right py-3 px-4">الإجمالي</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(selectedInvoice.items || []).map((item) => {
-                      const qty = typeof item.qty === 'string' ? parseFloat(item.qty) : Number(item.qty || 0);
-                      const price = typeof item.price_at_add === 'string' ? parseFloat(item.price_at_add) : Number(item.price_at_add || 0);
-                      const total = typeof item.line_total === 'string' ? parseFloat(item.line_total) : Number(item.line_total || 0);
-
-                      return (
-                        <tr key={item.id} className="border-b border-border last:border-b-0">
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-foreground">{item.product_name}</span>
-                              {item.product_sku && <span className="text-xs text-muted-foreground">SKU: {item.product_sku}</span>}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground">{qty}</td>
-                          <td className="py-3 px-4 text-muted-foreground">{price.toLocaleString()} ر.س</td>
-                          <td className="py-3 px-4 text-foreground font-medium">{total.toLocaleString()} ر.س</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-muted-foreground py-6">لا توجد بيانات</div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Create Invoice Dialog */}
       <Dialog
@@ -531,3 +359,4 @@ export const Invoices: React.FC = () => {
     </div>
   );
 };
+

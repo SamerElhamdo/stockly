@@ -8,141 +8,153 @@
 
 @layer base {
   :root {
-    /* Stockly Brand Colors (Light - warm off‑white palette) */
-    --background: 48 100% 98%;        /* near-ivory */
-    --foreground: 222 47% 11%;        /* slate-900 */
-    --background-secondary: 48 100% 96%;
-    
+    /* Stockly Brand Colors (Light - Neumorphic soft palette) */
+    --background: 222 45% 96%;
+    --foreground: 222 47% 11%;
+    --background-secondary: 208 32% 92%;
+
     /* Cards & Surfaces */
-    --card: 0 0% 100%;
+    --card: 222 45% 97%;
     --card-foreground: 222 47% 11%;
-    --card-hover: 48 100% 97%;
-    
+    --card-hover: 222 45% 98%;
+
     /* Popover & Dropdown */
-    --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
-    
+    --popover: 222 45% 97%;
+    --popover-foreground: 222 47% 11%;
+
     /* Stockly Primary Blue */
     --primary: 219 78% 58%;
     --primary-foreground: 255 255 255;
     --primary-hover: 219 78% 50%;
-    --primary-light: 219 78% 95%;
-    
+    --primary-light: 219 78% 94%;
+
     /* Secondary & Neutral */
-    --secondary: 226 54% 96%;
-    --secondary-foreground: 51 65% 5%;
-    --secondary-hover: 226 54% 92%;
-    
+    --secondary: 208 32% 92%;
+    --secondary-foreground: 222 47% 11%;
+    --secondary-hover: 208 32% 89%;
+
     /* Muted & Subtle */
-    --muted: 48 100% 96%;
-    --muted-foreground: 215 16% 47%;   /* slate-500 */
-    
+    --muted: 210 20% 88%;
+    --muted-foreground: 215 16% 40%;
+
     /* Accent Colors */
-    --accent: 142 76% 96%;
+    --accent: 142 76% 92%;
     --accent-foreground: 142 84% 24%;
-    
+
     /* Success Colors */
     --success: 142 76% 36%;
     --success-foreground: 255 255 255;
-    --success-light: 142 76% 96%;
-    
+    --success-light: 142 76% 92%;
+
     /* Warning Colors */
     --warning: 43 96% 56%;
     --warning-foreground: 15 23 42;
-    --warning-light: 43 96% 95%;
-    
+    --warning-light: 43 96% 90%;
+
     /* Destructive/Error Colors */
     --destructive: 0 84% 60%;
     --destructive-foreground: 255 255 255;
-    --destructive-light: 0 84% 96%;
-    
+    --destructive-light: 0 84% 92%;
+
     /* Borders & Inputs */
-    --border: 48 20% 88%;
-    --border-strong: 48 15% 80%;
-    --input: 48 100% 97%;
-    --input-border: 48 20% 85%;
-    --ring: 219 78% 58%;              /* keep brand ring */
-    
+    --border: 216 33% 88%;
+    --border-strong: 216 25% 80%;
+    --input: 222 45% 95%;
+    --input-border: 220 30% 85%;
+    --ring: 219 78% 58%;
+
     /* Layout & Spacing */
     --radius: 0.75rem;
     --radius-sm: 0.5rem;
     --radius-lg: 1rem;
-    
+
     /* Sidebar Colors */
-    --sidebar-background: 0 0% 100%;
+    --sidebar-background: 222 45% 96%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 219 78% 58%;
     --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 48 100% 96%;
+    --sidebar-accent: 208 32% 92%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 48 20% 88%;
+    --sidebar-border: 216 33% 88%;
     --sidebar-ring: 219 78% 58%;
-    
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(219 78% 58%), hsl(219 78% 50%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 30%));
-    
+
+    /* Neumorphic Shadows */
+    --shadow-neo: -5px -5px 10px #fff, 5px 5px 10px rgba(0, 0, 0, 0.15);
+    --shadow-neo-hover: -10px -10px 20px #fff, 10px 10px 20px rgba(0, 0, 0, 0.2);
+    --shadow-neo-inset: inset 2px 2px 4px rgba(0, 0, 0, 0.12), inset -2px -2px 4px rgba(255, 255, 255, 0.8);
+
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(226 54% 92% / 0.8);
-    --shadow-md: 0 4px 6px -1px hsl(226 54% 88% / 0.6), 0 2px 4px -1px hsl(226 54% 88% / 0.3);
-    --shadow-lg: 0 10px 15px -3px hsl(226 54% 88% / 0.4), 0 4px 6px -2px hsl(226 54% 88% / 0.2);
-    --shadow-primary: 0 4px 12px hsl(219 78% 58% / 0.3);
+    --shadow-sm: -3px -3px 6px #fff, 3px 3px 6px rgba(0, 0, 0, 0.1);
+    --shadow-md: -6px -6px 12px #fff, 6px 6px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: -12px -12px 24px #fff, 12px 12px 24px rgba(0, 0, 0, 0.2);
+    --shadow-primary: 0 4px 12px rgba(45, 115, 255, 0.3);
   }
 
   .dark {
-    /* Dark - neutral black/gray slate palette */
-    --background: 222 47% 11%;        /* slate-900 */
-    --foreground: 210 40% 98%;        /* slate-50 */
-    --background-secondary: 217 33% 17%; /* slate-800 */
+    /* Dark - Neumorphic charcoal palette */
+    --background: 0 0% 12%;
+    --foreground: 210 40% 98%;
+    --background-secondary: 0 0% 16%;
 
-    --card: 217 33% 17%;
+    --card: 0 0% 16%;
     --card-foreground: 210 40% 98%;
-    --card-hover: 217 33% 19%;
+    --card-hover: 0 0% 20%;
 
-    --popover: 217 33% 17%;
+    --popover: 0 0% 16%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 219 78% 58%;
     --primary-foreground: 255 255 255;
     --primary-hover: 219 78% 50%;
-    --primary-light: 219 78% 15%;
+    --primary-light: 219 78% 24%;
 
-    --secondary: 215 27% 12%;         /* slate-900ish */
-    --secondary-foreground: 210 40% 98%;
-    --secondary-hover: 215 27% 14%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --secondary-hover: 0 0% 22%;
 
-    --muted: 215 27% 12%;
-    --muted-foreground: 215 20% 65%;  /* slate-400 */
+    --muted: 0 0% 18%;
+    --muted-foreground: 215 16% 70%;
 
-    --accent: 142 76% 15%;
+    --accent: 142 76% 24%;
     --accent-foreground: 142 84% 90%;
-    
-    --success: 142 76% 45%;
+
+    --success: 142 76% 42%;
     --success-foreground: 255 255 255;
-    --success-light: 142 76% 15%;
-    
+    --success-light: 142 76% 24%;
+
     --warning: 43 96% 60%;
     --warning-foreground: 222 47% 11%;
-    --warning-light: 43 96% 20%;
+    --warning-light: 43 96% 28%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 255 255 255;
-    --destructive-light: 0 84% 15%;
+    --destructive-light: 0 84% 24%;
 
-    --border: 215 20% 20%;            /* slate-700 */
-    --border-strong: 215 20% 26%;     /* slate-600 */
-    --input: 217 33% 17%;
-    --input-border: 215 20% 26%;
+    --border: 0 0% 24%;
+    --border-strong: 0 0% 32%;
+    --input: 0 0% 18%;
+    --input-border: 0 0% 28%;
     --ring: 219 78% 58%;
 
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 219 78% 58%;
     --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent: 0 0% 18%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 20% 20%;
+    --sidebar-border: 0 0% 24%;
     --sidebar-ring: 219 78% 58%;
+
+    --shadow-neo: -5px -5px 10px rgba(255, 255, 255, 0.1), 5px 5px 10px rgba(0, 0, 0, 0.8);
+    --shadow-neo-hover: -10px -10px 20px rgba(255, 255, 255, 0.1), 10px 10px 20px rgba(0, 0, 0, 0.9);
+    --shadow-neo-inset: inset 2px 2px 4px rgba(0, 0, 0, 0.85), inset -2px -2px 4px rgba(255, 255, 255, 0.06);
+    --shadow-sm: -3px -3px 6px rgba(255, 255, 255, 0.08), 3px 3px 6px rgba(0, 0, 0, 0.65);
+    --shadow-md: -6px -6px 12px rgba(255, 255, 255, 0.1), 6px 6px 12px rgba(0, 0, 0, 0.7);
+    --shadow-lg: -12px -12px 24px rgba(255, 255, 255, 0.12), 12px 12px 24px rgba(0, 0, 0, 0.85);
   }
 }
 

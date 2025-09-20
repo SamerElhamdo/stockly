@@ -64,8 +64,6 @@ export const endpoints = {
   invoiceDetail: (id: number | string) => `/api/v1/invoices/${id}/`,
   invoiceAddItem: (id: number | string) => `/api/v1/invoices/${id}/add_item/`,
   invoiceConfirm: (id: number | string) => `/api/v1/invoices/${id}/confirm/`,
-  payments: "/api/v1/payments/",
-  balances: "/api/v1/balances/",
 } as const;
 
 export interface ApiListResponse<T> {

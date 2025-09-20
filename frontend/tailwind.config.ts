@@ -89,6 +89,9 @@ export default {
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'primary': 'var(--shadow-primary)',
+        'neo': 'var(--shadow-neo)',
+        'neo-hover': 'var(--shadow-neo-hover)',
+        'neo-inset': 'var(--shadow-neo-inset)',
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
