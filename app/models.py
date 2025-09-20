@@ -13,14 +13,30 @@ class Company(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     is_active = models.BooleanField(default=True, verbose_name='نشط')
     phone_verified = models.BooleanField(default=False, verbose_name='تم التحقق من الهاتف')
-    
+
     class Meta:
         verbose_name = 'شركة'
         verbose_name_plural = 'الشركات'
         ordering = ['name']
-    
+
     def __str__(self):
         return self.name
+
+
+class CompanyProfile(models.Model):
+    company = models.OneToOneField(Company, on_delete=models.CASCADE, related_name='profile', verbose_name='الشركة')
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True, verbose_name='شعار الشركة')
+    return_policy = models.TextField(blank=True, verbose_name='سياسة الإرجاع')
+    payment_policy = models.TextField(blank=True, verbose_name='سياسة الدفع')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+
+    class Meta:
+        verbose_name = 'ملف الشركة'
+        verbose_name_plural = 'ملفات الشركات'
+
+    def __str__(self):
+        return f"ملف {self.company.name}"
 
 class User(AbstractUser):
     # Account Types
@@ -260,7 +276,7 @@ class Return(models.Model):
         ordering = ['-return_date']
     
     def __str__(self):
-        return f"مرتجع #{self.return_number} - {self.original_invoice.invoice_number}"
+        return f"مرتجع #{self.return_number} - فاتورة #{self.original_invoice_id}"
     
     def save(self, *args, **kwargs):
         if not self.return_number:

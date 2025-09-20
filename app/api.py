@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from datetime import datetime, timedelta
-from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, User, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, company_queryset, can_manage_company
+from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, CompanyProfile, User, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, company_queryset, can_manage_company
 from .decorators import api_company_owner_required, api_company_staff_required
 import requests
 import random
@@ -641,7 +641,9 @@ def api_register_company(request):
                 address=company_data.get('address', ''),
                 phone_verified=True
             )
-            
+
+            CompanyProfile.objects.get_or_create(company=company)
+
             # Create admin user for the company
             admin_data = data.get('admin', {})
             admin_username = admin_data.get('username')
@@ -764,7 +766,21 @@ def api_company_users(request):
         
         users = company_queryset(User, request.user).exclude(id=request.user.id)
         
-        return Response([{
+        role_field = User._meta.get_field('role')
+        role_choices = dict(getattr(role_field, 'choices', []) or [])
+
+        def resolve_role_display(user_obj):
+            display_method = getattr(user_obj, 'get_role_display', None)
+            if callable(display_method):
+                try:
+                    return display_method()
+                except Exception:
+                    pass
+            if role_choices:
+                return role_choices.get(user_obj.role, user_obj.role)
+            return user_obj.role
+
+        return Response([{ 
             "id": user.id,
             "username": user.username,
             "email": user.email,
@@ -772,7 +788,7 @@ def api_company_users(request):
             "last_name": user.last_name,
             "phone": user.phone,
             "role": user.role,
-            "role_display": user.get_role_display(),
+            "role_display": resolve_role_display(user),
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat(),
             "last_login": user.last_login.isoformat() if user.last_login else None
