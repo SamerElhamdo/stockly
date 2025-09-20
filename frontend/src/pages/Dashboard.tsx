@@ -7,6 +7,8 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 
 interface StatCardProps {
   title: string;
@@ -19,12 +21,12 @@ interface StatCardProps {
   color?: 'primary' | 'success' | 'warning' | 'destructive';
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
-  title, 
-  value, 
-  icon: Icon, 
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon: Icon,
   trend,
-  color = 'primary' 
+  color = 'primary',
 }) => {
   const colorClasses = {
     primary: 'bg-primary-light text-primary border-primary/20',
@@ -46,9 +48,11 @@ const StatCard: React.FC<StatCardProps> = ({
               ) : (
                 <ArrowTrendingDownIcon className="h-4 w-4 text-destructive" />
               )}
-              <span className={`text-sm font-medium ${
-                trend.isPositive ? 'text-success' : 'text-destructive'
-              }`}>
+              <span
+                className={`text-sm font-medium ${
+                  trend.isPositive ? 'text-success' : 'text-destructive'
+                }`}
+              >
                 {trend.value}%
               </span>
               <span className="text-sm text-muted-foreground">من الشهر الماضي</span>
@@ -63,34 +67,99 @@ const StatCard: React.FC<StatCardProps> = ({
   );
 };
 
+interface DashboardStatsResponse {
+  today_invoices: number;
+  total_sales: number;
+  low_stock_items: number;
+  recent_invoices: Array<{
+    id: number;
+    customer_name: string;
+    total_amount: number;
+    status: string;
+    created_at: string;
+  }>;
+}
+
 export const Dashboard: React.FC = () => {
-  // Mock data - replace with real API calls
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.dashboardStats);
+      return res.data as DashboardStatsResponse;
+    },
+  });
+
+  const { data: productsCountData, isLoading: productsLoading } = useQuery({
+    queryKey: ['dashboard-products-count'],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.products);
+      const normalized = normalizeListResponse<{ id: number }>(res.data);
+      return normalized.count ?? normalized.results.length;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: customersCountData, isLoading: customersLoading } = useQuery({
+    queryKey: ['dashboard-customers-count'],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.customers);
+      const normalized = normalizeListResponse<{ id: number }>(res.data);
+      return normalized.count ?? normalized.results.length;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const lowStockEnabled = (statsData?.low_stock_items ?? 0) > 0;
+
+  const { data: lowStockProductsData, isLoading: lowStockLoading } = useQuery({
+    queryKey: ['dashboard-low-stock', lowStockEnabled],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.products, {
+        params: { ordering: 'stock_qty', page: 1 },
+      });
+      const normalized = normalizeListResponse<{ id: number; name: string; stock_qty: number }>(res.data);
+      return normalized.results
+        .filter((product) => Number(product.stock_qty) <= 5)
+        .slice(0, 5);
+    },
+    enabled: lowStockEnabled,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const totalSales = statsData?.total_sales ?? 0;
+  const todayInvoices = statsData?.today_invoices ?? 0;
+  const lowStockCount = statsData?.low_stock_items ?? 0;
+  const productsCount = productsCountData ?? 0;
+  const customersCount = customersCountData ?? 0;
+  const recentInvoices = statsData?.recent_invoices ?? [];
+
   const stats = [
     {
       title: 'إجمالي المبيعات',
-      value: '125,430 ر.س',
+      value: statsLoading ? '...' : `${totalSales.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س`,
       icon: CurrencyDollarIcon,
-      trend: { value: 12.5, isPositive: true },
       color: 'success' as const,
     },
     {
       title: 'فواتير اليوم',
-      value: 24,
+      value: statsLoading ? '...' : todayInvoices,
       icon: DocumentTextIcon,
-      trend: { value: 8.2, isPositive: true },
       color: 'primary' as const,
     },
     {
       title: 'المنتجات النشطة',
-      value: 1847,
+      value: productsLoading ? '...' : productsCount,
       icon: CubeIcon,
       color: 'warning' as const,
     },
     {
       title: 'العملاء',
-      value: 342,
+      value: customersLoading ? '...' : customersCount,
       icon: UsersIcon,
-      trend: { value: 3.1, isPositive: false },
       color: 'destructive' as const,
     },
   ];
@@ -101,7 +170,10 @@ export const Dashboard: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">لوحة التحكم</h1>
-          <p className="text-muted-foreground mt-2">نظرة عامة على أداء متجرك</p>
+          <p className="text-muted-foreground mt-2">
+            نظرة عامة على أداء متجرك
+            {statsError && <span className="text-destructive ml-2">تعذر تحميل بعض البيانات</span>}
+          </p>
         </div>
         <div className="text-sm text-muted-foreground">
           آخر تحديث: {new Date().toLocaleDateString('ar')}
@@ -121,22 +193,28 @@ export const Dashboard: React.FC = () => {
         <div className="bg-card rounded-lg border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">آخر الفواتير</h3>
           <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-light rounded-full flex items-center justify-center">
-                    <DocumentTextIcon className="h-4 w-4 text-primary" />
+            {statsLoading ? (
+              <p className="text-muted-foreground">...جاري التحميل</p>
+            ) : recentInvoices.length === 0 ? (
+              <p className="text-muted-foreground">لا توجد فواتير حديثة</p>
+            ) : (
+              recentInvoices.map((invoice) => (
+                <div key={invoice.id} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary-light rounded-full flex items-center justify-center">
+                      <DocumentTextIcon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">فاتورة #{invoice.id}</p>
+                      <p className="text-sm text-muted-foreground">{invoice.customer_name}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">فاتورة #{1000 + item}</p>
-                    <p className="text-sm text-muted-foreground">عميل {item}</p>
-                  </div>
+                  <span className="font-semibold text-success">
+                    {Number(invoice.total_amount || 0).toLocaleString()} ر.س
+                  </span>
                 </div>
-                <span className="font-semibold text-success">
-                  {(Math.random() * 5000 + 1000).toFixed(0)} ر.س
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -144,22 +222,30 @@ export const Dashboard: React.FC = () => {
         <div className="bg-card rounded-lg border border-border p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">تنبيهات المخزون</h3>
           <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-warning-light rounded-full flex items-center justify-center">
-                    <CubeIcon className="h-4 w-4 text-warning" />
+            {statsLoading ? (
+              <p className="text-muted-foreground">...جاري التحميل</p>
+            ) : lowStockCount === 0 ? (
+              <p className="text-muted-foreground">لا توجد منتجات منخفضة المخزون حالياً</p>
+            ) : lowStockLoading ? (
+              <p className="text-muted-foreground">...جاري التحميل</p>
+            ) : (lowStockProductsData || []).length === 0 ? (
+              <p className="text-muted-foreground">يوجد {lowStockCount} منتج بحاجة لإعادة التوريد</p>
+            ) : (
+              (lowStockProductsData || []).map((product) => (
+                <div key={product.id} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-warning-light rounded-full flex items-center justify-center">
+                      <CubeIcon className="h-4 w-4 text-warning" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{product.name}</p>
+                      <p className="text-sm text-muted-foreground">المتبقي {product.stock_qty} قطع</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">منتج {item}</p>
-                    <p className="text-sm text-muted-foreground">الكمية المتبقية قليلة</p>
-                  </div>
+                  <span className="text-sm font-medium text-warning">{product.stock_qty}</span>
                 </div>
-                <span className="text-sm font-medium text-warning">
-                  {Math.floor(Math.random() * 10 + 1)} قطع
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
