@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, OTPVerification, Return, ReturnItem, Payment, CustomerBalance
+from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, CompanyProfile, OTPVerification, Return, ReturnItem, Payment, CustomerBalance
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -75,13 +75,25 @@ class CompanyAdmin(admin.ModelAdmin):
     list_filter = ('phone_verified', 'created_at')
     search_fields = ('name', 'code', 'email', 'phone')
     ordering = ('-created_at',)
-    
+
     fieldsets = (
         ('معلومات الشركة', {'fields': ('name', 'code', 'email', 'phone', 'phone_verified')}),
         ('معلومات إضافية', {'fields': ('address', 'created_at')}),
     )
-    
+
     readonly_fields = ('created_at',)
+
+
+@admin.register(CompanyProfile)
+class CompanyProfileAdmin(admin.ModelAdmin):
+    list_display = ('company', 'updated_at')
+    search_fields = ('company__name',)
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('معلومات الشركة', {'fields': ('company',)}),
+        ('الشعار والسياسات', {'fields': ('logo', 'return_policy', 'payment_policy')}),
+        ('التواريخ', {'fields': ('created_at', 'updated_at')}),
+    )
 
 @admin.register(OTPVerification)
 class OTPVerificationAdmin(admin.ModelAdmin):
