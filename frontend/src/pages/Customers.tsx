@@ -13,7 +13,7 @@ import {
   ArrowsUpDownIcon,
 } from '@heroicons/react/24/outline';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiClient, endpoints } from '../lib/api';
+import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import {
   Dialog,
   DialogContent,
@@ -26,9 +26,11 @@ import { useToast } from '../components/ui/use-toast';
 interface ApiCustomer {
   id: number;
   name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  archived?: boolean;
+  created_at?: string;
 }
 
 type SortKey = 'name' | 'phone' | 'email';
@@ -39,6 +41,7 @@ export const Customers: React.FC = () => {
   const [effectiveSearch, setEffectiveSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
 
   // Quick action modal state
   const [openPayment, setOpenPayment] = useState(false);
@@ -47,19 +50,31 @@ export const Customers: React.FC = () => {
   const [activeCustomer, setActiveCustomer] = useState<ApiCustomer | null>(null);
   const [createInvoiceLoading, setCreateInvoiceLoading] = useState(false);
 
+  // Create / edit customer dialog state
+  const [customerFormOpen, setCustomerFormOpen] = useState(false);
+  const [customerForm, setCustomerForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+  });
+  const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
+
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ['customers', effectiveSearch],
+    queryKey: ['customers', effectiveSearch, page],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.customers, {
-        params: { search: effectiveSearch || undefined },
+        params: { search: effectiveSearch || undefined, page },
       });
-      // endpoint may return array or paginated
-      return (Array.isArray(res.data) ? { results: res.data } : res.data) as { results: ApiCustomer[] };
+      return normalizeListResponse<ApiCustomer>(res.data);
     },
     keepPreviousData: true,
   });
 
   const list: ApiCustomer[] = data?.results || [];
+  const total = data?.count ?? list.length;
+  const hasNext = Boolean(data?.next);
+  const hasPrev = Boolean(data?.previous);
 
   const sortedList = useMemo(() => {
     const clone = [...list];
@@ -82,6 +97,31 @@ export const Customers: React.FC = () => {
     }
   };
 
+  const resetCustomerForm = () => {
+    setCustomerForm({ name: '', phone: '', email: '', address: '' });
+  };
+
+  const openCreateDialog = () => {
+    setEditingCustomer(null);
+    resetCustomerForm();
+    setCustomerFormOpen(true);
+  };
+
+  const openEditDialog = (customer: ApiCustomer) => {
+    setEditingCustomer(customer);
+    setCustomerForm({
+      name: customer.name || '',
+      phone: customer.phone || '',
+      email: customer.email || '',
+      address: customer.address || '',
+    });
+    setCustomerFormOpen(true);
+  };
+
+  const handleCustomerFieldChange = (field: keyof typeof customerForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
   // Mutations
   const paymentMutation = useMutation({
     mutationFn: async (vars: { customerId: number; amount: number; invoiceId?: number }) => {
@@ -100,11 +140,50 @@ export const Customers: React.FC = () => {
       setOpenPayment(false);
       setPaymentAmount('');
       setPaymentInvoiceId('');
+      refetch();
     },
     onError: (err: any) => {
       toast({ title: 'خطأ', description: err?.response?.data?.detail || 'فشل تسجيل الدفعة', variant: 'destructive' });
     },
   });
+
+  const createCustomerMutation = useMutation({
+    mutationFn: async (payload: { name: string; phone?: string; email?: string; address?: string }) => {
+      const res = await apiClient.post(endpoints.customers, payload);
+      return res.data as ApiCustomer;
+    },
+    onSuccess: () => {
+      toast({ title: 'تمت الإضافة', description: 'تم إنشاء العميل بنجاح' });
+      setCustomerFormOpen(false);
+      resetCustomerForm();
+      setEditingCustomer(null);
+      refetch();
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء العميل';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
+  const updateCustomerMutation = useMutation({
+    mutationFn: async (payload: { id: number; data: { name: string; phone?: string; email?: string; address?: string } }) => {
+      const res = await apiClient.patch(endpoints.customerDetail(payload.id), payload.data);
+      return res.data as ApiCustomer;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم التحديث', description: 'تم تحديث بيانات العميل' });
+      setCustomerFormOpen(false);
+      resetCustomerForm();
+      setEditingCustomer(null);
+      refetch();
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تحديث بيانات العميل';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
+  const isSavingCustomer = createCustomerMutation.isPending || updateCustomerMutation.isPending;
 
   const createInvoice = async (customer: ApiCustomer) => {
     try {
@@ -126,7 +205,7 @@ export const Customers: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">العملاء</h1>
           <p className="text-muted-foreground mt-1">إدارة قاعدة بيانات العملاء</p>
         </div>
-        <Button variant="hero" className="gap-2">
+        <Button variant="hero" className="gap-2" onClick={openCreateDialog}>
           <PlusIcon className="h-4 w-4" />
           إضافة عميل جديد
         </Button>
@@ -144,7 +223,16 @@ export const Customers: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => { setEffectiveSearch(searchTerm.trim()); refetch(); }}>بحث</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPage(1);
+                setEffectiveSearch(searchTerm.trim());
+                refetch();
+              }}
+            >
+              بحث
+            </Button>
             <Button variant="outline" onClick={() => toggleSort('name')} className="gap-1">
               الاسم <ArrowsUpDownIcon className="h-4 w-4" />
             </Button>
@@ -207,7 +295,7 @@ export const Customers: React.FC = () => {
                         <Button variant="outline" size="sm" onClick={() => { setActiveCustomer(c); setOpenPayment(true); setPaymentAmount('-'); setPaymentInvoiceId(''); }}>
                           <ArrowUturnLeftIcon className="h-4 w-4 ml-1" /> سحب دفعة
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(c)}>
                           <PencilIcon className="h-4 w-4" />
                         </Button>
                       </div>
@@ -217,6 +305,30 @@ export const Customers: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">الإجمالي: {total.toLocaleString()} عميل</div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasPrev || page === 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            السابق
+          </Button>
+          <span className="text-sm text-muted-foreground">صفحة {page}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasNext}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            التالي
+          </Button>
         </div>
       </div>
 
@@ -248,6 +360,76 @@ export const Customers: React.FC = () => {
                 paymentMutation.mutate({ customerId: activeCustomer.id, amount, invoiceId: paymentInvoiceId ? Number(paymentInvoiceId) : undefined });
               }}
               disabled={paymentMutation.isPending}
+            >
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create / Edit Customer Dialog */}
+      <Dialog
+        open={customerFormOpen}
+        onOpenChange={(open) => {
+          setCustomerFormOpen(open);
+          if (!open) {
+            resetCustomerForm();
+            setEditingCustomer(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingCustomer ? 'تعديل العميل' : 'إضافة عميل جديد'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              label="الاسم"
+              placeholder="اسم العميل"
+              value={customerForm.name}
+              onChange={handleCustomerFieldChange('name')}
+              required
+            />
+            <Input
+              label="الهاتف"
+              placeholder="رقم الهاتف"
+              value={customerForm.phone}
+              onChange={handleCustomerFieldChange('phone')}
+            />
+            <Input
+              label="البريد الإلكتروني"
+              type="email"
+              placeholder="example@mail.com"
+              value={customerForm.email}
+              onChange={handleCustomerFieldChange('email')}
+            />
+            <Input
+              label="العنوان"
+              placeholder="عنوان العميل"
+              value={customerForm.address}
+              onChange={handleCustomerFieldChange('address')}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCustomerFormOpen(false); resetCustomerForm(); setEditingCustomer(null); }}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                const payload = {
+                  name: customerForm.name.trim(),
+                  phone: customerForm.phone.trim(),
+                  email: customerForm.email.trim(),
+                  address: customerForm.address.trim(),
+                };
+                if (!payload.name) return;
+                if (editingCustomer) {
+                  updateCustomerMutation.mutate({ id: editingCustomer.id, data: payload });
+                } else {
+                  createCustomerMutation.mutate(payload);
+                }
+              }}
+              disabled={!customerForm.name.trim() || isSavingCustomer}
             >
               حفظ
             </Button>

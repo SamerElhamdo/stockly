@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient, endpoints } from '../lib/api';
+import { apiClient, endpoints, setAuthTokens, clearAuthTokens, getAccessToken } from '../lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface User {
@@ -24,19 +24,80 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const USER_STORAGE_KEY = 'stockly_user_info';
+
+const isBrowser = typeof window !== 'undefined';
+
+const readStoredUser = (): User | null => {
+  if (!isBrowser) return null;
+  try {
+    const raw = window.localStorage.getItem(USER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as User;
+  } catch (error) {
+    console.warn('Unable to read stored user', error);
+    return null;
+  }
+};
+
+const persistUser = (value: User | null) => {
+  if (!isBrowser) return;
+  try {
+    if (value) {
+      window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(value));
+    } else {
+      window.localStorage.removeItem(USER_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.warn('Unable to persist user info', error);
+  }
+};
+
+const decodeToken = (token: string): Record<string, any> | null => {
+  if (!isBrowser || !token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join('')
+    );
+    return JSON.parse(payload);
+  } catch (error) {
+    console.warn('Unable to decode token payload', error);
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user;
 
-  // Check for existing auth on app load
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      // You could validate the token here with the server
-      // For now, we'll assume it's valid if it exists
-      setUser({ id: 1, username: 'user' }); // Placeholder user data
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      const stored = readStoredUser();
+      if (stored) {
+        setUser(stored);
+      } else {
+        const decoded = decodeToken(accessToken);
+        if (decoded) {
+          const fallbackUser: User = {
+            id: Number(decoded.user_id) || 0,
+            username: decoded.username || 'المستخدم',
+            email: decoded.email,
+            first_name: decoded.first_name,
+            last_name: decoded.last_name,
+          };
+          setUser(fallbackUser);
+          persistUser(fallbackUser);
+        }
+      }
     }
     setIsLoading(false);
   }, []);
@@ -50,14 +111,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { access, refresh } = response.data;
-      
+
       if (access && refresh) {
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
-        
-        // Set user data (you might want to fetch this from a separate endpoint)
-        setUser({ id: 1, username });
-        
+        setAuthTokens(access, refresh);
+
+        const decoded = decodeToken(access);
+        const resolvedUser: User = {
+          id: Number(decoded?.user_id) || 0,
+          username: decoded?.username || username,
+          email: decoded?.email,
+          first_name: decoded?.first_name,
+          last_name: decoded?.last_name,
+        };
+
+        setUser(resolvedUser);
+        persistUser(resolvedUser);
+
         toast({
           title: 'تم تسجيل الدخول بنجاح',
           description: 'مرحباً بك في منظومة Stockly',
@@ -69,14 +138,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return false;
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       const errorMessage = error.response?.data?.detail || 'خطأ في تسجيل الدخول';
       toast({
         title: 'خطأ في تسجيل الدخول',
         description: errorMessage,
         variant: 'destructive',
       });
-      
+
       return false;
     } finally {
       setIsLoading(false);
@@ -84,8 +153,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearAuthTokens();
+    persistUser(null);
     setUser(null);
     toast({
       title: 'تم تسجيل الخروج',

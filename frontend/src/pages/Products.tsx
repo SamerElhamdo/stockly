@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
 import {
@@ -8,8 +8,18 @@ import {
   ArchiveBoxIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient, endpoints } from '../lib/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
+import { useToast } from '../components/ui/use-toast';
 
 interface ApiProduct {
   id: number;
@@ -21,10 +31,31 @@ interface ApiProduct {
   archived?: boolean;
 }
 
+interface CategoryOption {
+  id: number;
+  name: string;
+}
+
 export const Products: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearch, setEffectiveSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    sku: '',
+    category: '',
+    price: '',
+    stock_qty: '',
+    unit: 'piece',
+    measurement: '',
+    description: '',
+    cost_price: '',
+    wholesale_price: '',
+    retail_price: '',
+  });
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['products', effectiveSearch, page],
@@ -42,6 +73,108 @@ export const Products: React.FC = () => {
   const hasNext = Boolean(data?.next);
   const hasPrev = Boolean(data?.previous);
 
+  const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['product-form-categories'],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.categories);
+      return normalizeListResponse<CategoryOption>(res.data);
+    },
+    enabled: productFormOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categoryOptions = categoriesData?.results ?? [];
+
+  const unitOptions = useMemo(
+    () => [
+      { value: 'piece', label: 'عدد' },
+      { value: 'meter', label: 'متر' },
+      { value: 'kg', label: 'كيلو' },
+      { value: 'liter', label: 'لتر' },
+      { value: 'box', label: 'صندوق' },
+      { value: 'pack', label: 'عبوة' },
+      { value: 'roll', label: 'لفة' },
+      { value: 'sheet', label: 'ورقة' },
+      { value: 'other', label: 'أخرى' },
+    ],
+    []
+  );
+
+  const resetProductForm = () => {
+    setProductForm({
+      name: '',
+      sku: '',
+      category: '',
+      price: '',
+      stock_qty: '',
+      unit: 'piece',
+      measurement: '',
+      description: '',
+      cost_price: '',
+      wholesale_price: '',
+      retail_price: '',
+    });
+  };
+
+  const handleProductFieldChange = (field: keyof typeof productForm) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setProductForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const createProductMutation = useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const res = await apiClient.post(endpoints.products, payload);
+      return res.data as ApiProduct;
+    },
+    onSuccess: () => {
+      toast({ title: 'تمت الإضافة', description: 'تم إنشاء المنتج بنجاح' });
+      setProductFormOpen(false);
+      resetProductForm();
+      setPage(1);
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء المنتج';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await apiClient.post(endpoints.productArchive(id), {});
+      return res.data as { archived: boolean };
+    },
+    onSuccess: () => {
+      toast({ title: 'تم الأرشفة', description: 'تم تحديث حالة المنتج' });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر أرشفة المنتج';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await apiClient.post(endpoints.productRestore(id), {});
+      return res.data as { archived: boolean };
+    },
+    onSuccess: () => {
+      toast({ title: 'تم الاستعادة', description: 'تم إعادة تنشيط المنتج' });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر استعادة المنتج';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
+  const isCreating = createProductMutation.isPending;
+
+  const activeArchiveId = archiveMutation.variables?.id;
+  const activeRestoreId = restoreMutation.variables?.id;
+
   const getStockStatus = (stock: number) => {
     if (stock === 0) return { text: 'نفذ المخزون', color: 'text-destructive bg-destructive-light' };
     if (stock <= 5) return { text: 'مخزون قليل', color: 'text-warning bg-warning-light' };
@@ -56,7 +189,14 @@ export const Products: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">المنتجات</h1>
           <p className="text-muted-foreground mt-1">إدارة منتجات المتجر</p>
         </div>
-        <Button variant="hero" className="gap-2">
+        <Button
+          variant="hero"
+          className="gap-2"
+          onClick={() => {
+            resetProductForm();
+            setProductFormOpen(true);
+          }}
+        >
           <PlusIcon className="h-4 w-4" />
           إضافة منتج جديد
         </Button>
@@ -146,11 +286,21 @@ export const Products: React.FC = () => {
                             <PencilIcon className="h-4 w-4" />
                           </Button>
                           {!isArchived ? (
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => archiveMutation.mutate({ id: product.id })}
+                              disabled={archiveMutation.isPending && activeArchiveId === product.id}
+                            >
                               <ArchiveBoxIcon className="h-4 w-4" />
                             </Button>
                           ) : (
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => restoreMutation.mutate({ id: product.id })}
+                              disabled={restoreMutation.isPending && activeRestoreId === product.id}
+                            >
                               <ArrowPathIcon className="h-4 w-4" />
                             </Button>
                           )}
@@ -174,6 +324,190 @@ export const Products: React.FC = () => {
           <Button variant="outline" size="sm" disabled={!hasNext} onClick={() => setPage((p) => p + 1)}>التالي</Button>
         </div>
       </div>
+
+      {/* Create Product Dialog */}
+      <Dialog
+        open={productFormOpen}
+        onOpenChange={(open) => {
+          setProductFormOpen(open);
+          if (!open) {
+            resetProductForm();
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>إضافة منتج جديد</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="اسم المنتج"
+              placeholder="أدخل اسم المنتج"
+              value={productForm.name}
+              onChange={handleProductFieldChange('name')}
+              required
+            />
+            <Input
+              label="الرمز (SKU)"
+              placeholder="اختياري"
+              value={productForm.sku}
+              onChange={handleProductFieldChange('sku')}
+            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">الفئة</label>
+              <Select
+                value={productForm.category}
+                onValueChange={(value) => setProductForm((prev) => ({ ...prev, category: value }))}
+                disabled={categoriesLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={categoriesLoading ? '...جاري التحميل' : 'اختر الفئة'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">الوحدة</label>
+              <Select
+                value={productForm.unit}
+                onValueChange={(value) => setProductForm((prev) => ({ ...prev, unit: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الوحدة" />
+                </SelectTrigger>
+                <SelectContent>
+                  {unitOptions.map((unit) => (
+                    <SelectItem key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Input
+              label="السعر"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={productForm.price}
+              onChange={handleProductFieldChange('price')}
+              required
+            />
+            <Input
+              label="الكمية في المخزون"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={productForm.stock_qty}
+              onChange={handleProductFieldChange('stock_qty')}
+              required
+            />
+            <Input
+              label="القياس"
+              placeholder="مثال: 1 لتر"
+              value={productForm.measurement}
+              onChange={handleProductFieldChange('measurement')}
+            />
+            <Input
+              label="سعر التكلفة"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="اختياري"
+              value={productForm.cost_price}
+              onChange={handleProductFieldChange('cost_price')}
+            />
+            <Input
+              label="سعر الجملة"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="اختياري"
+              value={productForm.wholesale_price}
+              onChange={handleProductFieldChange('wholesale_price')}
+            />
+            <Input
+              label="سعر التجزئة"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="اختياري"
+              value={productForm.retail_price}
+              onChange={handleProductFieldChange('retail_price')}
+            />
+            <div className="md:col-span-2">
+              <Textarea
+                placeholder="وصف المنتج"
+                value={productForm.description}
+                onChange={handleProductFieldChange('description')}
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setProductFormOpen(false); resetProductForm(); }}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                const name = productForm.name.trim();
+                const categoryId = Number(productForm.category);
+                const price = Number(productForm.price);
+                const stockQty = Number(productForm.stock_qty);
+
+                if (!name || !productForm.category || Number.isNaN(categoryId) || Number.isNaN(price) || Number.isNaN(stockQty)) {
+                  return;
+                }
+
+                const payload: Record<string, unknown> = {
+                  name,
+                  category: categoryId,
+                  price,
+                  stock_qty: stockQty,
+                  unit: productForm.unit,
+                };
+
+                const sku = productForm.sku.trim();
+                if (sku) payload.sku = sku;
+
+                const measurement = productForm.measurement.trim();
+                if (measurement) payload.measurement = measurement;
+
+                const description = productForm.description.trim();
+                if (description) payload.description = description;
+
+                const costPrice = Number(productForm.cost_price);
+                if (!Number.isNaN(costPrice) && productForm.cost_price) payload.cost_price = costPrice;
+
+                const wholesalePrice = Number(productForm.wholesale_price);
+                if (!Number.isNaN(wholesalePrice) && productForm.wholesale_price) payload.wholesale_price = wholesalePrice;
+
+                const retailPrice = Number(productForm.retail_price);
+                if (!Number.isNaN(retailPrice) && productForm.retail_price) payload.retail_price = retailPrice;
+
+                createProductMutation.mutate(payload);
+              }}
+              disabled={
+                !productForm.name.trim() ||
+                !productForm.category ||
+                productForm.price.trim() === '' ||
+                productForm.stock_qty.trim() === '' ||
+                isCreating
+              }
+            >
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
