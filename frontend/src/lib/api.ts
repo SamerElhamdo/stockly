@@ -49,10 +49,7 @@ export const clearAuthTokens = () => {
 export const endpoints = {
   login: "/api/auth/login/",
   refresh: "/api/auth/refresh/",
-  registerCompany: "/api/register/company/",
-  sendOtp: "/api/send-otp/",
-  verifyOtp: "/api/verify-otp/",
-  resetPassword: "/api/reset-password/",
+
   dashboardStats: "/api/dashboard/stats",
   products: "/api/v1/products/",
   productDetail: (id: number | string) => `/api/v1/products/${id}/`,
@@ -68,17 +65,7 @@ export const endpoints = {
   invoiceDetail: (id: number | string) => `/api/v1/invoices/${id}/`,
   invoiceAddItem: (id: number | string) => `/api/v1/invoices/${id}/add_item/`,
   invoiceConfirm: (id: number | string) => `/api/v1/invoices/${id}/confirm/`,
-  returns: "/api/v1/returns/",
-  returnDetail: (id: number | string) => `/api/v1/returns/${id}/`,
-  returnApprove: (id: number | string) => `/api/v1/returns/${id}/approve/`,
-  returnReject: (id: number | string) => `/api/v1/returns/${id}/reject/`,
-  payments: "/api/v1/payments/",
-  balances: "/api/v1/balances/",
-  companyProfile: "/api/v1/profile/",
-  companyProfileDetail: (id: number | string) => `/api/v1/profile/${id}/`,
-  companyUsers: "/api/company/users/",
-  registerStaff: "/api/register/staff/",
-  deleteUser: (id: number | string) => `/api/users/${id}/`,
+
 } as const;
 
 export interface ApiListResponse<T> {
