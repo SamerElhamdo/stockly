@@ -49,6 +49,7 @@ export const clearAuthTokens = () => {
 export const endpoints = {
   login: "/api/auth/login/",
   refresh: "/api/auth/refresh/",
+
   dashboardStats: "/api/dashboard/stats",
   products: "/api/v1/products/",
   productDetail: (id: number | string) => `/api/v1/products/${id}/`,
@@ -64,6 +65,7 @@ export const endpoints = {
   invoiceDetail: (id: number | string) => `/api/v1/invoices/${id}/`,
   invoiceAddItem: (id: number | string) => `/api/v1/invoices/${id}/add_item/`,
   invoiceConfirm: (id: number | string) => `/api/v1/invoices/${id}/confirm/`,
+
 } as const;
 
 export interface ApiListResponse<T> {

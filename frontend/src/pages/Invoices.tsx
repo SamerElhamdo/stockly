@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
 import {
@@ -23,15 +24,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../components/ui/use-toast';
 
-interface ApiInvoiceItem {
-  id: number;
-  product_name: string;
-  product_sku?: string | null;
-  qty: string | number;
-  price_at_add: string | number;
-  line_total: string | number;
-  
-const statusConfigMap: Record<ApiInvoice['status'], { text: string; color: string; icon: typeof CheckCircleIcon }> = {
   draft: { text: 'مسودة', color: 'text-warning bg-warning-light', icon: ClockIcon },
   confirmed: { text: 'مؤكدة', color: 'text-primary bg-primary-light', icon: CheckCircleIcon },
   cancelled: { text: 'ملغاة', color: 'text-destructive bg-destructive-light', icon: XCircleIcon },
@@ -43,7 +35,7 @@ export const Invoices: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | ApiInvoice['status']>('all');
+
   const [page, setPage] = useState(1);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ApiInvoice | null>(null);
@@ -52,31 +44,6 @@ export const Invoices: React.FC = () => {
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerSearchKeyword, setCustomerSearchKeyword] = useState('');
 
-
-  const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: ['invoices', statusFilter, page],
-    queryFn: async () => {
-      const res = await apiClient.get(endpoints.invoices, {
-        params: {
-          page,
-          status: statusFilter === 'all' ? undefined : statusFilter,
-        },
-      });
-      return normalizeListResponse<ApiInvoice>(res.data);
-    },
-    keepPreviousData: true,
-  });
-
-  const { data: customerOptionsData, isLoading: customerOptionsLoading } = useQuery({
-    queryKey: ['invoice-customers', customerSearchKeyword],
-    queryFn: async () => {
-      const res = await apiClient.get(endpoints.customers, {
-        params: { search: customerSearchKeyword || undefined },
-      });
-      return normalizeListResponse<ApiCustomerOption>(res.data);
-    },
-    enabled: createDialogOpen,
-    keepPreviousData: true,
 
   return (
     <div className="space-y-6">
