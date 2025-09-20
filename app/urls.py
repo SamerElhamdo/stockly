@@ -8,7 +8,8 @@ from .api import (api_products, api_invoice_session, api_get_invoice, api_add_it
                   api_send_otp, api_verify_otp, api_whatsapp_webhook, api_delete_user,
                   api_get_token, api_reset_password, api_returns, api_create_return, 
                   api_return_details, api_approve_return, api_reject_return, api_invoice_returnable_items,
-                  api_payments, api_create_payment, api_customer_balances, api_customer_payments, api_customer_invoices, api_invoice_payments, api_search_invoices, api_archive_product, api_archive_customer)
+                  api_payments, api_create_payment, api_customer_balances, api_customer_payments, api_customer_invoices, api_invoice_payments, api_search_invoices, api_archive_product, api_archive_customer,
+                  api_archived_customers, api_archived_products, api_restore_customer, api_restore_product)
 from . import views
 
 urlpatterns = [
@@ -73,8 +74,14 @@ urlpatterns = [
   path('api/customer-balances/', api_customer_balances),
   path('api/customers/<int:customer_id>/payments/', api_customer_payments),
   path('api/customers/<int:customer_id>/invoices/', api_customer_invoices),
-    path('api/invoices/<int:invoice_id>/payments/', api_invoice_payments),
-    path('api/search-invoices/', api_search_invoices),
+  path('api/invoices/<int:invoice_id>/payments/', api_invoice_payments),
+  path('api/search-invoices/', api_search_invoices),
+  
+  # Archive Management
+  path('api/archive/customers/', api_archived_customers),
+  path('api/archive/products/', api_archived_products),
+  path('api/customers/<int:customer_id>/restore/', api_restore_customer),
+  path('api/products/<int:product_id>/restore/', api_restore_product),
 
   # Dashboard Pages
   path('', views.dashboard, name='dashboard'),
@@ -86,6 +93,11 @@ urlpatterns = [
   path('returns/', views.returns, name='returns'),
   path('returns/<int:return_id>/', views.return_details, name='return_details'),
   path('payments/', views.payments, name='payments'),
+  path('archive/', views.archive, name='archive'),
+
+
+  
+
   
   # PDF Generation
   path('invoice/<int:invoice_id>/pdf/', views.invoice_pdf, name='invoice_pdf'),

@@ -49,6 +49,7 @@ def api_invoice_session(request):
     customer, _ = Customer.objects.get_or_create(
         name=name, 
         company=request.user.company,
+        archived=False,
         defaults={'phone': '', 'email': '', 'address': ''}
     )
     inv = Invoice.objects.create(customer=customer, company=request.user.company)
@@ -1472,3 +1473,124 @@ def api_search_invoices(request):
         "status": inv.status,
         "status_display": inv.get_status_display()
     } for inv in unique_invoices])
+
+
+# Archive Management APIs
+@api_view(["GET"])
+@api_company_staff_required
+def api_archived_customers(request):
+    """Get all archived customers for the company"""
+    try:
+        customers = company_queryset(Customer, request.user).filter(archived=True).annotate(
+            invoices_count=Count('invoices', distinct=True),
+            returns_count=Count('invoices__returns', filter=Q(invoices__returns__status='approved'), distinct=True)
+        ).order_by('-created_at')
+        
+        # Get customer balances
+        customer_balances = {}
+        for customer in customers:
+            try:
+                balance = CustomerBalance.objects.get(customer=customer, company=request.user.company)
+                customer_balances[customer.id] = float(balance.balance)
+            except CustomerBalance.DoesNotExist:
+                customer_balances[customer.id] = 0.0
+        
+        return Response([{
+            "id": c.id, 
+            "name": c.name, 
+            "phone": c.phone, 
+            "email": c.email,
+            "address": c.address, 
+            "invoices_count": c.invoices_count,
+            "returns_count": c.returns_count,
+            "balance": customer_balances.get(c.id, 0.0),
+            "archived_at": c.created_at.isoformat()  # Using created_at as archived_at
+        } for c in customers])
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["GET"])
+@api_company_staff_required
+def api_archived_products(request):
+    """Get all archived products for the company"""
+    try:
+        products = company_queryset(Product, request.user).filter(archived=True).select_related('category').order_by('-created_at')
+        
+        return Response([{
+            "id": p.id,
+            "sku": p.sku,
+            "name": p.name,
+            "price": float(p.price),
+            "stock_qty": p.stock_qty,
+            "category_id": p.category.id if p.category else None,
+            "category_name": p.category.name if p.category else None,
+            "unit": p.unit,
+            "unit_display": p.get_unit_display() if p.unit else None,
+            "measurement": p.measurement,
+            "description": p.description,
+            "cost_price": float(p.cost_price) if p.cost_price else None,
+            "wholesale_price": float(p.wholesale_price) if p.wholesale_price else None,
+            "retail_price": float(p.retail_price) if p.retail_price else None,
+            "archived_at": p.created_at.isoformat()  # Using created_at as archived_at
+        } for p in products])
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_restore_customer(request, customer_id):
+    """Restore an archived customer"""
+    try:
+        if request.user.account_type != 'company_owner':
+            return Response({"error": "Only company owners can restore customers"}, status=403)
+        
+        customer = company_queryset(Customer, request.user).get(id=customer_id, archived=True)
+        customer.archived = False
+        customer.save(update_fields=["archived"])
+        
+        return Response({
+            "success": True,
+            "message": "تم إلغاء أرشفة العميل بنجاح",
+            "customer": {
+                "id": customer.id,
+                "name": customer.name,
+                "archived": customer.archived
+            }
+        })
+        
+    except Customer.DoesNotExist:
+        return Response({"error": "العميل المؤرشف غير موجود"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+@api_company_owner_required
+def api_restore_product(request, product_id):
+    """Restore an archived product"""
+    try:
+        if request.user.account_type != 'company_owner':
+            return Response({"error": "Only company owners can restore products"}, status=403)
+        
+        product = company_queryset(Product, request.user).get(id=product_id, archived=True)
+        product.archived = False
+        product.save(update_fields=["archived"])
+        
+        return Response({
+            "success": True,
+            "message": "تم إلغاء أرشفة المنتج بنجاح",
+            "product": {
+                "id": product.id,
+                "name": product.name,
+                "archived": product.archived
+            }
+        })
+        
+    except Product.DoesNotExist:
+        return Response({"error": "المنتج المؤرشف غير موجود"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)

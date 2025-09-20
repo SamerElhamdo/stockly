@@ -359,3 +359,9 @@ def return_details(request, return_id):
 def payments(request):
     """Payments page"""
     return render(request, 'payments.html')
+
+
+@company_staff_required
+def archive(request):
+    """Archive page for archived customers and products"""
+    return render(request, 'archive.html')
