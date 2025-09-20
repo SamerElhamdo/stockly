@@ -8,41 +8,39 @@ import {
   ArchiveBoxIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient, endpoints } from '../lib/api';
 
-interface Product {
+interface ApiProduct {
   id: number;
   name: string;
   sku: string;
-  category: string;
-  price: number;
-  stock: number;
-  status: 'active' | 'archived';
+  category_name?: string | null;
+  price: number | string;
+  stock_qty: number;
+  archived?: boolean;
 }
 
-// Mock data
-const mockProducts: Product[] = [
-  { id: 1, name: 'لابتوب Dell XPS 13', sku: 'LT001', category: 'أجهزة كمبيوتر', price: 4500, stock: 15, status: 'active' },
-  { id: 2, name: 'ماوس لاسلكي Logitech', sku: 'MS001', category: 'إكسسوارات', price: 120, stock: 45, status: 'active' },
-  { id: 3, name: 'كيبورد ميكانيكي', sku: 'KB001', category: 'إكسسوارات', price: 350, stock: 8, status: 'active' },
-  { id: 4, name: 'شاشة Samsung 27"', sku: 'MN001', category: 'شاشات', price: 1200, stock: 22, status: 'active' },
-  { id: 5, name: 'سماعات Sony WH-1000XM4', sku: 'HP001', category: 'صوتيات', price: 800, stock: 3, status: 'active' },
-];
-
 export const Products: React.FC = () => {
-  const [products] = useState<Product[]>(mockProducts);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [effectiveSearch, setEffectiveSearch] = useState('');
+  const [page, setPage] = useState(1);
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ['products', effectiveSearch, page],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.products, {
+        params: { search: effectiveSearch || undefined, page },
+      });
+      return res.data as { count: number; next: string | null; previous: string | null; results: ApiProduct[] };
+    },
+    keepPreviousData: true,
+  });
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const total = data?.count || 0;
+  const results = data?.results || [];
+  const hasNext = Boolean(data?.next);
+  const hasPrev = Boolean(data?.previous);
 
   const getStockStatus = (stock: number) => {
     if (stock === 0) return { text: 'نفذ المخزون', color: 'text-destructive bg-destructive-light' };
@@ -76,8 +74,7 @@ export const Products: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">ترشيح حسب الفئة</Button>
-            <Button variant="outline">ترتيب</Button>
+            <Button variant="outline" onClick={() => { setPage(1); setEffectiveSearch(searchTerm.trim()); refetch(); }}>بحث</Button>
           </div>
         </div>
       </div>
@@ -98,115 +95,85 @@ export const Products: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedProducts.map((product, index) => {
-                const stockStatus = getStockStatus(product.stock);
-                
-                return (
-                  <tr 
-                    key={product.id} 
-                    className={`border-b border-border hover:bg-card-hover transition-colors ${
-                      index % 2 === 0 ? 'bg-background' : 'bg-card'
-                    }`}
-                  >
-                    <td className="py-4 px-6">
-                      <div className="font-medium text-foreground">{product.name}</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="font-mono text-sm text-muted-foreground">{product.sku}</span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-muted-foreground">{product.category}</span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="font-semibold text-foreground">{product.price.toLocaleString()} ر.س</span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{product.stock}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${stockStatus.color}`}>
-                          {stockStatus.text}
+              {isLoading || isFetching ? (
+                <tr><td className="py-6 px-6 text-muted-foreground" colSpan={7}>...جاري التحميل</td></tr>
+              ) : isError ? (
+                <tr><td className="py-6 px-6 text-destructive" colSpan={7}>تعذر جلب البيانات</td></tr>
+              ) : results.length === 0 ? (
+                <tr><td className="py-6 px-6 text-muted-foreground" colSpan={7}>لا توجد بيانات</td></tr>
+              ) : (
+                results.map((product, index) => {
+                  const stockStatus = getStockStatus(product.stock_qty);
+                  const priceNumber = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+                  const isArchived = Boolean(product.archived);
+                  return (
+                    <tr 
+                      key={product.id} 
+                      className={`border-b border-border hover:bg-card-hover transition-colors ${
+                        index % 2 === 0 ? 'bg-background' : 'bg-card'
+                      }`}
+                    >
+                      <td className="py-4 px-6">
+                        <div className="font-medium text-foreground">{product.name}</div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-mono text-sm text-muted-foreground">{product.sku}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="text-sm text-muted-foreground">{product.category_name || '-'}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-semibold text-foreground">{Number(priceNumber || 0).toLocaleString()} ر.س</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{product.stock_qty}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${stockStatus.color}`}>
+                            {stockStatus.text}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          !isArchived ? 'text-success bg-success-light' : 'text-muted-foreground bg-muted'
+                        }`}>
+                          {!isArchived ? 'نشط' : 'مؤرشف'}
                         </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        product.status === 'active' 
-                          ? 'text-success bg-success-light' 
-                          : 'text-muted-foreground bg-muted'
-                      }`}>
-                        {product.status === 'active' ? 'نشط' : 'مؤرشف'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <PencilIcon className="h-4 w-4" />
-                        </Button>
-                        {product.status === 'active' ? (
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
                           <Button variant="ghost" size="sm">
-                            <ArchiveBoxIcon className="h-4 w-4" />
+                            <PencilIcon className="h-4 w-4" />
                           </Button>
-                        ) : (
-                          <Button variant="ghost" size="sm">
-                            <ArrowPathIcon className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                          {!isArchived ? (
+                            <Button variant="ghost" size="sm">
+                              <ArchiveBoxIcon className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="sm">
+                              <ArrowPathIcon className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
-
-        {/* Empty State */}
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-              <MagnifyingGlassIcon className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">لم يتم العثور على منتجات</h3>
-            <p className="text-muted-foreground">جرب تغيير كلمات البحث أو المرشحات</p>
-          </div>
-        )}
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
-              السابق
-            </Button>
-            
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </Button>
-            ))}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
-              التالي
-            </Button>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">الإجمالي: {total.toLocaleString()} منتج</div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={!hasPrev} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
+          <span className="text-sm text-muted-foreground">صفحة {page}</span>
+          <Button variant="outline" size="sm" disabled={!hasNext} onClick={() => setPage((p) => p + 1)}>التالي</Button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
