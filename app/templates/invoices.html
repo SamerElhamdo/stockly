@@ -393,7 +393,10 @@ function clearSelectedCustomer() {
 
 // Create invoice with selected customer
 async function createInvoice() {
-    let customerName = 'عميل نقدي';
+    customerName = document.getElementById('customerName').value.trim();
+    if (!customerName) {
+        customerName = 'عميل نقدي';
+    }
     
     // Check if customer is selected
     if (selectedCustomerId) {
