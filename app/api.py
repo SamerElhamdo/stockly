@@ -354,11 +354,18 @@ def api_dashboard_stats(request):
     total_sales = company_queryset(Invoice, request.user).filter(status=Invoice.CONFIRMED).aggregate(
         total=Sum('total_amount'))['total'] or 0
     low_stock_items = company_queryset(Product, request.user).filter(stock_qty__lt=5).count()
-    
+    recent_invoices = company_queryset(Invoice, request.user).select_related('customer').order_by('-created_at')[:5]
     return Response({
         "today_invoices": today_invoices,
         "total_sales": float(total_sales),
-        "low_stock_items": low_stock_items
+        "low_stock_items": low_stock_items,
+        "recent_invoices": [{
+            "id": inv.id,
+            "customer_name": inv.customer.name,
+            "total_amount": float(inv.total_amount),
+            "status": inv.status,
+            "created_at": inv.created_at.isoformat()
+        } for inv in recent_invoices]
     })
 
 # Delete endpoints

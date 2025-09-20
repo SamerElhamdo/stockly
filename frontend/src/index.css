@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Stockly Design System - Professional Arabic RTL Interface */
+
+@layer base {
+  :root {
+    /* Stockly Brand Colors */
+    --background: 248 250 252;
+    --foreground: 15 23 42;
+    --background-secondary: 241 245 249;
+    
+    /* Cards & Surfaces */
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --card-hover: 248 250 252;
+    
+    /* Popover & Dropdown */
+    --popover: 255 255 255;
+    --popover-foreground: 15 23 42;
+    
+    /* Stockly Primary Blue */
+    --primary: 219 78% 58%;
+    --primary-foreground: 255 255 255;
+    --primary-hover: 219 78% 50%;
+    --primary-light: 219 78% 95%;
+    
+    /* Secondary & Neutral */
+    --secondary: 226 54% 96%;
+    --secondary-foreground: 51 65% 5%;
+    --secondary-hover: 226 54% 92%;
+    
+    /* Muted & Subtle */
+    --muted: 226 54% 96%;
+    --muted-foreground: 100 7% 47%;
+    
+    /* Accent Colors */
+    --accent: 142 76% 96%;
+    --accent-foreground: 142 84% 24%;
+    
+    /* Success Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 255 255 255;
+    --success-light: 142 76% 96%;
+    
+    /* Warning Colors */
+    --warning: 43 96% 56%;
+    --warning-foreground: 15 23 42;
+    --warning-light: 43 96% 95%;
+    
+    /* Destructive/Error Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 255 255 255;
+    --destructive-light: 0 84% 96%;
+    
+    /* Borders & Inputs */
+    --border: 226 54% 92%;
+    --border-strong: 226 54% 88%;
+    --input: 226 54% 96%;
+    --input-border: 226 54% 88%;
+    --ring: 219 78% 58%;
+    
+    /* Layout & Spacing */
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-lg: 1rem;
+    
+    /* Sidebar Colors */
+    --sidebar-background: 255 255 255;
+    --sidebar-foreground: 71 85% 6%;
+    --sidebar-primary: 219 78% 58%;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 226 54% 96%;
+    --sidebar-accent-foreground: 71 85% 6%;
+    --sidebar-border: 226 54% 92%;
+    --sidebar-ring: 219 78% 58%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(219 78% 58%), hsl(219 78% 50%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 30%));
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(226 54% 92% / 0.8);
+    --shadow-md: 0 4px 6px -1px hsl(226 54% 88% / 0.6), 0 2px 4px -1px hsl(226 54% 88% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(226 54% 88% / 0.4), 0 4px 6px -2px hsl(226 54% 88% / 0.2);
+    --shadow-primary: 0 4px 12px hsl(219 78% 58% / 0.3);
+  }
+
+  .dark {
+    --background: 15 23 42;
+    --foreground: 248 250 252;
+    --background-secondary: 30 41 59;
+
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
+    --card-hover: 51 65% 8%;
+
+    --popover: 30 41 59;
+    --popover-foreground: 248 250 252;
+
+    --primary: 219 78% 58%;
+    --primary-foreground: 255 255 255;
+    --primary-hover: 219 78% 50%;
+    --primary-light: 219 78% 15%;
+
+    --secondary: 51 65% 8%;
+    --secondary-foreground: 248 250 252;
+    --secondary-hover: 51 65% 10%;
+
+    --muted: 51 65% 8%;
+    --muted-foreground: 148 163 184;
+
+    --accent: 142 76% 15%;
+    --accent-foreground: 142 84% 90%;
+    
+    --success: 142 76% 50%;
+    --success-foreground: 255 255 255;
+    --success-light: 142 76% 15%;
+    
+    --warning: 43 96% 60%;
+    --warning-foreground: 15 23 42;
+    --warning-light: 43 96% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 255 255 255;
+    --destructive-light: 0 84% 15%;
+
+    --border: 51 65% 15%;
+    --border-strong: 51 65% 20%;
+    --input: 51 65% 8%;
+    --input-border: 51 65% 20%;
+    --ring: 219 78% 58%;
+
+    --sidebar-background: 15 23 42;
+    --sidebar-foreground: 248 250 252;
+    --sidebar-primary: 219 78% 58%;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 51 65% 8%;
+    --sidebar-accent-foreground: 248 250 252;
+    --sidebar-border: 51 65% 15%;
+    --sidebar-ring: 219 78% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Noto Sans Arabic', system-ui, sans-serif;
+    direction: rtl;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-foreground;
+  }
+  
+  /* RTL Specific Styles */
+  .ltr {
+    direction: ltr;
+  }
+}
+
+@layer components {
+  /* Custom scrollbar for better UX */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--border-strong));
+  }
+  
+  /* Animation utilities */
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Focus styles for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  /* Custom button variants */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus-ring;
+  }
+  
+  .btn-success {
+    @apply bg-success text-success-foreground hover:bg-success/90;
+  }
+  
+  .btn-warning {
+    @apply bg-warning text-warning-foreground hover:bg-warning/90;
+  }
+  
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+  }
+}
