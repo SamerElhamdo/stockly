@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../components/ui/use-toast';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import { useCompany } from '../contexts/CompanyContext';
@@ -392,20 +393,24 @@ export const Returns: React.FC = () => {
             >
               بحث
             </Button>
-            <select
+            <Select
               value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value as StatusFilter);
+              onValueChange={(value) => {
+                setStatusFilter(value as StatusFilter);
                 setPage(1);
               }}
-              className="px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="all">جميع الحالات</option>
-              <option value="pending">قيد المراجعة</option>
-              <option value="approved">موافق عليها</option>
-              <option value="rejected">مرفوضة</option>
-              <option value="completed">مكتملة</option>
-            </select>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="جميع الحالات" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="pending">قيد المراجعة</SelectItem>
+                <SelectItem value="approved">موافق عليها</SelectItem>
+                <SelectItem value="rejected">مرفوضة</SelectItem>
+                <SelectItem value="completed">مكتملة</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               onClick={() => {

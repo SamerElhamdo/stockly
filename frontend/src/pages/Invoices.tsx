@@ -313,19 +313,23 @@ export const Invoices: React.FC = () => {
             >
               بحث
             </Button>
-            <select
+            <Select
               value={statusFilter}
-              onChange={(e) => {
+              onValueChange={(value) => {
                 setPage(1);
-                setStatusFilter(e.target.value as typeof statusFilter);
+                setStatusFilter(value as typeof statusFilter);
               }}
-              className="px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="all">جميع الحالات</option>
-              <option value="draft">مسودة</option>
-              <option value="confirmed">مؤكدة</option>
-              <option value="cancelled">ملغاة</option>
-            </select>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="جميع الحالات" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="draft">مسودة</SelectItem>
+                <SelectItem value="confirmed">مؤكدة</SelectItem>
+                <SelectItem value="cancelled">ملغاة</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               onClick={() => {

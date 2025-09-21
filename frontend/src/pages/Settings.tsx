@@ -178,7 +178,7 @@ export const Settings: React.FC = () => {
                   <div>
                     <label className="text-sm font-medium text-foreground">اللغة</label>
                     <select
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
                       value={language}
                       onChange={(e) => setLanguage(e.target.value as 'ar' | 'en')}
                     >
@@ -189,7 +189,7 @@ export const Settings: React.FC = () => {
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-foreground">رسالة الشريط العلوي</label>
                     <input
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
                       placeholder="نص قصير يظهر بجانب الترحيب"
                       value={navbarMessage}
                       onChange={(e) => setNavbarMessage(e.target.value)}
@@ -204,7 +204,7 @@ export const Settings: React.FC = () => {
                   <div>
                     <label className="text-sm font-medium text-foreground">العملة الثانوية</label>
                     <select
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
                       value={secondaryCurrency}
                       onChange={(e) => setSecondaryCurrency(e.target.value)}
                     >
@@ -220,7 +220,7 @@ export const Settings: React.FC = () => {
                   <div>
                     <label className="text-sm font-medium text-foreground">سعر 1 دولار بالثانوية</label>
                     <input
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
                       placeholder="مثال: 15000"
                       value={secondaryPerUsd}
                       onChange={(e) => setSecondaryPerUsd(e.target.value)}
@@ -232,7 +232,7 @@ export const Settings: React.FC = () => {
                   <div>
                     <label className="text-sm font-medium text-foreground">عرض الأسعار</label>
                     <select
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
                       value={priceDisplayMode}
                       onChange={(e) => setPriceDisplayMode(e.target.value as any)}
                     >

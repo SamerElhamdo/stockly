@@ -20,12 +20,22 @@ export const Header: React.FC = () => {
     <header className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold text-foreground flex items-center gap-3">
-            <span>مرحباً، {user?.username || 'المستخدم'}</span>
+          {profile?.logo_url && (
+            <div className="h-8 w-8 rounded-lg bg-muted border border-border overflow-hidden">
+              <img src={profile.logo_url} alt="شعار" className="h-full w-full object-contain" />
+            </div>
+          )}
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold text-foreground">مرحباً، {user?.username || 'المستخدم'}</h1>
+              {profile?.company_name && (
+                <span className="text-sm text-muted-foreground">{profile.company_name}</span>
+              )}
+            </div>
             {profile?.navbar_message && (
-              <span className="text-sm text-muted-foreground">{profile.navbar_message}</span>
+              <span className="text-xs text-muted-foreground">{profile.navbar_message}</span>
             )}
-          </h1>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
