@@ -287,7 +287,7 @@ export const Payments: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المدفوع</p>
-              <p className="text-xl font-bold text-foreground"><Amount value={stats.totalPaid} /></p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.totalPaid} digits={2} /></p>
             </div>
           </div>
         </div>
@@ -298,7 +298,7 @@ export const Payments: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">الرصيد المستحق</p>
-              <p className="text-xl font-bold text-foreground"><Amount value={stats.outstanding} /></p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.outstanding} digits={2} /></p>
             </div>
           </div>
         </div>
@@ -309,7 +309,7 @@ export const Payments: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي الفواتير</p>
-              <p className="text-xl font-bold text-foreground"><Amount value={stats.invoiced} /></p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.invoiced} digits={2} /></p>
             </div>
           </div>
         </div>
@@ -406,7 +406,7 @@ export const Payments: React.FC = () => {
                     <td className="py-4 px-6 text-muted-foreground">
                       {payment.invoice ? `فاتورة #${payment.invoice}` : '—'}
                     </td>
-                    <td className="py-4 px-6 font-semibold text-foreground"><Amount value={parseNumber(payment.amount)} /></td>
+                    <td className="py-4 px-6 font-semibold text-foreground"><Amount value={parseNumber(payment.amount)} digits={2} /></td>
                     <td className="py-4 px-6 text-muted-foreground">
                       {payment.payment_method_display || paymentMethodLabels[payment.payment_method as PaymentMethod]}
                     </td>
@@ -478,7 +478,7 @@ export const Payments: React.FC = () => {
                   {invoiceOptions.map((invoice) => (
                     <SelectItem key={invoice.id} value={String(invoice.id)}>
                       {`فاتورة #${invoice.id} - `}
-                      <Amount value={parseNumber(invoice.total_amount)} />
+                      <Amount value={parseNumber(invoice.total_amount)} digits={2} />
                     </SelectItem>
                   ))}
                 </SelectContent>

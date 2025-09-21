@@ -204,7 +204,7 @@ export const Dashboard: React.FC = () => {
             key={index}
             {...stat}
             value={stat.title === 'إجمالي المبيعات' ? (
-              statsLoading ? '...' : <Amount value={totalSales} />
+              statsLoading ? '...' : <Amount value={totalSales} digits={2} />
             ) : stat.value}
           />
         ))}
@@ -233,7 +233,7 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   <span className="font-semibold text-success">
-                    {Number(invoice.total_amount || 0).toLocaleString()} ر.س
+                    <Amount value={Number(invoice.total_amount || 0)} digits={2} />
                   </span>
                 </div>
               ))

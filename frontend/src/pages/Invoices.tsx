@@ -402,7 +402,7 @@ export const Invoices: React.FC = () => {
                         <span className="text-foreground">{invoice.customer_name}</span>
                       </td>
                       <td className="py-4 px-6">
-                        <Amount value={amount} />
+                        <Amount value={amount} digits={2} tone={amount < 0 ? 'success' : amount > 0 ? 'destructive' : undefined} />
                       </td>
                       <td className="py-4 px-6">
                         <span className="text-muted-foreground">{itemsCount} عنصر</span>
@@ -587,8 +587,8 @@ export const Invoices: React.FC = () => {
                         <tr key={it.id} className="border-b border-border last:border-b-0">
                           <td className="py-2 px-3">{it.product_name}</td>
                           <td className="py-2 px-3 text-muted-foreground">{qty}</td>
-                          <td className="py-2 px-3 text-muted-foreground"><Amount value={price} /></td>
-                          <td className="py-2 px-3 font-medium text-foreground"><Amount value={total} /></td>
+                          <td className="py-2 px-3 text-muted-foreground"><Amount value={price} digits={2} /></td>
+                          <td className="py-2 px-3 font-medium text-foreground"><Amount value={total} digits={2} /></td>
                         </tr>
                       );
                     })}
@@ -599,7 +599,7 @@ export const Invoices: React.FC = () => {
                         <span className="text-sm font-semibold text-foreground">المبلغ الإجمالي</span>
                       </td>
                       <td className="py-2 px-3 font-bold text-foreground">
-                        <Amount value={Number(previewInvoice.total_amount || 0)} />
+                        <Amount value={Number(previewInvoice.total_amount || 0)} digits={2} />
                       </td>
                     </tr>
                   </tfoot>
@@ -614,7 +614,7 @@ export const Invoices: React.FC = () => {
                 <div className="flex items-center gap-6 print:pb-6">
                   <div className="text-lg font-bold text-foreground">
                     <span className="text-sm font-medium mr-2">المبلغ الإجمالي:</span>
-                    <Amount value={Number(previewInvoice.total_amount || 0)} />
+                    <Amount value={Number(previewInvoice.total_amount || 0)} digits={2} />
                   </div>
                   <Button onClick={printPreview} className="print:hidden">طباعة</Button>
                 </div>

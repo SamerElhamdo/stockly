@@ -24,6 +24,8 @@ import {
   DialogFooter,
 } from '../components/ui/dialog';
 import { useToast } from '../components/ui/use-toast';
+import { Amount } from '../components/Amount';
+import { useCompany } from '../contexts/CompanyContext';
 
 interface ApiCustomer {
   id: number;
@@ -35,11 +37,16 @@ interface ApiCustomer {
   created_at?: string;
 }
 
-type SortKey = 'name' | 'phone' | 'email';
+type SortKey = 'name' | 'phone' | 'email' | 'created_at' | 'dues';
+
+interface ApiCustomerWithDues extends ApiCustomer {
+  dues?: number | string | null;
+}
 
 export const Customers: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { formatAmount } = useCompany();
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearch, setEffectiveSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -63,18 +70,37 @@ export const Customers: React.FC = () => {
   });
   const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery<ApiResponse<ApiCustomer>>({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<ApiResponse<ApiCustomerWithDues>>({
     queryKey: ['customers', effectiveSearch, page],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.customers, {
         params: { search: effectiveSearch || undefined, page },
       });
-      return normalizeListResponse<ApiCustomer>(res.data);
+      return normalizeListResponse<ApiCustomerWithDues>(res.data);
     },
     placeholderData: (prev) => prev,
   });
 
-  const list: ApiCustomer[] = data?.results || [];
+  const { data: balancesData } = useQuery({
+    queryKey: ['balances'],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.balances);
+      return normalizeListResponse<{ customer: number; balance: number | string }>(res.data);
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const listRaw: ApiCustomerWithDues[] = data?.results || [];
+  const balances = balancesData?.results || [];
+  const customerIdToBalance = useMemo(() => {
+    const map = new Map<number, number>();
+    balances.forEach((b) => map.set((b as any).customer, Number((b as any).balance || 0)));
+    return map;
+  }, [balances]);
+
+  const list: ApiCustomerWithDues[] = useMemo(() => {
+    return listRaw.map((c) => ({ ...c, dues: customerIdToBalance.get(c.id) ?? c.dues ?? 0 }));
+  }, [listRaw, customerIdToBalance]);
   const total = data?.count ?? list.length;
   const hasNext = Boolean(data?.next);
   const hasPrev = Boolean(data?.previous);
@@ -82,6 +108,16 @@ export const Customers: React.FC = () => {
   const sortedList = useMemo(() => {
     const clone = [...list];
     clone.sort((a, b) => {
+      if (sortKey === 'created_at') {
+        const at = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bt = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return sortDir === 'asc' ? at - bt : bt - at;
+      }
+      if (sortKey === 'dues') {
+        const av = Number((a.dues as any) ?? 0);
+        const bv = Number((b.dues as any) ?? 0);
+        return sortDir === 'asc' ? av - bv : bv - av;
+      }
       const av = (a[sortKey] || '').toString().toLowerCase();
       const bv = (b[sortKey] || '').toString().toLowerCase();
       if (av < bv) return sortDir === 'asc' ? -1 : 1;
@@ -92,6 +128,8 @@ export const Customers: React.FC = () => {
   }, [list, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
+    const allowed: SortKey[] = ['created_at', 'dues'];
+    if (!allowed.includes(key)) return;
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -218,7 +256,7 @@ export const Customers: React.FC = () => {
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               onClick={() => {
@@ -229,11 +267,12 @@ export const Customers: React.FC = () => {
             >
               بحث
             </Button>
-            <Button variant="outline" onClick={() => toggleSort('name')} className="gap-1">
-              الاسم <ArrowsUpDownIcon className="h-4 w-4" />
+            {/* Removed name/phone sorting per request */}
+            <Button variant="outline" onClick={() => toggleSort('created_at')} className="gap-1">
+              التاريخ <ArrowsUpDownIcon className="h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={() => toggleSort('phone')} className="gap-1">
-              الهاتف <ArrowsUpDownIcon className="h-4 w-4" />
+            <Button variant="outline" onClick={() => toggleSort('dues')} className="gap-1">
+              المستحقات <ArrowsUpDownIcon className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -247,8 +286,8 @@ export const Customers: React.FC = () => {
               <tr>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">الاسم</th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">الهاتف</th>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">البريد</th>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">العنوان</th>
+                <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">المستحقات</th>
+                <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">التاريخ</th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">إجراءات سريعة</th>
               </tr>
             </thead>
@@ -271,15 +310,16 @@ export const Customers: React.FC = () => {
                         <span className="ltr">{c.phone || '-'}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <EnvelopeIcon className="h-4 w-4" />
-                        <span>{c.email || '-'}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-sm text-muted-foreground">{c.address || '-'}</span>
-                    </td>
+                  <td className="py-4 px-6">
+                    {typeof c.dues !== 'undefined' && c.dues !== null ? (
+                      <Amount value={Number(c.dues)} digits={2} tone={Number(c.dues) > 0 ? 'destructive' : Number(c.dues) < 0 ? 'success' : undefined} />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-6 text-muted-foreground">
+                    {c.created_at ? new Date(c.created_at).toLocaleDateString('ar') : '—'}
+                  </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => createInvoice(c)} disabled={createInvoiceLoading}>
