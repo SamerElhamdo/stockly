@@ -151,7 +151,7 @@ export const Users: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">المستخدمون</h1>
           <p className="text-muted-foreground mt-1">إدارة مستخدمي الشركة وصلاحياتهم</p>
         </div>
-        <Button variant="hero" className="gap-2" onClick={() => setCreateDialogOpen(true)}>
+        <Button variant="outline" className="gap-2" onClick={() => setCreateDialogOpen(true)}>
           <PlusIcon className="h-4 w-4" />
           إضافة مستخدم جديد
         </Button>

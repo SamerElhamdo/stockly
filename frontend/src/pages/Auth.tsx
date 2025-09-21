@@ -559,7 +559,7 @@ export const Auth: React.FC = () => {
 
                 <Button
                   type="submit"
-                  variant="hero"
+                  variant="outline"
                   size="lg"
                   className="w-full"
                   disabled={isSubmitting || !formData.username || !formData.password}
@@ -766,7 +766,7 @@ export const Auth: React.FC = () => {
 
                 <Button
                   type="submit"
-                  variant="hero"
+                  variant="outline"
                   size="lg"
                   className="w-full"
                   disabled={disableRegisterSubmit}
@@ -931,7 +931,7 @@ export const Auth: React.FC = () => {
 
                 <Button
                   type="submit"
-                  variant="hero"
+                  variant="outline"
                   size="lg"
                   className="w-full"
                   disabled={disableResetSubmit}
