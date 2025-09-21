@@ -212,8 +212,10 @@ export const Payments: React.FC = () => {
       setAmountInput('');
       setMethodInput('cash');
       setNotesInput('');
+      setPage(1);
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['balances'] });
+      queryClient.refetchQueries({ queryKey: ['payments'] });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر تسجيل الدفعة';

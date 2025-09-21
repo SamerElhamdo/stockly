@@ -27,7 +27,7 @@ export const Categories: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearch, setEffectiveSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  // لا حاجة للترتيب في الفئات
 
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
   const [categoryForm, setCategoryForm] = useState({
@@ -69,17 +69,7 @@ export const Categories: React.FC = () => {
     return map;
   }, [optionSource, list]);
 
-  const sortedList = useMemo(() => {
-    const categories = [...list];
-    categories.sort((a, b) => {
-      const av = a.name.toLowerCase();
-      const bv = b.name.toLowerCase();
-      if (av < bv) return sortDir === 'asc' ? -1 : 1;
-      if (av > bv) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return categories;
-  }, [list, sortDir]);
+  const sortedList = list;
 
   const createCategoryMutation = useMutation({
     mutationFn: async (payload: { name: string; parent?: number | null }) => {
@@ -173,13 +163,7 @@ export const Categories: React.FC = () => {
             >
               بحث
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setSortDir((dir) => (dir === 'asc' ? 'desc' : 'asc'))}
-              className="gap-1"
-            >
-              ترتيب <ArrowsUpDownIcon className="h-4 w-4" />
-            </Button>
+            {/* تمت إزالة الترتيب بناءً على الطلب */}
           </div>
         </div>
       </div>

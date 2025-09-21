@@ -37,6 +37,7 @@ type InvoiceStatus = keyof typeof statusConfigMap;
 
 interface ApiInvoice {
   id: number;
+  customer?: number;
   customer_name: string;
   total_amount: number | string;
   status: InvoiceStatus;
@@ -75,6 +76,10 @@ export const Invoices: React.FC = () => {
   const [previewInvoice, setPreviewInvoice] = useState<ApiInvoice | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmInvoice, setConfirmInvoice] = useState<ApiInvoice | null>(null);
+  // Return dialog
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [returnInvoice, setReturnInvoice] = useState<ApiInvoice | null>(null);
+  const [returnInputs, setReturnInputs] = useState<Record<number, string>>({});
   const [productSearch, setProductSearch] = useState('');
   const [productSearchKeyword, setProductSearchKeyword] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -203,6 +208,78 @@ export const Invoices: React.FC = () => {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تأكيد الفاتورة';
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' });
+    },
+  });
+
+  // Returns summary for selected invoice
+  const { data: returnsListData, isFetching: returnsFetching } = useQuery({
+    queryKey: ['returns-by-invoice', returnInvoice?.id, returnInvoice?.customer],
+    queryFn: async () => {
+      const params: any = {};
+      if (returnInvoice?.customer) params.customer = returnInvoice.customer;
+      const res = await apiClient.get(endpoints.returns, { params });
+      return normalizeListResponse<any>(res.data);
+    },
+    enabled: Boolean(returnDialogOpen && returnInvoice?.id),
+  });
+
+  const returnedByItemId = useMemo(() => {
+    const map = new Map<number, number>();
+    const results = returnsListData?.results || [];
+    results.forEach((ret: any) => {
+      if (ret.invoice_id !== (returnInvoice?.id || ret.original_invoice)) return;
+      if (ret.status === 'rejected') return;
+      (ret.items || []).forEach((rit: any) => {
+        const key = Number(rit.original_item);
+        const qty = Number(rit.qty_returned || 0);
+        map.set(key, (map.get(key) || 0) + qty);
+      });
+    });
+    return map;
+  }, [returnsListData, returnInvoice]);
+
+  const openReturnDialog = (inv: ApiInvoice) => {
+    setReturnInvoice(inv);
+    // init inputs to empty
+    const initial: Record<number, string> = {};
+    (inv.items || []).forEach((it: any) => { initial[it.id] = ''; });
+    setReturnInputs(initial);
+    setReturnDialogOpen(true);
+    // Force-refresh returns data for accurate counts
+    queryClient.invalidateQueries({ queryKey: ['returns-by-invoice', inv.id, inv.customer] });
+    queryClient.refetchQueries({ queryKey: ['returns-by-invoice', inv.id, inv.customer] });
+  };
+
+  const submitReturn = useMutation({
+    mutationFn: async () => {
+      if (!returnInvoice) return;
+      const items: Array<{ original_item_id: number; qty_returned: number }> = [];
+      (returnInvoice.items || []).forEach((it: any) => {
+        const v = Number(returnInputs[it.id]);
+        if (v && v > 0) items.push({ original_item_id: it.id, qty_returned: v });
+      });
+      if (items.length === 0) throw new Error('no_items');
+      const body = { original_invoice: returnInvoice.id, items } as any;
+      const res = await apiClient.post(endpoints.returns, body);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم إنشاء المرتجع', description: 'تم حفظ المرتجع بنجاح' });
+      // Keep dialog open and refresh counts
+      setReturnInputs((prev) => {
+        const cleared: Record<number, string> = {};
+        Object.keys(prev).forEach((k) => { cleared[Number(k)] = ''; });
+        return cleared;
+      });
+      queryClient.invalidateQueries({ queryKey: ['returns-by-invoice', returnInvoice?.id, returnInvoice?.customer] });
+      queryClient.refetchQueries({ queryKey: ['returns-by-invoice', returnInvoice?.id, returnInvoice?.customer] });
+      queryClient.invalidateQueries({ queryKey: ['returns'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء المرتجع';
       toast({ title: 'خطأ', description: msg, variant: 'destructive' });
     },
   });
@@ -422,6 +499,13 @@ export const Invoices: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="sm" onClick={() => openPreview(invoice)}>
                             <PrinterIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openReturnDialog(invoice)}
+                          >
+                            مرتجع
                           </Button>
                           {isDraft && (
                             <>
@@ -661,6 +745,67 @@ export const Invoices: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>إلغاء</Button>
             <Button onClick={() => confirmInvoice && confirmMutation.mutate(confirmInvoice.id)} disabled={!confirmInvoice || confirmMutation.isPending}>تأكيد</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Return Dialog */}
+      <Dialog
+        open={returnDialogOpen}
+        onOpenChange={(open) => { setReturnDialogOpen(open); if (!open) { setReturnInvoice(null); setReturnInputs({}); } }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>إنشاء مرتجع {returnInvoice ? `لفاتورة #${returnInvoice.id}` : ''}</DialogTitle>
+          </DialogHeader>
+          {returnInvoice ? (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">العميل: <span className="text-foreground font-medium">{returnInvoice.customer_name}</span></div>
+              <div className="border border-border rounded-md overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-right py-2 px-3">المنتج</th>
+                      <th className="text-right py-2 px-3">المباع</th>
+                      <th className="text-right py-2 px-3">تم إرجاعه</th>
+                      <th className="text-right py-2 px-3">المتاح إرجاعه</th>
+                      <th className="text-right py-2 px-3">إرجاع الآن</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(returnInvoice.items || []).map((it: any) => {
+                      const sold = Number(it.qty || 0);
+                      const alreadyReturned = Number(returnedByItemId.get(it.id) || 0);
+                      const remaining = Math.max(0, sold - alreadyReturned);
+                      return (
+                        <tr key={it.id} className="border-b border-border last:border-b-0">
+                          <td className="py-2 px-3">{it.product_name}</td>
+                          <td className="py-2 px-3 text-muted-foreground">{sold}</td>
+                          <td className="py-2 px-3 text-muted-foreground">{alreadyReturned}</td>
+                          <td className="py-2 px-3 font-medium text-foreground">{remaining}</td>
+                          <td className="py-2 px-3">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={remaining}
+                              value={returnInputs[it.id] ?? ''}
+                              onChange={(e) => setReturnInputs((prev) => ({ ...prev, [it.id]: e.target.value }))}
+                              placeholder="0"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-10">لا توجد بيانات</div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={() => submitReturn.mutate()} disabled={!returnInvoice || submitReturn.isPending}>حفظ المرتجع</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
