@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.db import transaction
@@ -19,6 +20,8 @@ from .serializers import (
     CustomerBalanceSerializer
 )
 from .permissions import IsCompanyOwner, IsCompanyStaff, ReadOnlyOrOwner
+from .api import api_send_otp, api_verify_otp, api_reset_password
+from . import views as legacy_views
 from .api import update_customer_balance
 
 
@@ -194,6 +197,11 @@ class InvoiceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
             pass
         return Response({'invoice_id': invoice.id, 'status': invoice.status})
 
+    @action(detail=True, methods=['get'], permission_classes=[IsCompanyStaff])
+    def pdf(self, request, pk=None):
+        # Reuse existing PDF generator view
+        return legacy_views.invoice_pdf(request, invoice_id=int(pk))
+
 
 class ReturnViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = ReturnSerializer
@@ -299,5 +307,26 @@ class CustomerBalanceViewSet(CompanyScopedQuerysetMixin, mixins.ListModelMixin, 
     serializer_class = CustomerBalanceSerializer
     queryset = CustomerBalance.objects.select_related('customer')
     permission_classes = [IsCompanyStaff]
+
+
+class OTPRequestView(APIView):
+    permission_classes: list = []  # public
+
+    def post(self, request):
+        return api_send_otp(request)
+
+
+class OTPVerifyView(APIView):
+    permission_classes: list = []  # public
+
+    def post(self, request):
+        return api_verify_otp(request)
+
+
+class ResetPasswordView(APIView):
+    permission_classes: list = []  # public
+
+    def post(self, request):
+        return api_reset_password(request)
 
 

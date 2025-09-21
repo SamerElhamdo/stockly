@@ -24,10 +24,24 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../components/ui/use-toast';
 
+const statusConfigMap = {
   draft: { text: 'مسودة', color: 'text-warning bg-warning-light', icon: ClockIcon },
   confirmed: { text: 'مؤكدة', color: 'text-primary bg-primary-light', icon: CheckCircleIcon },
   cancelled: { text: 'ملغاة', color: 'text-destructive bg-destructive-light', icon: XCircleIcon },
-};
+} as const;
+
+type InvoiceStatus = keyof typeof statusConfigMap;
+
+interface ApiInvoice {
+  id: number;
+  customer_name: string;
+  total_amount: number | string;
+  status: InvoiceStatus;
+  created_at: string;
+  items?: any[];
+}
+
+interface OptionItem { id: number; name: string }
 
 export const Invoices: React.FC = () => {
   const queryClient = useQueryClient();
@@ -35,15 +49,153 @@ export const Invoices: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
-
+  const [statusFilter, setStatusFilter] = useState<'all' | InvoiceStatus>('all');
   const [page, setPage] = useState(1);
+
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ApiInvoice | null>(null);
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerSearchKeyword, setCustomerSearchKeyword] = useState('');
 
+  // Add item dialog
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const [addItemInvoiceId, setAddItemInvoiceId] = useState<number | null>(null);
+  const [productSearch, setProductSearch] = useState('');
+  const [productSearchKeyword, setProductSearchKeyword] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [itemQty, setItemQty] = useState<string>('1');
+
+  // Invoices list
+  const { data, isLoading, isError, isFetching } = useQuery({
+    queryKey: ['invoices', searchKeyword, statusFilter, page],
+    queryFn: async () => {
+      const params: any = { page };
+      if (searchKeyword) params.search = searchKeyword;
+      if (statusFilter !== 'all') params.status = statusFilter;
+      const res = await apiClient.get(endpoints.invoices, { params });
+      return normalizeListResponse<ApiInvoice>(res.data);
+    },
+    keepPreviousData: true,
+  });
+
+  const list = data?.results || [];
+  const count = data?.count || list.length;
+  const hasNext = Boolean(data?.next);
+  const hasPrev = Boolean(data?.previous);
+
+  const stats = useMemo(() => {
+    const statusCount = { draft: 0, confirmed: 0, cancelled: 0 } as Record<InvoiceStatus, number>;
+    let totalAmount = 0;
+    list.forEach((inv) => {
+      totalAmount += Number(inv.total_amount || 0);
+      if (inv.status in statusCount) statusCount[inv.status as InvoiceStatus]++;
+    });
+    return { count: list.length, statusCount, totalAmount };
+  }, [list]);
+
+  // Customer options for create dialog
+  const { data: customerOptionsData, isFetching: customerOptionsLoading } = useQuery({
+    queryKey: ['invoice-customer-options', customerSearchKeyword],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.customers, {
+        params: customerSearchKeyword ? { search: customerSearchKeyword } : undefined,
+      });
+      const normalized = normalizeListResponse<OptionItem & { phone?: string }>(res.data);
+      return normalized.results.map((c) => ({ id: c.id, name: c.name } as OptionItem));
+    },
+    enabled: createDialogOpen,
+  });
+  const customerOptions = customerOptionsData || [];
+
+  // Product options for add item
+  const { data: productOptionsData, isFetching: productOptionsLoading } = useQuery({
+    queryKey: ['invoice-product-options', productSearchKeyword],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.products, {
+        params: productSearchKeyword ? { search: productSearchKeyword } : undefined,
+      });
+      const normalized = normalizeListResponse<{ id: number; name: string }>(res.data);
+      return normalized.results.map((p) => ({ id: p.id, name: p.name } as OptionItem));
+    },
+    enabled: addItemOpen,
+  });
+  const productOptions = productOptionsData || [];
+
+  // Mutations
+  const createInvoiceMutation = useMutation({
+    mutationFn: async (vars: { customerId: number }) => {
+      const res = await apiClient.post(endpoints.invoices, { customer: vars.customerId });
+      return res.data as ApiInvoice;
+    },
+    onSuccess: (inv) => {
+      toast({ title: 'فاتورة جديدة', description: `تم إنشاء فاتورة مسودة #${inv.id}` });
+      setCreateDialogOpen(false);
+      setSelectedCustomer('');
+      setCustomerSearch(''); setCustomerSearchKeyword('');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      // Open add item dialog directly
+      setAddItemInvoiceId(inv.id);
+      setAddItemOpen(true);
+    },
+    onError: (err: any) => {
+      toast({ title: 'خطأ', description: err?.response?.data?.detail || 'تعذر إنشاء الفاتورة', variant: 'destructive' });
+    },
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: async (vars: { invoiceId: number; productId: number; qty: number }) => {
+      const res = await apiClient.post(endpoints.invoiceAddItem(vars.invoiceId), {
+        product: vars.productId,
+        qty: vars.qty,
+      });
+      return res.data as ApiInvoice;
+    },
+    onSuccess: () => {
+      toast({ title: 'تمت الإضافة', description: 'تمت إضافة العنصر للفاتورة' });
+      setItemQty('1'); setSelectedProductId('');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إضافة العنصر';
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' });
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: async (invoiceId: number) => {
+      const res = await apiClient.post(endpoints.invoiceConfirm(invoiceId));
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم التأكيد', description: 'تم تأكيد الفاتورة' });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تأكيد الفاتورة';
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' });
+    },
+  });
+
+  const downloadPdf = async (invoiceId: number) => {
+    try {
+      const res = await apiClient.get(endpoints.invoicePdf(invoiceId), { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const win = window.open(url, '_blank');
+      if (!win) {
+        const a = document.createElement('a');
+        a.href = url; a.download = `invoice_${invoiceId}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err: any) {
+      toast({ title: 'خطأ', description: 'تعذر تنزيل PDF', variant: 'destructive' });
+    }
+  };
+
+  const filteredInvoices = list; // server-side filtered already by params
 
   return (
     <div className="space-y-6">
@@ -80,7 +232,7 @@ export const Invoices: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">مؤكدة</p>
-              <p className="text-xl font-bold text-foreground">{stats.statusCount.confirmed}</p>
+              <p className="text-xl font-bold text-foreground">{list.filter((i) => i.status === 'confirmed').length}</p>
             </div>
           </div>
         </div>
@@ -92,7 +244,7 @@ export const Invoices: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">مسودات</p>
-              <p className="text-xl font-bold text-foreground">{stats.statusCount.draft}</p>
+              <p className="text-xl font-bold text-foreground">{list.filter((i) => i.status === 'draft').length}</p>
             </div>
           </div>
         </div>
@@ -198,6 +350,9 @@ export const Invoices: React.FC = () => {
                   const StatusIcon = statusConfig.icon;
 
                   const itemsCount = invoice.items?.length ?? 0;
+                  const amount = Number(invoice.total_amount || 0);
+
+                  const isDraft = invoice.status === 'draft';
 
                   return (
                     <tr
@@ -232,16 +387,29 @@ export const Invoices: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedInvoice(invoice);
-                            setDetailDialogOpen(true);
-                          }}
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => downloadPdf(invoice.id)}>
+                            <PrinterIcon className="h-4 w-4" />
+                          </Button>
+                          {isDraft && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => { setAddItemInvoiceId(invoice.id); setAddItemOpen(true); }}
+                              >
+                                إضافة عنصر
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => confirmMutation.mutate(invoice.id)}
+                              >
+                                تأكيد
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -249,6 +417,16 @@ export const Invoices: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">الإجمالي: {count.toLocaleString()} فاتورة</div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={!hasPrev || page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
+          <span className="text-sm text-muted-foreground">صفحة {page}</span>
+          <Button variant="outline" size="sm" disabled={!hasNext} onClick={() => setPage((p) => p + 1)}>التالي</Button>
         </div>
       </div>
 
@@ -317,6 +495,63 @@ export const Invoices: React.FC = () => {
                 createInvoiceMutation.mutate({ customerId: Number(selectedCustomer) });
               }}
               disabled={!selectedCustomer || createInvoiceMutation.isPending}
+            >
+              حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Item Dialog */}
+      <Dialog
+        open={addItemOpen}
+        onOpenChange={(open) => {
+          setAddItemOpen(open);
+          if (!open) {
+            setAddItemInvoiceId(null); setSelectedProductId(''); setItemQty('1'); setProductSearch(''); setProductSearchKeyword('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إضافة عنصر للفاتورة #{addItemInvoiceId}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              label="بحث عن منتج"
+              placeholder="اكتب اسم المنتج أو SKU"
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
+            />
+            <Button variant="outline" onClick={() => setProductSearchKeyword(productSearch.trim())} disabled={productOptionsLoading}>بحث</Button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">اختر المنتج</label>
+              <Select value={selectedProductId} onValueChange={(value) => setSelectedProductId(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder={productOptionsLoading ? '...جاري التحميل' : 'اختر المنتج'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {productOptions.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Input label="الكمية" type="number" min={1} value={itemQty} onChange={(e) => setItemQty(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddItemOpen(false)}>إلغاء</Button>
+            <Button
+              onClick={() => {
+                const pid = Number(selectedProductId);
+                const qty = Number(itemQty);
+                if (!addItemInvoiceId || !pid || !qty) return;
+                addItemMutation.mutate({ invoiceId: addItemInvoiceId, productId: pid, qty });
+              }}
+              disabled={!addItemInvoiceId || !selectedProductId || Number(itemQty) <= 0 || addItemMutation.isPending}
             >
               حفظ
             </Button>

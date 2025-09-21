@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsCompanyStaff
 from django.db import transaction
 from django.db.models import Count, Q, Sum, Q, Max
 from django.utils import timezone
@@ -347,7 +348,7 @@ def api_recent_invoices(request):
     } for inv in invoices])
 
 @api_view(["GET"])
-@api_company_staff_required
+@permission_classes([IsCompanyStaff])
 def api_dashboard_stats(request):
     today = timezone.now().date()
     today_invoices = company_queryset(Invoice, request.user).filter(created_at__date=today).count()
