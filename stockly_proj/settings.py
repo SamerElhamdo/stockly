@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "stockly.encryptosystem.com",
+    "www.stockly.encryptosystem.com",
     "localhost",
     "127.0.0.1",
     "*"  # Remove this in production
@@ -181,6 +182,7 @@ X_FRAME_OPTIONS = 'DENY'
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = [
     'https://stockly.encryptosystem.com',
+    'https://www.stockly.encryptosystem.com',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://localhost:5173',
