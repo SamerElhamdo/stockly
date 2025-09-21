@@ -264,7 +264,7 @@ export const Payments: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">المدفوعات</h1>
           <p className="text-muted-foreground mt-1">سجل المدفوعات ومتابعة أرصدة العملاء</p>
         </div>
-        <Button variant="hero" className="gap-2" onClick={openCreateDialog}>
+        <Button variant="outline" className="gap-2" onClick={openCreateDialog}>
           <PlusIcon className="h-4 w-4" />
           إضافة دفعة جديدة
         </Button>

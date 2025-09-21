@@ -17,7 +17,7 @@ export const NotFoundPage: React.FC = () => {
         
         <div className="space-y-4">
           <Link to="/dashboard">
-            <Button variant="hero" size="lg" className="gap-2">
+            <Button variant="outline" size="lg" className="gap-2">
               <HomeIcon className="h-5 w-5" />
               العودة إلى الصفحة الرئيسية
             </Button>
