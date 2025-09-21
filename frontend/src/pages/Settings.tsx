@@ -19,6 +19,13 @@ interface CompanyProfile {
   logo_url?: string | null;
   return_policy?: string | null;
   payment_policy?: string | null;
+  language?: 'ar' | 'en';
+  navbar_message?: string | null;
+  dashboard_cards?: string[];
+  primary_currency?: 'USD';
+  secondary_currency?: string | null;
+  secondary_per_usd?: number | null;
+  price_display_mode?: 'both' | 'primary' | 'secondary';
   updated_at: string;
 }
 
@@ -41,6 +48,12 @@ export const Settings: React.FC = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
+  const [navbarMessage, setNavbarMessage] = useState('');
+  const [dashboardCards, setDashboardCards] = useState<string[]>([]);
+  const [secondaryCurrency, setSecondaryCurrency] = useState<string>('');
+  const [secondaryPerUsd, setSecondaryPerUsd] = useState<string>('');
+  const [priceDisplayMode, setPriceDisplayMode] = useState<'both' | 'primary' | 'secondary'>('both');
 
   useEffect(() => {
     if (profile) {
@@ -49,6 +62,12 @@ export const Settings: React.FC = () => {
       setLogoPreview(profile.logo_url || null);
       setLogoFile(null);
       setRemoveLogo(false);
+      setLanguage(profile.language || 'ar');
+      setNavbarMessage(profile.navbar_message || '');
+      setDashboardCards(profile.dashboard_cards || []);
+      setSecondaryCurrency(profile.secondary_currency || '');
+      setSecondaryPerUsd(profile.secondary_per_usd ? String(profile.secondary_per_usd) : '');
+      setPriceDisplayMode(profile.price_display_mode || 'both');
     }
   }, [profile]);
 
@@ -61,11 +80,17 @@ export const Settings: React.FC = () => {
   }, [logoPreview, logoFile]);
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { return_policy: string; payment_policy: string; logo?: File | null; remove_logo?: boolean }) => {
+    mutationFn: async (payload: { return_policy: string; payment_policy: string; language: string; navbar_message: string; dashboard_cards: string[]; secondary_currency?: string | null; secondary_per_usd?: string | null; price_display_mode: string; logo?: File | null; remove_logo?: boolean }) => {
       if (!profile) throw new Error('لا يوجد ملف شركة');
       const formData = new FormData();
       formData.append('return_policy', payload.return_policy);
       formData.append('payment_policy', payload.payment_policy);
+      formData.append('language', payload.language);
+      formData.append('navbar_message', payload.navbar_message);
+      formData.append('dashboard_cards', JSON.stringify(payload.dashboard_cards || []));
+      if (payload.secondary_currency) formData.append('secondary_currency', payload.secondary_currency);
+      if (payload.secondary_per_usd) formData.append('secondary_per_usd', payload.secondary_per_usd);
+      formData.append('price_display_mode', payload.price_display_mode);
       if (payload.logo) {
         formData.append('logo', payload.logo);
       }
@@ -108,6 +133,12 @@ export const Settings: React.FC = () => {
     updateMutation.mutate({
       return_policy: returnPolicy,
       payment_policy: paymentPolicy,
+      language,
+      navbar_message: navbarMessage,
+      dashboard_cards: dashboardCards,
+      secondary_currency: secondaryCurrency,
+      secondary_per_usd: secondaryPerUsd,
+      price_display_mode: priceDisplayMode,
       logo: logoFile || undefined,
       remove_logo: removeLogo || (!logoFile && !logoPreview),
     });
@@ -142,6 +173,76 @@ export const Settings: React.FC = () => {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+              <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">اللغة</label>
+                    <select
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value as 'ar' | 'en')}
+                    >
+                      <option value="ar">العربية</option>
+                      <option value="en">English</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium text-foreground">رسالة الشريط العلوي</label>
+                    <input
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="نص قصير يظهر بجانب الترحيب"
+                      value={navbarMessage}
+                      onChange={(e) => setNavbarMessage(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">العملة الأساسية</label>
+                    <input className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-muted text-sm" value="USD" disabled />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">العملة الثانوية</label>
+                    <select
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={secondaryCurrency}
+                      onChange={(e) => setSecondaryCurrency(e.target.value)}
+                    >
+                      <option value="">بدون</option>
+                      <option value="SYP">الليرة السورية (SYP)</option>
+                      <option value="SAR">الريال السعودي (SAR)</option>
+                      <option value="TRY">الليرة التركية (TRY)</option>
+                      <option value="AED">الدرهم الإماراتي (AED)</option>
+                      <option value="EUR">اليورو (EUR)</option>
+                      <option value="LBP">الليرة اللبنانية (LBP)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">سعر 1 دولار بالثانوية</label>
+                    <input
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="مثال: 15000"
+                      value={secondaryPerUsd}
+                      onChange={(e) => setSecondaryPerUsd(e.target.value)}
+                      disabled={!secondaryCurrency}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">عرض الأسعار</label>
+                    <select
+                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={priceDisplayMode}
+                      onChange={(e) => setPriceDisplayMode(e.target.value as any)}
+                    >
+                      <option value="both">كلا العملتين</option>
+                      <option value="primary">الدولار فقط</option>
+                      <option value="secondary">الثانوية فقط</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
               <div className="bg-card rounded-lg border border-border p-6 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary-light rounded-full">

@@ -65,8 +65,11 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
+      const onAuthPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/auth');
       clearAuthTokens();
-      window.location.href = '/auth';
+      if (!onAuthPage) {
+        window.location.href = '/auth';
+      }
     }
     return Promise.reject(error);
   }
@@ -100,6 +103,7 @@ export const endpoints = {
   invoiceAddItem: (id: number) => `/api/v1/invoices/${id}/add_item/`,
   invoiceConfirm: (id: number) => `/api/v1/invoices/${id}/confirm/`,
   invoicePdf: (id: number) => `/api/v1/invoices/${id}/pdf/`,
+  invoicePreview: (id: number) => `/api/v1/invoices/${id}/`, // same details endpoint; front renders preview
   
   // Returns
   returns: '/api/v1/returns/',
@@ -109,6 +113,10 @@ export const endpoints = {
   // Payments
   payments: '/api/v1/payments/',
   balances: '/api/v1/balances/',
+
+  // Company Profile
+  companyProfile: '/api/v1/company-profile/', // list returns single profile via overridden list
+  companyProfileDetail: (id: number) => `/api/v1/company-profile/${id}/`,
   
   // Users
   users: '/api/v1/users/',

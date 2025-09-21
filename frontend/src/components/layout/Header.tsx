@@ -9,17 +9,22 @@ import {
   MoonIcon
 } from '@heroicons/react/24/outline';
 import { useTheme } from 'next-themes';
+import { useCompany } from '../../contexts/CompanyContext';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { profile } = useCompany();
 
   return (
     <header className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold text-foreground">
-            مرحباً، {user?.username || 'المستخدم'}
+          <h1 className="text-xl font-semibold text-foreground flex items-center gap-3">
+            <span>مرحباً، {user?.username || 'المستخدم'}</span>
+            {profile?.navbar_message && (
+              <span className="text-sm text-muted-foreground">{profile.navbar_message}</span>
+            )}
           </h1>
         </div>
         

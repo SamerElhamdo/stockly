@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { ApiResponse } from '../lib/api';
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
 import {
@@ -36,6 +38,7 @@ interface ApiCustomer {
 type SortKey = 'name' | 'phone' | 'email';
 
 export const Customers: React.FC = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearch, setEffectiveSearch] = useState('');
@@ -60,7 +63,7 @@ export const Customers: React.FC = () => {
   });
   const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<ApiResponse<ApiCustomer>>({
     queryKey: ['customers', effectiveSearch, page],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.customers, {
@@ -68,7 +71,7 @@ export const Customers: React.FC = () => {
       });
       return normalizeListResponse<ApiCustomer>(res.data);
     },
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
   const list: ApiCustomer[] = data?.results || [];
@@ -185,16 +188,9 @@ export const Customers: React.FC = () => {
 
   const isSavingCustomer = createCustomerMutation.isPending || updateCustomerMutation.isPending;
 
-  const createInvoice = async (customer: ApiCustomer) => {
-    try {
-      setCreateInvoiceLoading(true);
-      const res = await apiClient.post(endpoints.invoices, { customer: customer.id });
-      toast({ title: 'فاتورة جديدة', description: `تم إنشاء مسودة فاتورة #${res.data?.id}` });
-    } catch (err: any) {
-      toast({ title: 'خطأ', description: err?.response?.data?.detail || 'تعذر إنشاء الفاتورة', variant: 'destructive' });
-    } finally {
-      setCreateInvoiceLoading(false);
-    }
+  const createInvoice = (customer: ApiCustomer) => {
+    // انتقل إلى صفحة الفواتير مع تمرير العميل لبدء إنشاء فاتورة ومسار إضافة العناصر
+    navigate('/invoices', { state: { action: 'create_invoice', customerId: customer.id, customerName: customer.name } });
   };
 
   return (

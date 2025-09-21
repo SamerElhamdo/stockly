@@ -9,6 +9,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
+import { useCompany } from '../contexts/CompanyContext';
+import { Amount } from '../components/Amount';
 
 interface StatCardProps {
   title: string;
@@ -81,6 +83,7 @@ interface DashboardStatsResponse {
 }
 
 export const Dashboard: React.FC = () => {
+  const { profile, formatAmount } = useCompany();
   const {
     data: statsData,
     isLoading: statsLoading,
@@ -137,10 +140,10 @@ export const Dashboard: React.FC = () => {
   const customersCount = customersCountData ?? 0;
   const recentInvoices = statsData?.recent_invoices ?? [];
 
-  const stats = [
+  const allStats = [
     {
       title: 'إجمالي المبيعات',
-      value: statsLoading ? '...' : `${totalSales.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س`,
+      value: statsLoading ? '...' : undefined,
       icon: CurrencyDollarIcon,
       color: 'success' as const,
     },
@@ -164,6 +167,20 @@ export const Dashboard: React.FC = () => {
     },
   ];
 
+  const cardsPref = profile?.dashboard_cards && profile.dashboard_cards.length > 0 ? new Set(profile.dashboard_cards) : null;
+  const stats = cardsPref
+    ? allStats.filter((s) => {
+        const map: Record<string, string> = {
+          'إجمالي المبيعات': 'total_sales',
+          'فواتير اليوم': 'today_invoices',
+          'المنتجات النشطة': 'products',
+          'العملاء': 'customers',
+        };
+        const key = map[s.title] || '';
+        return cardsPref.has(key);
+      })
+    : allStats;
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -183,7 +200,13 @@ export const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
+          <StatCard
+            key={index}
+            {...stat}
+            value={stat.title === 'إجمالي المبيعات' ? (
+              statsLoading ? '...' : <Amount value={totalSales} />
+            ) : stat.value}
+          />
         ))}
       </div>
 

@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 
 // Context Providers
 import { AuthProvider } from "./contexts/AuthContext";
+import { CompanyProvider } from "./contexts/CompanyContext";
 
 // Layout Components
 import { Layout } from "./components/layout/Layout";
@@ -41,6 +42,7 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <TooltipProvider>
         <AuthProvider>
+          <CompanyProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -137,6 +139,7 @@ const App = () => (
             </Routes>
           </Layout>
         </BrowserRouter>
+          </CompanyProvider>
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>

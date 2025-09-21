@@ -20,6 +20,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../components/ui/use-toast';
+import { useCompany } from '../contexts/CompanyContext';
+import { Amount } from '../components/Amount';
 
 interface ApiProduct {
   id: number;
@@ -37,6 +39,7 @@ interface CategoryOption {
 }
 
 export const Products: React.FC = () => {
+  const { formatAmount } = useCompany();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -263,7 +266,7 @@ export const Products: React.FC = () => {
                         <span className="text-sm text-muted-foreground">{product.category_name || '-'}</span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="font-semibold text-foreground">{Number(priceNumber || 0).toLocaleString()} ر.س</span>
+                        <Amount value={Number(priceNumber || 0)} />
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">

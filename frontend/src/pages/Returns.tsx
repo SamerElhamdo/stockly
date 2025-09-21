@@ -22,6 +22,8 @@ import {
 } from '../components/ui/dialog';
 import { useToast } from '../components/ui/use-toast';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
+import { useCompany } from '../contexts/CompanyContext';
+import { Amount } from '../components/Amount';
 
 interface ApiReturnItem {
   id: number;
@@ -98,6 +100,7 @@ const parseNumber = (value: number | string | undefined | null): number => {
 const formatCurrency = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 export const Returns: React.FC = () => {
+  const { formatAmount } = useCompany();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -467,7 +470,7 @@ export const Returns: React.FC = () => {
                         <span className="text-foreground">{record.customer_name}</span>
                       </td>
                       <td className="py-4 px-6 text-muted-foreground">فاتورة #{record.invoice_id}</td>
-                      <td className="py-4 px-6 font-semibold text-foreground">{formatCurrency(amount)} ر.س</td>
+                      <td className="py-4 px-6 font-semibold text-foreground"><Amount value={amount} /></td>
                       <td className="py-4 px-6 text-muted-foreground">
                         {new Date(record.return_date).toLocaleString('ar')}
                       </td>
@@ -601,8 +604,8 @@ export const Returns: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-muted-foreground">{parseNumber(item.qty_returned)}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{formatCurrency(parseNumber(item.unit_price))} ر.س</td>
-                        <td className="py-3 px-4 text-foreground font-medium">{formatCurrency(parseNumber(item.line_total))} ر.س</td>
+                        <td className="py-3 px-4 text-muted-foreground"><Amount value={parseNumber(item.unit_price)} /></td>
+                        <td className="py-3 px-4 text-foreground font-medium"><Amount value={parseNumber(item.line_total)} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -713,7 +716,7 @@ export const Returns: React.FC = () => {
                   </div>
                   <div className="bg-muted/40 border border-border rounded-lg p-4 space-y-2">
                     <p className="text-sm text-muted-foreground">الإجمالي التقديري</p>
-                    <p className="text-2xl font-bold text-foreground">{formatCurrency(returnDraftTotal)} ر.س</p>
+                    <p className="text-2xl font-bold text-foreground"><Amount value={returnDraftTotal} /></p>
                     <p className="text-xs text-muted-foreground">
                       سيتم تحديث الإجمالي الفعلي عند إنشاء المرتجع بناءً على الكميات المدخلة
                     </p>

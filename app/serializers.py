@@ -19,7 +19,9 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
         model = CompanyProfile
         fields = [
             'id', 'company', 'company_name', 'company_code', 'company_email', 'company_phone', 'company_address',
-            'logo', 'logo_url', 'return_policy', 'payment_policy', 'created_at', 'updated_at'
+            'logo', 'logo_url', 'return_policy', 'payment_policy', 'language', 'navbar_message', 'dashboard_cards',
+            'primary_currency', 'secondary_currency', 'secondary_per_usd', 'price_display_mode',
+            'created_at', 'updated_at'
         ]
         read_only_fields = [
             'company', 'company_name', 'company_code', 'company_email',
@@ -46,7 +48,17 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
             instance.logo.delete(save=False)
             instance.logo = None
 
-        for attr in ['return_policy', 'payment_policy']:
+        # Coerce dashboard_cards if sent as JSON string via multipart
+        if request is not None and 'dashboard_cards' in request.data:
+            raw_cards = request.data.get('dashboard_cards')
+            if isinstance(raw_cards, str):
+                import json
+                try:
+                    validated_data['dashboard_cards'] = json.loads(raw_cards)
+                except Exception:
+                    pass
+
+        for attr in ['return_policy', 'payment_policy', 'language', 'navbar_message', 'dashboard_cards', 'secondary_currency', 'secondary_per_usd', 'price_display_mode']:
             if attr in validated_data:
                 setattr(instance, attr, validated_data[attr])
 

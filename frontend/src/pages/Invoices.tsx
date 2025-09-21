@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
@@ -23,6 +24,8 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../components/ui/use-toast';
+import { useCompany } from '../contexts/CompanyContext';
+import { Amount } from '../components/Amount';
 
 const statusConfigMap = {
   draft: { text: 'مسودة', color: 'text-warning bg-warning-light', icon: ClockIcon },
@@ -42,10 +45,14 @@ interface ApiInvoice {
 }
 
 interface OptionItem { id: number; name: string }
+interface ProductOption extends OptionItem { stock_qty?: number; price?: number; sku?: string | null; unit_display?: string | null }
 
 export const Invoices: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { formatAmount, profile } = useCompany();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -63,13 +70,18 @@ export const Invoices: React.FC = () => {
   // Add item dialog
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [addItemInvoiceId, setAddItemInvoiceId] = useState<number | null>(null);
+  // Preview & Confirm dialogs
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewInvoice, setPreviewInvoice] = useState<ApiInvoice | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmInvoice, setConfirmInvoice] = useState<ApiInvoice | null>(null);
   const [productSearch, setProductSearch] = useState('');
   const [productSearchKeyword, setProductSearchKeyword] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [itemQty, setItemQty] = useState<string>('1');
 
   // Invoices list
-  const { data, isLoading, isError, isFetching } = useQuery({
+  const { data, isLoading, isError, isFetching } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiInvoice[] }>({
     queryKey: ['invoices', searchKeyword, statusFilter, page],
     queryFn: async () => {
       const params: any = { page };
@@ -78,7 +90,7 @@ export const Invoices: React.FC = () => {
       const res = await apiClient.get(endpoints.invoices, { params });
       return normalizeListResponse<ApiInvoice>(res.data);
     },
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
   const list = data?.results || [];
@@ -117,12 +129,12 @@ export const Invoices: React.FC = () => {
       const res = await apiClient.get(endpoints.products, {
         params: productSearchKeyword ? { search: productSearchKeyword } : undefined,
       });
-      const normalized = normalizeListResponse<{ id: number; name: string }>(res.data);
-      return normalized.results.map((p) => ({ id: p.id, name: p.name } as OptionItem));
+      const normalized = normalizeListResponse<{ id: number; name: string; stock_qty?: number; price?: number; sku?: string; unit_display?: string }>(res.data);
+      return normalized.results.map((p) => ({ id: p.id, name: p.name, stock_qty: (p as any).stock_qty, price: (p as any).price, sku: (p as any).sku, unit_display: (p as any).unit_display } as ProductOption));
     },
     enabled: addItemOpen,
   });
-  const productOptions = productOptionsData || [];
+  const productOptions = (productOptionsData || []) as ProductOption[];
 
   // Mutations
   const createInvoiceMutation = useMutation({
@@ -144,6 +156,20 @@ export const Invoices: React.FC = () => {
       toast({ title: 'خطأ', description: err?.response?.data?.detail || 'تعذر إنشاء الفاتورة', variant: 'destructive' });
     },
   });
+
+  // Handle deep-link from Customers page to auto-create invoice for a customer
+  useEffect(() => {
+    const state = (location.state || {}) as any;
+    if (state && state.action === 'create_invoice' && state.customerId) {
+      const customerId = Number(state.customerId);
+      if (customerId && !createInvoiceMutation.isPending) {
+        createInvoiceMutation.mutate({ customerId });
+        // Clear state to avoid re-trigger on back/refresh
+        navigate('/invoices', { replace: true, state: null });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addItemMutation = useMutation({
     mutationFn: async (vars: { invoiceId: number; productId: number; qty: number }) => {
@@ -172,6 +198,8 @@ export const Invoices: React.FC = () => {
     onSuccess: () => {
       toast({ title: 'تم التأكيد', description: 'تم تأكيد الفاتورة' });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setConfirmDialogOpen(false);
+      setConfirmInvoice(null);
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تأكيد الفاتورة';
@@ -179,23 +207,25 @@ export const Invoices: React.FC = () => {
     },
   });
 
-  const downloadPdf = async (invoiceId: number) => {
-    try {
-      const res = await apiClient.get(endpoints.invoicePdf(invoiceId), { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const win = window.open(url, '_blank');
-      if (!win) {
-        const a = document.createElement('a');
-        a.href = url; a.download = `invoice_${invoiceId}.pdf`;
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch (err: any) {
-      toast({ title: 'خطأ', description: 'تعذر تنزيل PDF', variant: 'destructive' });
-    }
+  const openPreview = (invoice: ApiInvoice) => {
+    setPreviewInvoice(invoice);
+    setPreviewOpen(true);
+  };
+
+  const printPreview = () => {
+    window.print();
   };
 
   const filteredInvoices = list; // server-side filtered already by params
+
+  // Debounce product search input for typeahead
+  useEffect(() => {
+    if (!addItemOpen) return;
+    const handle = setTimeout(() => {
+      setProductSearchKeyword(productSearch.trim());
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [productSearch, addItemOpen]);
 
   return (
     <div className="space-y-6">
@@ -368,9 +398,7 @@ export const Invoices: React.FC = () => {
                         <span className="text-foreground">{invoice.customer_name}</span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="font-semibold text-foreground">
-                          {amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س
-                        </span>
+                        <Amount value={amount} />
                       </td>
                       <td className="py-4 px-6">
                         <span className="text-muted-foreground">{itemsCount} عنصر</span>
@@ -388,7 +416,7 @@ export const Invoices: React.FC = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => downloadPdf(invoice.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => openPreview(invoice)}>
                             <PrinterIcon className="h-4 w-4" />
                           </Button>
                           {isDraft && (
@@ -403,7 +431,7 @@ export const Invoices: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => confirmMutation.mutate(invoice.id)}
+                                onClick={() => { setConfirmInvoice(invoice); setConfirmDialogOpen(true); }}
                               >
                                 تأكيد
                               </Button>
@@ -502,6 +530,126 @@ export const Invoices: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Preview Dialog (frontend print) */}
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => { setPreviewOpen(open); if (!open) setPreviewInvoice(null); }}
+      >
+        <DialogContent className="max-w-3xl print:max-w-none print:!p-0">
+          <DialogHeader>
+            <DialogTitle>معاينة الفاتورة</DialogTitle>
+          </DialogHeader>
+          {previewInvoice ? (
+            <div className="space-y-5 print:space-y-0">
+              {/* Header with logo and company info */}
+              <div className="flex items-center justify-between gap-6 print:px-6 print:pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden print:h-16 print:w-16">
+                    {profile?.logo_url ? (
+                      <img src={profile.logo_url} alt="شعار الشركة" className="h-full w-full object-contain" />
+                    ) : (
+                      <div className="text-xs text-muted-foreground">لا شعار</div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">{profile?.company_name || 'فاتورة'}</h3>
+                    <p className="text-xs text-muted-foreground">{profile?.company_address || ''}</p>
+                    <p className="text-xs text-muted-foreground">{profile?.company_phone || ''}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <h3 className="text-xl font-bold text-foreground">فاتورة #{previewInvoice.id}</h3>
+                  <p className="text-sm text-muted-foreground">{new Date(previewInvoice.created_at).toLocaleString('ar')}</p>
+                  <p className="text-sm text-foreground">{previewInvoice.customer_name}</p>
+                </div>
+              </div>
+
+              <div className="border-y border-border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-right py-2 px-3">المنتج</th>
+                      <th className="text-right py-2 px-3">الكمية</th>
+                      <th className="text-right py-2 px-3">السعر</th>
+                      <th className="text-right py-2 px-3">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(previewInvoice.items || []).map((it) => {
+                      const qty = Number(it.qty || 0);
+                      const price = Number(it.price_at_add || 0);
+                      const total = qty * price;
+                      return (
+                        <tr key={it.id} className="border-b border-border last:border-b-0">
+                          <td className="py-2 px-3">{it.product_name}</td>
+                          <td className="py-2 px-3 text-muted-foreground">{qty}</td>
+                          <td className="py-2 px-3 text-muted-foreground"><Amount value={price} /></td>
+                          <td className="py-2 px-3 font-medium text-foreground"><Amount value={total} /></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totals and actions */}
+              <div className="flex items-center justify-between print:px-6">
+                <div className="text-sm text-muted-foreground">
+                  <div>طريقة الدفع: —</div>
+                </div>
+                <div className="flex items-center gap-6 print:pb-6">
+                  <div className="text-lg font-bold text-foreground"><Amount value={Number(previewInvoice.total_amount || 0)} /></div>
+                  <Button onClick={printPreview} className="print:hidden">طباعة</Button>
+                </div>
+              </div>
+
+              {/* Policies (plain, no cards/shadows) */}
+              {(profile?.return_policy || profile?.payment_policy) && (
+                <div className="print:px-6 print:pb-6 space-y-2">
+                  <h4 className="text-sm font-semibold text-foreground">الملاحظات والسياسات</h4>
+                  {profile?.return_policy && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-foreground">سياسة الإرجاع</p>
+                      <p className="text-xs whitespace-pre-wrap text-muted-foreground">{profile.return_policy}</p>
+                    </div>
+                  )}
+                  {profile?.payment_policy && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-foreground">سياسة الدفع</p>
+                      <p className="text-xs whitespace-pre-wrap text-muted-foreground">{profile.payment_policy}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-10">لا توجد بيانات للعرض</div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Dialog */}
+      <Dialog
+        open={confirmDialogOpen}
+        onOpenChange={(open) => { setConfirmDialogOpen(open); if (!open) setConfirmInvoice(null); }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>تأكيد الفاتورة</DialogTitle>
+          </DialogHeader>
+          {confirmInvoice ? (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">فاتورة #{confirmInvoice.id} — {confirmInvoice.customer_name}</div>
+              <div className="text-foreground font-semibold">الإجمالي: {formatAmount(Number(confirmInvoice.total_amount || 0))}</div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={() => confirmInvoice && confirmMutation.mutate(confirmInvoice.id)} disabled={!confirmInvoice || confirmMutation.isPending}>تأكيد</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Item Dialog */}
       <Dialog
         open={addItemOpen}
@@ -524,23 +672,44 @@ export const Invoices: React.FC = () => {
               onChange={(e) => setProductSearch(e.target.value)}
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
-            <Button variant="outline" onClick={() => setProductSearchKeyword(productSearch.trim())} disabled={productOptionsLoading}>بحث</Button>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">اختر المنتج</label>
-              <Select value={selectedProductId} onValueChange={(value) => setSelectedProductId(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={productOptionsLoading ? '...جاري التحميل' : 'اختر المنتج'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {productOptions.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium text-foreground">النتائج</label>
+              <div className="max-h-56 overflow-auto border border-border rounded-md divide-y divide-border">
+                {productOptionsLoading ? (
+                  <div className="p-3 text-sm text-muted-foreground">...جاري التحميل</div>
+                ) : productOptions.length === 0 ? (
+                  <div className="p-3 text-sm text-muted-foreground">لا توجد نتائج</div>
+                ) : (
+                  productOptions.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`w-full text-right p-3 hover:bg-card-hover transition-colors ${selectedProductId === String(p.id) ? 'bg-muted/50' : ''}`}
+                      onClick={() => setSelectedProductId(String(p.id))}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-foreground font-medium">{p.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {p.sku ? `SKU: ${p.sku} • ` : ''}الوحدة: {p.unit_display || '-'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          المتاح: <span className="text-foreground font-semibold">{(p.stock_qty ?? 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
-            <Input label="الكمية" type="number" min={1} value={itemQty} onChange={(e) => setItemQty(e.target.value)} />
+            <Input
+              label="الكمية"
+              type="number"
+              min={1}
+              value={itemQty}
+              onChange={(e) => setItemQty(e.target.value)}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddItemOpen(false)}>إلغاء</Button>

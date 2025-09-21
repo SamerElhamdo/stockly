@@ -23,6 +23,8 @@ import {
 } from '../components/ui/dialog';
 import { useToast } from '../components/ui/use-toast';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
+import { Amount } from '../components/Amount';
+import { useCompany } from '../contexts/CompanyContext';
 
 interface ApiPayment {
   id: number;
@@ -86,6 +88,7 @@ const formatCurrency = (value: number) => value.toLocaleString(undefined, { maxi
 
 export const Payments: React.FC = () => {
   const { toast } = useToast();
+  const { formatAmount } = useCompany();
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -284,7 +287,7 @@ export const Payments: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المدفوع</p>
-              <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalPaid)} ر.س</p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.totalPaid} /></p>
             </div>
           </div>
         </div>
@@ -295,7 +298,7 @@ export const Payments: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">الرصيد المستحق</p>
-              <p className="text-xl font-bold text-foreground">{formatCurrency(stats.outstanding)} ر.س</p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.outstanding} /></p>
             </div>
           </div>
         </div>
@@ -306,7 +309,7 @@ export const Payments: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي الفواتير</p>
-              <p className="text-xl font-bold text-foreground">{formatCurrency(stats.invoiced)} ر.س</p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.invoiced} /></p>
             </div>
           </div>
         </div>
@@ -403,9 +406,7 @@ export const Payments: React.FC = () => {
                     <td className="py-4 px-6 text-muted-foreground">
                       {payment.invoice ? `فاتورة #${payment.invoice}` : '—'}
                     </td>
-                    <td className="py-4 px-6 font-semibold text-foreground">
-                      {formatCurrency(parseNumber(payment.amount))} ر.س
-                    </td>
+                    <td className="py-4 px-6 font-semibold text-foreground"><Amount value={parseNumber(payment.amount)} /></td>
                     <td className="py-4 px-6 text-muted-foreground">
                       {payment.payment_method_display || paymentMethodLabels[payment.payment_method as PaymentMethod]}
                     </td>
@@ -476,7 +477,8 @@ export const Payments: React.FC = () => {
                   <SelectItem value="">بدون فاتورة</SelectItem>
                   {invoiceOptions.map((invoice) => (
                     <SelectItem key={invoice.id} value={String(invoice.id)}>
-                      {`فاتورة #${invoice.id} - ${formatCurrency(parseNumber(invoice.total_amount))} ر.س`}
+                      {`فاتورة #${invoice.id} - `}
+                      <Amount value={parseNumber(invoice.total_amount)} />
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -4,7 +4,8 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from .api_v1 import (
     CategoryViewSet, ProductViewSet, CustomerViewSet,
     InvoiceViewSet, ReturnViewSet, PaymentViewSet,
-    CustomerBalanceViewSet, OTPRequestView, OTPVerifyView, ResetPasswordView
+    CustomerBalanceViewSet, CompanyProfileViewSet,
+    OTPRequestView, OTPVerifyView, ResetPasswordView
 )
 from .api import (
     api_whatsapp_webhook,
@@ -20,6 +21,7 @@ router.register(r'v1/invoices', InvoiceViewSet, basename='v1-invoices')
 router.register(r'v1/returns', ReturnViewSet, basename='v1-returns')
 router.register(r'v1/payments', PaymentViewSet, basename='v1-payments')
 router.register(r'v1/balances', CustomerBalanceViewSet, basename='v1-balances')
+router.register(r'v1/company-profile', CompanyProfileViewSet, basename='v1-company-profile')
 
 urlpatterns = [
   # DRF v1 API

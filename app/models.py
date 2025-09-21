@@ -28,6 +28,25 @@ class CompanyProfile(models.Model):
     logo = models.ImageField(upload_to='company_logos/', blank=True, null=True, verbose_name='شعار الشركة')
     return_policy = models.TextField(blank=True, verbose_name='سياسة الإرجاع')
     payment_policy = models.TextField(blank=True, verbose_name='سياسة الدفع')
+    language = models.CharField(max_length=5, choices=[('ar', 'العربية'), ('en', 'English')], default='ar', verbose_name='لغة الشركة')
+    navbar_message = models.CharField(max_length=200, blank=True, default='', verbose_name='رسالة الشريط العلوي')
+    dashboard_cards = models.JSONField(default=list, blank=True, verbose_name='بطاقات لوحة التحكم')
+    # Currency settings
+    primary_currency = models.CharField(max_length=3, default='USD', editable=False, verbose_name='العملة الأساسية')
+    secondary_currency = models.CharField(max_length=3, choices=[
+        ('SYP', 'الليرة السورية'),
+        ('SAR', 'الريال السعودي'),
+        ('TRY', 'الليرة التركية'),
+        ('AED', 'الدرهم الإماراتي'),
+        ('EUR', 'اليورو'),
+        ('LBP', 'الليرة اللبنانية'),
+    ], blank=True, null=True, verbose_name='العملة الثانوية')
+    secondary_per_usd = models.DecimalField(max_digits=14, decimal_places=6, blank=True, null=True, help_text='كم تعادل 1 دولار من العملة الثانوية', verbose_name='سعر 1 دولار')
+    price_display_mode = models.CharField(max_length=12, choices=[
+        ('both', 'كلا العملتين'),
+        ('primary', 'الأساسية فقط (USD)'),
+        ('secondary', 'الثانوية فقط')
+    ], default='both', verbose_name='عرض الأسعار')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
 
