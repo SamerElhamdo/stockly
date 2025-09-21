@@ -215,7 +215,7 @@ export const Products: React.FC = () => {
           <p className="text-muted-foreground mt-1">إدارة منتجات المتجر</p>
         </div>
         <Button
-          variant="outline"
+          variant="hero"
           className="gap-2"
           onClick={() => {
             resetProductForm();

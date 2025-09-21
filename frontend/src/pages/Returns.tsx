@@ -330,7 +330,7 @@ export const Returns: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">المرتجعات</h1>
           <p className="text-muted-foreground mt-1">إدارة مرتجعات المبيعات ومتابعة حالاتها</p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={() => toggleCreateDialog(true)}>
+        <Button variant="hero" className="gap-2" onClick={() => toggleCreateDialog(true)}>
           <PlusIcon className="h-4 w-4" />
           إنشاء مرتجع جديد
         </Button>

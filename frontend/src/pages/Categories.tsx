@@ -164,7 +164,7 @@ export const Categories: React.FC = () => {
           <p className="text-muted-foreground mt-1">إدارة فئات المنتجات</p>
         </div>
         <Button
-          variant="outline"
+          variant="hero"
           className="gap-2"
           onClick={() => {
             setCategoryForm({ name: '', parent: '' });

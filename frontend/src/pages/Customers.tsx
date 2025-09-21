@@ -239,7 +239,7 @@ export const Customers: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">العملاء</h1>
           <p className="text-muted-foreground mt-1">إدارة قاعدة بيانات العملاء</p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={openCreateDialog}>
+        <Button variant="hero" className="gap-2" onClick={openCreateDialog}>
           <PlusIcon className="h-4 w-4" />
           إضافة عميل جديد
         </Button>
