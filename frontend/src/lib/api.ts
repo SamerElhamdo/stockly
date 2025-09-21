@@ -79,6 +79,11 @@ apiClient.interceptors.response.use(
 export const endpoints = {
   // Authentication
   login: '/api/auth/login/',
+  // OTP & Auth flows
+  sendOtp: '/api/v1/auth/otp/send/',
+  verifyOtp: '/api/v1/auth/otp/verify/',
+  resetPassword: '/api/v1/auth/reset-password/',
+  registerCompany: '/api/register-company/',
   
   // Dashboard
   dashboardStats: '/api/dashboard/stats',

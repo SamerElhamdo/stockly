@@ -539,12 +539,12 @@ export const Invoices: React.FC = () => {
         open={previewOpen}
         onOpenChange={(open) => { setPreviewOpen(open); if (!open) setPreviewInvoice(null); }}
       >
-        <DialogContent className="max-w-3xl print:max-w-none print:!p-0">
+        <DialogContent className="max-w-3xl print:max-w-none print:!p-0 print-invoice">
           <DialogHeader>
             <DialogTitle>معاينة الفاتورة</DialogTitle>
           </DialogHeader>
           {previewInvoice ? (
-            <div className="space-y-5 print:space-y-0">
+            <div className="invoice-print-area space-y-5 print:space-y-2">
               {/* Header with logo and company info */}
               <div className="flex items-center justify-between gap-6 print:px-6 print:pt-6">
                 <div className="flex items-center gap-4">
@@ -593,6 +593,16 @@ export const Invoices: React.FC = () => {
                       );
                     })}
                   </tbody>
+                  <tfoot>
+                    <tr>
+                      <td className="py-2 px-3" colSpan={3}>
+                        <span className="text-sm font-semibold text-foreground">المبلغ الإجمالي</span>
+                      </td>
+                      <td className="py-2 px-3 font-bold text-foreground">
+                        <Amount value={Number(previewInvoice.total_amount || 0)} />
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
 
@@ -602,29 +612,30 @@ export const Invoices: React.FC = () => {
                   <div>طريقة الدفع: —</div>
                 </div>
                 <div className="flex items-center gap-6 print:pb-6">
-                  <div className="text-lg font-bold text-foreground"><Amount value={Number(previewInvoice.total_amount || 0)} /></div>
+                  <div className="text-lg font-bold text-foreground">
+                    <span className="text-sm font-medium mr-2">المبلغ الإجمالي:</span>
+                    <Amount value={Number(previewInvoice.total_amount || 0)} />
+                  </div>
                   <Button onClick={printPreview} className="print:hidden">طباعة</Button>
                 </div>
               </div>
 
-              {/* Policies (plain, no cards/shadows) */}
-              {(profile?.return_policy || profile?.payment_policy) && (
-                <div className="print:px-6 print:pb-6 space-y-2">
-                  <h4 className="text-sm font-semibold text-foreground">الملاحظات والسياسات</h4>
-                  {profile?.return_policy && (
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-foreground">سياسة الإرجاع</p>
-                      <p className="text-xs whitespace-pre-wrap text-muted-foreground">{profile.return_policy}</p>
-                    </div>
-                  )}
-                  {profile?.payment_policy && (
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-foreground">سياسة الدفع</p>
-                      <p className="text-xs whitespace-pre-wrap text-muted-foreground">{profile.payment_policy}</p>
-                    </div>
-                  )}
+              {/* Policies (always printed, plain, no cards/shadows) */}
+              <div className="print:px-6 print:pb-6 space-y-2">
+                <h4 className="text-sm font-semibold text-foreground">الملاحظات والسياسات</h4>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-foreground">سياسة الإرجاع</p>
+                  <p className="text-xs whitespace-pre-wrap text-muted-foreground">
+                    {profile?.return_policy?.trim() || 'لا توجد سياسة إرجاع محددة.'}
+                  </p>
                 </div>
-              )}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-foreground">سياسة الدفع</p>
+                  <p className="text-xs whitespace-pre-wrap text-muted-foreground">
+                    {profile?.payment_policy?.trim() || 'لا توجد سياسة دفع محددة.'}
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center text-muted-foreground py-10">لا توجد بيانات للعرض</div>

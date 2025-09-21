@@ -285,3 +285,43 @@
 
   * { -webkit-tap-highlight-color: transparent; }
 }
+
+/* Print styles - clean invoice without shadows/borders/radius */
+@media print {
+  /* Print only the invoice area */
+  body * { visibility: hidden; }
+  .invoice-print-area, .invoice-print-area * { visibility: visible; }
+  .invoice-print-area { position: absolute; left: 0; top: 0; right: 0; }
+
+  /* Page size and margins */
+  @page { size: A4 portrait; margin: 10mm; }
+  html, body { width: 210mm; height: 297mm; }
+
+  .print-invoice, .invoice-print-area {
+    background: #fff !important;
+  }
+  .print-invoice *, .invoice-print-area * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  .print-invoice .border, .print-invoice .border-border, .print-invoice .border-b, .print-invoice .border-t, .print-invoice .border-l, .print-invoice .border-r,
+  .invoice-print-area .border, .invoice-print-area .border-border, .invoice-print-area .border-b, .invoice-print-area .border-t, .invoice-print-area .border-l, .invoice-print-area .border-r {
+    border-color: #000 !important;
+  }
+  .print-invoice .bg-card, .print-invoice .bg-muted, .print-invoice .bg-primary-light, .print-invoice .bg-background,
+  .invoice-print-area .bg-card, .invoice-print-area .bg-muted, .invoice-print-area .bg-primary-light, .invoice-print-area .bg-background {
+    background: #fff !important;
+  }
+  .print-invoice button, .print-invoice [role="button"], .print-invoice .print\:hidden,
+  .invoice-print-area button, .invoice-print-area [role="button"], .invoice-print-area .print\:hidden {
+    display: none !important;
+  }
+
+  /* Compact spacing and layout to fit a single page */
+  .invoice-print-area { font-size: 12px !important; line-height: 1.4; }
+  .invoice-print-area table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+  .invoice-print-area th, .invoice-print-area td { padding: 4px !important; }
+  .invoice-print-area tr, .invoice-print-area td, .invoice-print-area th { page-break-inside: avoid; break-inside: avoid; }
+  .invoice-print-area h1, .invoice-print-area h2, .invoice-print-area h3 { margin: 0 !important; }
+}

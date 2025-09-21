@@ -9,7 +9,8 @@ from .api_v1 import (
 )
 from .api import (
     api_whatsapp_webhook,
-    api_delete_user, api_dashboard_stats
+    api_delete_user, api_dashboard_stats,
+    api_register_company
 )
 from . import views
 
@@ -37,6 +38,8 @@ urlpatterns = [
   path('api/v1/auth/otp/send/', OTPRequestView.as_view()),
   path('api/v1/auth/otp/verify/', OTPVerifyView.as_view()),
   path('api/v1/auth/reset-password/', ResetPasswordView.as_view()),
+  # Public company registration
+  path('api/register-company/', api_register_company),
 
   # WhatsApp webhook (legacy integration kept)
   path('api/whatsapp-webhook/', api_whatsapp_webhook),

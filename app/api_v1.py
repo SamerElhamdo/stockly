@@ -200,7 +200,8 @@ class InvoiceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], permission_classes=[IsCompanyStaff])
     def pdf(self, request, pk=None):
         # Reuse existing PDF generator view
-        return legacy_views.invoice_pdf(request, invoice_id=int(pk))
+        django_request = getattr(request, '_request', request)
+        return legacy_views.invoice_pdf(django_request, invoice_id=int(pk))
 
 
 class ReturnViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -313,20 +314,23 @@ class OTPRequestView(APIView):
     permission_classes: list = []  # public
 
     def post(self, request):
-        return api_send_otp(request)
+        django_request = getattr(request, '_request', request)
+        return api_send_otp(django_request)
 
 
 class OTPVerifyView(APIView):
     permission_classes: list = []  # public
 
     def post(self, request):
-        return api_verify_otp(request)
+        django_request = getattr(request, '_request', request)
+        return api_verify_otp(django_request)
 
 
 class ResetPasswordView(APIView):
     permission_classes: list = []  # public
 
     def post(self, request):
-        return api_reset_password(request)
+        django_request = getattr(request, '_request', request)
+        return api_reset_password(django_request)
 
 
