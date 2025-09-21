@@ -21,6 +21,8 @@ import { Customers } from "./pages/Customers";
 import { Categories } from "./pages/Categories";
 import { Invoices } from "./pages/Invoices";
 import { Returns } from "./pages/Returns";
+import { PrintInvoice } from "./pages/PrintInvoice";
+import { PrintReturn } from "./pages/PrintReturn";
 import { Payments } from "./pages/Payments";
 import { Archive } from "./pages/Archive";
 import { Users } from "./pages/Users";
@@ -94,10 +96,26 @@ const App = () => (
                 } 
               />
               <Route 
+                path="/print/invoice/:id" 
+                element={
+                  <ProtectedRoute>
+                    <PrintInvoice />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/returns" 
                 element={
                   <ProtectedRoute>
                     <Returns />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/print/return/:id" 
+                element={
+                  <ProtectedRoute>
+                    <PrintReturn />
                   </ProtectedRoute>
                 } 
               />

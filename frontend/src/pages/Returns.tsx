@@ -498,7 +498,7 @@ export const Returns: React.FC = () => {
                         <Button variant="ghost" size="sm" onClick={() => openDetailDialog(record)}>
                           <EyeIcon className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => openPreviewDialog(record)}>
+                        <Button variant="ghost" size="sm" onClick={() => window.open(`/print/return/${record.id}`, '_blank')}>
                           <PrinterIcon className="h-4 w-4" />
                         </Button>
                         {isPending && (
@@ -635,19 +635,7 @@ export const Returns: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Return Print Preview */}
-      <Dialog open={previewDialogOpen} onOpenChange={(open) => { setPreviewDialogOpen(open); if (!open) setPreviewReturnId(null); }}>
-        <DialogContent className="max-w-3xl print:max-w-none print:!p-0 print-invoice">
-          <DialogHeader>
-            <DialogTitle>معاينة المرتجع</DialogTitle>
-          </DialogHeader>
-          {previewReturnId ? (
-            <ReturnPreviewContent id={previewReturnId} />
-          ) : (
-            <div className="text-center text-muted-foreground py-10">لا توجد بيانات للعرض</div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* تم نقل المعاينة إلى تبويب جديد */}
 
       <Dialog open={createDialogOpen} onOpenChange={toggleCreateDialog}>
         <DialogContent className="max-w-4xl">

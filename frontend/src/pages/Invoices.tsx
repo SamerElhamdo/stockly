@@ -497,7 +497,7 @@ export const Invoices: React.FC = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => openPreview(invoice)}>
+                          <Button variant="ghost" size="sm" onClick={() => window.open(`/print/invoice/${invoice.id}`, '_blank') }>
                             <PrinterIcon className="h-4 w-4" />
                           </Button>
                           <Button
