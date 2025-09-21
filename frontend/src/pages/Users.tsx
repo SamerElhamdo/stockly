@@ -29,6 +29,7 @@ interface CompanyUser {
   first_name?: string | null;
   last_name?: string | null;
   phone?: string | null;
+  account_type?: string | null;
   role?: string | null;
   role_display?: string | null;
   is_active: boolean;
@@ -70,8 +71,10 @@ export const Users: React.FC = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['company-users'],
     queryFn: async () => {
-      const res = await apiClient.get<CompanyUser[]>(endpoints.companyUsers);
-      return res.data;
+      const res = await apiClient.get(endpoints.users);
+      // DRF list response
+      const payload = res.data as { results?: CompanyUser[] } | CompanyUser[];
+      return Array.isArray(payload) ? payload : (payload.results || []);
     },
   });
 
@@ -90,7 +93,7 @@ export const Users: React.FC = () => {
 
   const registerMutation = useMutation({
     mutationFn: async (payload: NewUserForm) => {
-      const res = await apiClient.post(endpoints.registerStaff, {
+      const res = await apiClient.post(endpoints.users, {
         username: payload.username,
         email: payload.email,
         password: payload.password,
@@ -192,11 +195,14 @@ export const Users: React.FC = () => {
 
       <div className="bg-card rounded-lg border border-border p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <Input
-            placeholder="البحث باسم المستخدم أو البريد"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
+          <div className="flex-1 min-w-[260px]">
+            <Input
+              className="w-full"
+              placeholder="البحث باسم المستخدم أو البريد"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -269,19 +275,29 @@ export const Users: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 text-muted-foreground">{user.email || '—'}</td>
                     <td className="py-4 px-6 text-muted-foreground">{user.phone || '—'}</td>
-                    <td className="py-4 px-6 text-muted-foreground">{user.role_display || user.role || '—'}</td>
+                    <td className="py-4 px-6">
+                      {(user.account_type === 'company_owner') || user.role === 'company_owner' || (user.role_display && user.role_display.includes('مالك')) ? (
+                        <span className="text-success font-medium">مالك الشركة</span>
+                      ) : (
+                        <span className="text-muted-foreground">مستخدم عادي</span>
+                      )}
+                    </td>
                     <td className="py-4 px-6 text-muted-foreground">{formatDate(user.last_login)}</td>
                     <td className="py-4 px-6">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 text-destructive border-destructive"
-                        onClick={() => deleteMutation.mutate(user.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                        حذف
-                      </Button>
+                      {(user.account_type === 'company_owner') || user.role === 'company_owner' || (user.role_display && user.role_display.includes('مالك')) ? (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 text-destructive border-destructive"
+                          onClick={() => deleteMutation.mutate(user.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          حذف
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))

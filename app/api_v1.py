@@ -310,6 +310,31 @@ class CustomerBalanceViewSet(CompanyScopedQuerysetMixin, mixins.ListModelMixin, 
     permission_classes = [IsCompanyStaff]
 
 
+class UsersViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.select_related('company')
+    permission_classes = [IsCompanyStaff]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    ordering_fields = ['created_at', 'last_login', 'username']
+
+    def get_queryset(self):
+        return company_queryset(User, self.request.user)
+
+    def perform_create(self, serializer):
+        if not IsCompanyOwner().has_permission(self.request, self):
+            raise PermissionDenied('Only company owners can create users')
+        company = getattr(self.request.user, 'company', None)
+        serializer.save(company=company, account_type='company_staff')
+
+    def destroy(self, request, *args, **kwargs):
+        if not IsCompanyOwner().has_permission(request, self):
+            raise PermissionDenied('Only company owners can delete users')
+        instance = self.get_object()
+        # منع حذف مالك الشركة
+        if getattr(instance, 'account_type', None) == 'company_owner':
+            return Response({'detail': 'cannot_delete_company_owner'}, status=status.HTTP_400_BAD_REQUEST)
+        return super().destroy(request, *args, **kwargs)
+
 class OTPRequestView(APIView):
     permission_classes: list = []  # public
 

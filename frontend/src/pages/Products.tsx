@@ -27,6 +27,7 @@ interface ApiProduct {
   id: number;
   name: string;
   sku: string;
+  category?: number;
   category_name?: string | null;
   price: number | string;
   stock_qty: number;
@@ -46,6 +47,8 @@ export const Products: React.FC = () => {
   const [effectiveSearch, setEffectiveSearch] = useState('');
   const [page, setPage] = useState(1);
   const [productFormOpen, setProductFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ApiProduct | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [productForm, setProductForm] = useState({
     name: '',
     sku: '',
@@ -60,7 +63,7 @@ export const Products: React.FC = () => {
     retail_price: '',
   });
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiProduct[]}>({
     queryKey: ['products', effectiveSearch, page],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.products, {
@@ -68,7 +71,7 @@ export const Products: React.FC = () => {
       });
       return res.data as { count: number; next: string | null; previous: string | null; results: ApiProduct[] };
     },
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
   const total = data?.count || 0;
@@ -117,6 +120,8 @@ export const Products: React.FC = () => {
       wholesale_price: '',
       retail_price: '',
     });
+    setEditingProduct(null);
+    setShowAdvanced(false);
   };
 
   const handleProductFieldChange = (field: keyof typeof productForm) => (
@@ -139,6 +144,23 @@ export const Products: React.FC = () => {
     },
     onError: (err: any) => {
       const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء المنتج';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: async (payload: { id: number; data: Record<string, unknown> }) => {
+      const res = await apiClient.patch(endpoints.productDetail(payload.id), payload.data);
+      return res.data as ApiProduct;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم التحديث', description: 'تم تعديل المنتج بنجاح' });
+      setProductFormOpen(false);
+      resetProductForm();
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تعديل المنتج';
       toast({ title: 'خطأ', description: message, variant: 'destructive' });
     },
   });
@@ -197,6 +219,7 @@ export const Products: React.FC = () => {
           className="gap-2"
           onClick={() => {
             resetProductForm();
+            setEditingProduct(null);
             setProductFormOpen(true);
           }}
         >
@@ -285,7 +308,28 @@ export const Products: React.FC = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingProduct(product);
+                              setProductFormOpen(true);
+                              setShowAdvanced(false);
+                              setProductForm({
+                                name: product.name || '',
+                                sku: product.sku || '',
+                                category: product.category ? String(product.category) : '',
+                                price: String(typeof product.price === 'number' ? product.price : (product.price || '')),
+                                stock_qty: String(product.stock_qty ?? ''),
+                                unit: 'piece',
+                                measurement: '',
+                                description: '',
+                                cost_price: '',
+                                wholesale_price: '',
+                                retail_price: '',
+                              });
+                            }}
+                          >
                             <PencilIcon className="h-4 w-4" />
                           </Button>
                           {!isArchived ? (
@@ -340,7 +384,7 @@ export const Products: React.FC = () => {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>إضافة منتج جديد</DialogTitle>
+            <DialogTitle>{editingProduct ? 'تعديل منتج' : 'إضافة منتج جديد'}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -350,12 +394,7 @@ export const Products: React.FC = () => {
               onChange={handleProductFieldChange('name')}
               required
             />
-            <Input
-              label="الرمز (SKU)"
-              placeholder="اختياري"
-              value={productForm.sku}
-              onChange={handleProductFieldChange('sku')}
-            />
+            {/* SKU سيتم عرضه ضمن الخيارات المتقدمة */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">الفئة</label>
               <Select
@@ -413,47 +452,62 @@ export const Products: React.FC = () => {
               onChange={handleProductFieldChange('stock_qty')}
               required
             />
-            <Input
-              label="القياس"
-              placeholder="مثال: 1 لتر"
-              value={productForm.measurement}
-              onChange={handleProductFieldChange('measurement')}
-            />
-            <Input
-              label="سعر التكلفة"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="اختياري"
-              value={productForm.cost_price}
-              onChange={handleProductFieldChange('cost_price')}
-            />
-            <Input
-              label="سعر الجملة"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="اختياري"
-              value={productForm.wholesale_price}
-              onChange={handleProductFieldChange('wholesale_price')}
-            />
-            <Input
-              label="سعر التجزئة"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="اختياري"
-              value={productForm.retail_price}
-              onChange={handleProductFieldChange('retail_price')}
-            />
             <div className="md:col-span-2">
-              <Textarea
-                placeholder="وصف المنتج"
-                value={productForm.description}
-                onChange={handleProductFieldChange('description')}
-                className="min-h-[120px]"
-              />
+              <Button variant="outline" onClick={() => setShowAdvanced((s) => !s)}>
+                {showAdvanced ? 'إخفاء الخيارات المتقدمة' : 'خيارات متقدمة'}
+              </Button>
             </div>
+            {showAdvanced && (
+              <>
+                <Input
+                  label="الرمز (SKU)"
+                  placeholder="اختياري"
+                  value={productForm.sku}
+                  onChange={handleProductFieldChange('sku')}
+                />
+                <Input
+                  label="القياس"
+                  placeholder="مثال: 1 لتر"
+                  value={productForm.measurement}
+                  onChange={handleProductFieldChange('measurement')}
+                />
+                <Input
+                  label="سعر التكلفة"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="اختياري"
+                  value={productForm.cost_price}
+                  onChange={handleProductFieldChange('cost_price')}
+                />
+                <Input
+                  label="سعر الجملة"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="اختياري"
+                  value={productForm.wholesale_price}
+                  onChange={handleProductFieldChange('wholesale_price')}
+                />
+                <Input
+                  label="سعر التجزئة"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="اختياري"
+                  value={productForm.retail_price}
+                  onChange={handleProductFieldChange('retail_price')}
+                />
+                <div className="md:col-span-2">
+                  <Textarea
+                    placeholder="وصف المنتج"
+                    value={productForm.description}
+                    onChange={handleProductFieldChange('description')}
+                    className="min-h-[120px]"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setProductFormOpen(false); resetProductForm(); }}>
@@ -496,14 +550,18 @@ export const Products: React.FC = () => {
                 const retailPrice = Number(productForm.retail_price);
                 if (!Number.isNaN(retailPrice) && productForm.retail_price) payload.retail_price = retailPrice;
 
-                createProductMutation.mutate(payload);
+                if (editingProduct) {
+                  updateProductMutation.mutate({ id: editingProduct.id, data: payload });
+                } else {
+                  createProductMutation.mutate(payload);
+                }
               }}
               disabled={
                 !productForm.name.trim() ||
                 !productForm.category ||
                 productForm.price.trim() === '' ||
                 productForm.stock_qty.trim() === '' ||
-                isCreating
+                isCreating || updateProductMutation.isPending
               }
             >
               حفظ

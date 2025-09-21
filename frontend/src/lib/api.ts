@@ -90,6 +90,7 @@ export const endpoints = {
   
   // Products
   products: '/api/v1/products/',
+  productDetail: (id: number) => `/api/v1/products/${id}/`,
   productArchive: (id: number) => `/api/v1/products/${id}/archive/`,
   productRestore: (id: number) => `/api/v1/products/${id}/restore/`,
   
@@ -101,6 +102,7 @@ export const endpoints = {
   
   // Categories
   categories: '/api/v1/categories/',
+  categoryDetail: (id: number) => `/api/v1/categories/${id}/`,
   
   // Invoices
   invoices: '/api/v1/invoices/',
@@ -125,7 +127,7 @@ export const endpoints = {
   
   // Users
   users: '/api/v1/users/',
-  companyUsers: '/api/company-users/',
+  companyUsers: '/api/v1/users/',
 };
 
 // Helpers

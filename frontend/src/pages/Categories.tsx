@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
-import { PlusIcon, TagIcon, TrashIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TagIcon, ArrowsUpDownIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import {
@@ -30,6 +30,7 @@ export const Categories: React.FC = () => {
   // لا حاجة للترتيب في الفئات
 
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
   const [categoryForm, setCategoryForm] = useState({
     name: '',
     parent: '',
@@ -90,6 +91,25 @@ export const Categories: React.FC = () => {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (payload: { id: number; data: { name: string; parent?: number | null } }) => {
+      const res = await apiClient.patch(endpoints.categoryDetail(payload.id), payload.data);
+      return res.data as ApiCategory;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم التحديث', description: 'تم تعديل الفئة بنجاح' });
+      setCategoryFormOpen(false);
+      setCategoryForm({ name: '', parent: '' });
+      setPage(1);
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['category-options'] });
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تعديل الفئة';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
   const deleteCategoryMutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
       await apiClient.delete(endpoints.categoryDetail(id));
@@ -120,7 +140,21 @@ export const Categories: React.FC = () => {
   };
 
   const isDeleting = deleteCategoryMutation.isPending;
-  const deletingId = deleteCategoryMutation.variables?.id;
+  const deletingId = deleteCategoryMutation.variables?.id as number | undefined;
+
+  const handleDelete = async (category: ApiCategory) => {
+    try {
+      const res = await apiClient.get(endpoints.products, { params: { category: category.id } });
+      const normalized = normalizeListResponse<any>(res.data);
+      if ((normalized.count ?? normalized.results.length) > 0) {
+        toast({ title: 'غير ممكن', description: 'لا يمكن حذف الفئة لوجود منتجات مرتبطة بها', variant: 'destructive' });
+        return;
+      }
+      deleteCategoryMutation.mutate({ id: category.id });
+    } catch (e: any) {
+      toast({ title: 'خطأ', description: 'تعذر التحقق من المنتجات المرتبطة', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -134,6 +168,7 @@ export const Categories: React.FC = () => {
           className="gap-2"
           onClick={() => {
             setCategoryForm({ name: '', parent: '' });
+            setEditingCategoryId(null);
             setCategoryFormOpen(true);
           }}
         >
@@ -209,8 +244,20 @@ export const Categories: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => {
+                          setCategoryForm({ name: category.name, parent: category.parent ? String(category.parent) : '' });
+                          setEditingCategoryId(category.id);
+                          setCategoryFormOpen(true);
+                          // For future: implement update via PATCH
+                        }}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-destructive"
-                        onClick={() => deleteCategoryMutation.mutate({ id: category.id })}
+                        onClick={() => handleDelete(category)}
                         disabled={isDeleting && deletingId === category.id}
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -258,7 +305,7 @@ export const Categories: React.FC = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إضافة فئة جديدة</DialogTitle>
+            <DialogTitle>{editingCategoryId ? 'تعديل الفئة' : 'إضافة فئة جديدة'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <Input
@@ -297,12 +344,14 @@ export const Categories: React.FC = () => {
                 const name = categoryForm.name.trim();
                 if (!name) return;
                 const payload: { name: string; parent?: number | null } = { name };
-                if (categoryForm.parent) {
-                  payload.parent = Number(categoryForm.parent);
+                if (categoryForm.parent) payload.parent = Number(categoryForm.parent);
+                if (editingCategoryId) {
+                  updateCategoryMutation.mutate({ id: editingCategoryId, data: payload });
+                } else {
+                  createCategoryMutation.mutate(payload);
                 }
-                createCategoryMutation.mutate(payload);
               }}
-              disabled={!categoryForm.name.trim() || createCategoryMutation.isPending}
+              disabled={!categoryForm.name.trim() || createCategoryMutation.isPending || updateCategoryMutation.isPending}
             >
               حفظ
             </Button>

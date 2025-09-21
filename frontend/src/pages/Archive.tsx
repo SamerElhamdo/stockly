@@ -169,15 +169,23 @@ export const Archive: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-2 inline-flex">
+      <div className="bg-card rounded-lg border border-border p-2 inline-flex gap-2">
         <button
-          className={`px-4 py-2 rounded-lg transition ${activeTab === 'products' ? 'bg-primary text-primary-foreground shadow-neo' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`px-5 py-2 rounded-xl transition-all duration-200 focus-visible:shadow-neo-inset ${
+            activeTab === 'products'
+              ? 'bg-background text-foreground shadow-neo'
+              : 'bg-muted text-muted-foreground hover:text-foreground'
+          }`}
           onClick={() => setActiveTab('products')}
         >
           المنتجات
         </button>
         <button
-          className={`px-4 py-2 rounded-lg transition ${activeTab === 'customers' ? 'bg-primary text-primary-foreground shadow-neo' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`px-5 py-2 rounded-xl transition-all duration-200 focus-visible:shadow-neo-inset ${
+            activeTab === 'customers'
+              ? 'bg-background text-foreground shadow-neo'
+              : 'bg-muted text-muted-foreground hover:text-foreground'
+          }`}
           onClick={() => setActiveTab('customers')}
         >
           العملاء
@@ -187,11 +195,14 @@ export const Archive: React.FC = () => {
       {activeTab === 'products' ? (
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <Input
-              placeholder="البحث باسم المنتج أو SKU أو الفئة"
-              value={productSearch}
-              onChange={(event) => setProductSearch(event.target.value)}
-            />
+            <div className="flex-1 min-w-[260px]">
+              <Input
+                className="w-full"
+                placeholder="البحث باسم المنتج أو SKU أو الفئة"
+                value={productSearch}
+                onChange={(event) => setProductSearch(event.target.value)}
+              />
+            </div>
             <span className="text-sm text-muted-foreground">{filteredProducts.length.toLocaleString()} منتج</span>
           </div>
           <div className="bg-card rounded-lg border border-border overflow-hidden">
@@ -257,11 +268,14 @@ export const Archive: React.FC = () => {
       ) : (
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <Input
-              placeholder="البحث باسم العميل أو رقم الهاتف أو البريد"
-              value={customerSearch}
-              onChange={(event) => setCustomerSearch(event.target.value)}
-            />
+            <div className="flex-1 min-w-[260px]">
+              <Input
+                className="w-full"
+                placeholder="البحث باسم العميل أو رقم الهاتف أو البريد"
+                value={customerSearch}
+                onChange={(event) => setCustomerSearch(event.target.value)}
+              />
+            </div>
             <span className="text-sm text-muted-foreground">{filteredCustomers.length.toLocaleString()} عميل</span>
           </div>
           <div className="bg-card rounded-lg border border-border overflow-hidden">

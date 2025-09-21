@@ -4,7 +4,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from .api_v1 import (
     CategoryViewSet, ProductViewSet, CustomerViewSet,
     InvoiceViewSet, ReturnViewSet, PaymentViewSet,
-    CustomerBalanceViewSet, CompanyProfileViewSet,
+    CustomerBalanceViewSet, CompanyProfileViewSet, UsersViewSet,
     OTPRequestView, OTPVerifyView, ResetPasswordView
 )
 from .api import (
@@ -23,6 +23,7 @@ router.register(r'v1/returns', ReturnViewSet, basename='v1-returns')
 router.register(r'v1/payments', PaymentViewSet, basename='v1-payments')
 router.register(r'v1/balances', CustomerBalanceViewSet, basename='v1-balances')
 router.register(r'v1/company-profile', CompanyProfileViewSet, basename='v1-company-profile')
+router.register(r'v1/users', UsersViewSet, basename='v1-users')
 
 urlpatterns = [
   # DRF v1 API
