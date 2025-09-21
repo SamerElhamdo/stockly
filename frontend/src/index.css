@@ -181,6 +181,32 @@
   .ltr {
     direction: ltr;
   }
+  
+  /* Force RTL for auth page */
+  [dir="rtl"] {
+    direction: rtl !important;
+  }
+  
+  [dir="rtl"] * {
+    direction: inherit;
+  }
+  
+  /* Sidebar icon size fixes */
+  .sidebar-collapsed .sidebar-icon {
+    min-width: 20px !important;
+    min-height: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
+  }
+  
+  .sidebar-collapsed .sidebar-link {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
 }
 
 @layer components {

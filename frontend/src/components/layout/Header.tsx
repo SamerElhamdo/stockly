@@ -17,7 +17,7 @@ export const Header: React.FC = () => {
   const { profile } = useCompany();
 
   return (
-    <header className="bg-card border-b border-border px-6 py-4">
+    <header className="bg-card border-b border-border px-6 py-4 h-16 flex items-center">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {profile?.logo_url && (

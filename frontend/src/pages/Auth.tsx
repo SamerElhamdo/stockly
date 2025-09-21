@@ -510,9 +510,9 @@ export const Auth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light to-background px-4 py-8">
-      <div className="w-full max-w-4xl">
-        <div className="bg-card rounded-xl shadow-lg p-8 border border-border">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-light to-background px-4 py-8" dir="rtl" style={{ direction: 'rtl' }}>
+      <div className="w-full max-w-4xl" style={{ direction: 'rtl' }}>
+        <div className="bg-card rounded-xl shadow-lg p-8 border border-border" style={{ direction: 'rtl' }}>
           <div className="text-center mb-8 space-y-2">
             <h1 className="text-3xl font-bold text-primary">Stockly</h1>
             <p className="text-muted-foreground">منظومة إدارة المخزون والفواتير</p>

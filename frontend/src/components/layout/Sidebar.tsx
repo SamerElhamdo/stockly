@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   HomeIcon,
@@ -11,6 +11,8 @@ import {
   ArchiveBoxIcon,
   UserGroupIcon,
   Cog6ToothIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -24,6 +26,22 @@ import {
   UserGroupIcon as UserGroupIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
 } from '@heroicons/react/24/solid';
+
+// Tooltip component for collapsed sidebar
+const Tooltip: React.FC<{ children: React.ReactNode; content: string }> = ({ children, content }) => {
+  if (!content || content.trim() === '') {
+    return <>{children}</>;
+  }
+  
+  return (
+    <div className="relative group">
+      {children}
+      <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        {content}
+      </div>
+    </div>
+  );
+};
 
 interface NavItem {
   name: string;
@@ -97,13 +115,37 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   return (
-    <aside className="w-64 bg-sidebar border-l border-sidebar-border">
+    <aside className={`bg-sidebar transition-all duration-300 ${
+      isCollapsed ? 'w-16 sidebar-collapsed' : 'w-64'
+    }`}>
       {/* Logo */}
-      <div className="p-6 border-b border-sidebar-border">
-        <h2 className="text-2xl font-bold text-sidebar-primary">Stockly</h2>
-        <p className="text-sm text-sidebar-foreground/70 mt-1">نظام إدارة المخزون</p>
+      <div className="px-6 py-4 border-b border-border h-16 flex items-center">
+        <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isCollapsed && (
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold text-sidebar-primary leading-tight">Stockly</h2>
+              <p className="text-xs text-sidebar-foreground/70 leading-tight">نظام إدارة المخزون</p>
+            </div>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg border border-sidebar-border bg-sidebar-accent/20 hover:bg-sidebar-accent/50 transition-colors shadow-sm"
+            title={isCollapsed ? 'توسيع الشريط الجانبي' : 'طي الشريط الجانبي'}
+          >
+            {isCollapsed ? (
+              <ChevronLeftIcon className="h-5 w-5 text-sidebar-foreground" />
+            ) : (
+              <ChevronRightIcon className="h-5 w-5 text-sidebar-foreground" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -115,17 +157,32 @@ export const Sidebar: React.FC = () => {
             
             return (
               <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-sidebar-accent text-sidebar-primary font-medium'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-                  }`}
-                >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-sm">{item.name}</span>
-                </NavLink>
+                {isCollapsed ? (
+                  <Tooltip content={item.name}>
+                    <NavLink
+                      to={item.path}
+                      className={`sidebar-link flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-sidebar-accent text-sidebar-primary font-medium'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                      }`}
+                    >
+                      <Icon className="sidebar-icon h-5 w-5" />
+                    </NavLink>
+                  </Tooltip>
+                ) : (
+                  <NavLink
+                    to={item.path}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-sidebar-accent text-sidebar-primary font-medium'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-sm">{item.name}</span>
+                  </NavLink>
+                )}
               </li>
             );
           })}
