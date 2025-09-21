@@ -18,8 +18,8 @@ export const Header: React.FC = () => {
 
   return (
     <header className="bg-card border-b border-border px-6 py-4 h-16 flex items-center">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-4 order-1">
           {profile?.logo_url && (
             <div className="h-8 w-8 rounded-lg bg-muted border border-border overflow-hidden">
               <img src={profile.logo_url} alt="شعار" className="h-full w-full object-contain" />
@@ -38,7 +38,7 @@ export const Header: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 order-2">
           <Button variant="ghost" size="icon">
             <BellIcon className="h-5 w-5" />
           </Button>

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '../components/ui/custom-button';
 import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { apiClient, endpoints } from '../lib/api';
 
 interface CompanyProfile {
@@ -177,14 +178,18 @@ export const Settings: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">اللغة</label>
-                    <select
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
+                    <Select
                       value={language}
-                      onChange={(e) => setLanguage(e.target.value as 'ar' | 'en')}
+                      onValueChange={(value) => setLanguage(value as 'ar' | 'en')}
                     >
-                      <option value="ar">العربية</option>
-                      <option value="en">English</option>
-                    </select>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="اختر اللغة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ar">العربية</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-foreground">رسالة الشريط العلوي</label>
@@ -203,19 +208,23 @@ export const Settings: React.FC = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground">العملة الثانوية</label>
-                    <select
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
-                      value={secondaryCurrency}
-                      onChange={(e) => setSecondaryCurrency(e.target.value)}
+                    <Select
+                      value={secondaryCurrency || 'none'}
+                      onValueChange={(value) => setSecondaryCurrency(value === 'none' ? '' : value)}
                     >
-                      <option value="">بدون</option>
-                      <option value="SYP">الليرة السورية (SYP)</option>
-                      <option value="SAR">الريال السعودي (SAR)</option>
-                      <option value="TRY">الليرة التركية (TRY)</option>
-                      <option value="AED">الدرهم الإماراتي (AED)</option>
-                      <option value="EUR">اليورو (EUR)</option>
-                      <option value="LBP">الليرة اللبنانية (LBP)</option>
-                    </select>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="اختر العملة الثانوية" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون</SelectItem>
+                        <SelectItem value="SYP">الليرة السورية (SYP)</SelectItem>
+                        <SelectItem value="SAR">الريال السعودي (SAR)</SelectItem>
+                        <SelectItem value="TRY">الليرة التركية (TRY)</SelectItem>
+                        <SelectItem value="AED">الدرهم الإماراتي (AED)</SelectItem>
+                        <SelectItem value="EUR">اليورو (EUR)</SelectItem>
+                        <SelectItem value="LBP">الليرة اللبنانية (LBP)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground">سعر 1 دولار بالثانوية</label>
@@ -231,15 +240,19 @@ export const Settings: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">عرض الأسعار</label>
-                    <select
-                      className="mt-1 w-full px-3 py-2 rounded-md border border-input-border bg-background text-sm focus:outline-none"
+                    <Select
                       value={priceDisplayMode}
-                      onChange={(e) => setPriceDisplayMode(e.target.value as any)}
+                      onValueChange={(value) => setPriceDisplayMode(value as 'both' | 'primary' | 'secondary')}
                     >
-                      <option value="both">كلا العملتين</option>
-                      <option value="primary">الدولار فقط</option>
-                      <option value="secondary">الثانوية فقط</option>
-                    </select>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="اختر طريقة العرض" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="both">كلا العملتين</SelectItem>
+                        <SelectItem value="primary">الدولار فقط</SelectItem>
+                        <SelectItem value="secondary">الثانوية فقط</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
