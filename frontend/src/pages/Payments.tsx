@@ -474,7 +474,7 @@ export const Payments: React.FC = () => {
                   <SelectValue placeholder={selectedCustomer ? 'اختر الفاتورة' : 'اختر العميل أولاً'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون فاتورة</SelectItem>
+                  <SelectItem value="none">بدون فاتورة</SelectItem>
                   {invoiceOptions.map((invoice) => (
                     <SelectItem key={invoice.id} value={String(invoice.id)}>
                       {`فاتورة #${invoice.id} - `}

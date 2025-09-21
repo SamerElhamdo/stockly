@@ -287,14 +287,14 @@ export const Categories: React.FC = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">الفئة الأب (اختياري)</label>
               <Select
-                value={categoryForm.parent}
-                onValueChange={(value) => setCategoryForm((prev) => ({ ...prev, parent: value }))}
+                value={categoryForm.parent || 'none'}
+                onValueChange={(value) => setCategoryForm((prev) => ({ ...prev, parent: value === 'none' ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الفئة الأب" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون فئة أب</SelectItem>
+                  <SelectItem value="none">بدون فئة أب</SelectItem>
                   {parentOptions.map((option) => (
                     <SelectItem key={option.id} value={String(option.id)}>
                       {option.name}
