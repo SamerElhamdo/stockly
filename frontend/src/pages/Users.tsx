@@ -368,10 +368,10 @@ export const Users: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button className='mx-2' variant="outline" onClick={() => setCreateDialogOpen(false)}>
               إلغاء
             </Button>
-            <Button onClick={submitForm} disabled={registerMutation.isPending}>
+            <Button className='mx-2' onClick={submitForm} disabled={registerMutation.isPending}>
               حفظ المستخدم
             </Button>
           </DialogFooter>

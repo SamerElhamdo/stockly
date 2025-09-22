@@ -336,10 +336,10 @@ export const Categories: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCategoryFormOpen(false); setCategoryForm({ name: '', parent: '' }); }}>
+            <Button className='mx-2' variant="outline" onClick={() => { setCategoryFormOpen(false); setCategoryForm({ name: '', parent: '' }); }}>
               إلغاء
             </Button>
-            <Button
+            <Button className='mx-2'
               onClick={() => {
                 const name = categoryForm.name.trim();
                 if (!name) return;

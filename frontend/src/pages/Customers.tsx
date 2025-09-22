@@ -447,10 +447,10 @@ export const Customers: React.FC = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCustomerFormOpen(false); resetCustomerForm(); setEditingCustomer(null); }}>
+            <Button className='mx-2' variant="outline" onClick={() => { setCustomerFormOpen(false); resetCustomerForm(); setEditingCustomer(null); }}>
               إلغاء
             </Button>
-            <Button
+            <Button className='mx-2'
               onClick={() => {
                 const payload = {
                   name: customerForm.name.trim(),

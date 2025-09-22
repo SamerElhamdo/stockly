@@ -116,6 +116,16 @@ export const Settings: React.FC = () => {
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+    if (file.size > MAX_SIZE_BYTES) {
+      toast({
+        title: 'حجم الصورة كبير',
+        description: 'الحد الأقصى للحجم هو 2 ميجابايت. الرجاء اختيار صورة أصغر.',
+        variant: 'destructive',
+      });
+      event.currentTarget.value = '';
+      return;
+    }
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
     setRemoveLogo(false);

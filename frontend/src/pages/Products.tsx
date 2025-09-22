@@ -510,10 +510,11 @@ export const Products: React.FC = () => {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setProductFormOpen(false); resetProductForm(); }}>
+            <Button className='mx-2' variant="outline" onClick={() => { setProductFormOpen(false); resetProductForm(); }}>
               إلغاء
             </Button>
             <Button
+              className='mx-2'
               onClick={() => {
                 const name = productForm.name.trim();
                 const categoryId = Number(productForm.category);

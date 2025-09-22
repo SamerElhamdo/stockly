@@ -595,6 +595,7 @@ export const Invoices: React.FC = () => {
           </div>
           <DialogFooter>
             <Button
+              className='mx-2'
               variant="outline"
               onClick={() => {
                 setCreateDialogOpen(false);
@@ -606,6 +607,7 @@ export const Invoices: React.FC = () => {
               إلغاء
             </Button>
             <Button
+              className='mx-2'
               onClick={() => {
                 if (!selectedCustomer) return;
                 createInvoiceMutation.mutate({ customerId: Number(selectedCustomer) });
@@ -743,8 +745,8 @@ export const Invoices: React.FC = () => {
             </div>
           ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>إلغاء</Button>
-            <Button onClick={() => confirmInvoice && confirmMutation.mutate(confirmInvoice.id)} disabled={!confirmInvoice || confirmMutation.isPending}>تأكيد</Button>
+            <Button className='mx-2' variant="outline" onClick={() => setConfirmDialogOpen(false)}>إلغاء</Button>
+            <Button className='mx-2' onClick={() => confirmInvoice && confirmMutation.mutate(confirmInvoice.id)} disabled={!confirmInvoice || confirmMutation.isPending}>تأكيد</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -804,8 +806,8 @@ export const Invoices: React.FC = () => {
             <div className="text-center text-muted-foreground py-10">لا توجد بيانات</div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>إلغاء</Button>
-            <Button onClick={() => submitReturn.mutate()} disabled={!returnInvoice || submitReturn.isPending}>حفظ المرتجع</Button>
+            <Button className='mx-2' variant="outline" onClick={() => setReturnDialogOpen(false)}>إلغاء</Button>
+            <Button className='mx-2' onClick={() => submitReturn.mutate()} disabled={!returnInvoice || submitReturn.isPending}>حفظ المرتجع</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -872,8 +874,9 @@ export const Invoices: React.FC = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddItemOpen(false)}>إلغاء</Button>
+            <Button className='mx-2' variant="outline" onClick={() => setAddItemOpen(false)}>إلغاء</Button>
             <Button
+              className='mx-2'
               onClick={() => {
                 const pid = Number(selectedProductId);
                 const qty = Number(itemQty);

@@ -746,10 +746,10 @@ export const Returns: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => toggleCreateDialog(false)}>
+            <Button className='mx-2' variant="outline" onClick={() => toggleCreateDialog(false)}>
               إلغاء
             </Button>
-            <Button onClick={submitReturn} disabled={!returnInvoice || createReturnMutation.isPending}>
+            <Button className='mx-2' onClick={submitReturn} disabled={!returnInvoice || createReturnMutation.isPending}>
               حفظ المرتجع
             </Button>
           </DialogFooter>

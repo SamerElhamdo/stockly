@@ -522,10 +522,10 @@ export const Payments: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeCreateDialog}>
+            <Button className='mx-2' variant="outline" onClick={closeCreateDialog}>
               إلغاء
             </Button>
-            <Button onClick={submitPayment} disabled={createPaymentMutation.isPending}>
+            <Button className='mx-2' onClick={submitPayment} disabled={createPaymentMutation.isPending}>
               حفظ الدفعة
             </Button>
           </DialogFooter>
