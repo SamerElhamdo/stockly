@@ -281,7 +281,7 @@ export const Settings: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <label className="relative inline-flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium cursor-pointer shadow-neo transition hover:shadow-neo-hover">
+                    <label className="relative inline-flex items-center justify-center px-4 py-2 rounded-xl bg-card text-foreground font-medium cursor-pointer shadow-neo transition hover:shadow-neo-hover">
                       <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
                       رفع شعار
                       <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
@@ -346,10 +346,11 @@ export const Settings: React.FC = () => {
               </div>
               <div className="bg-card rounded-lg border border-border p-6 space-y-3">
                 <h2 className="text-lg font-semibold text-foreground">الإجراءات</h2>
-                <Button onClick={submitForm} disabled={updateMutation.isPending}>
+                <Button className="mx-3" onClick={submitForm} disabled={updateMutation.isPending}>
                   حفظ التغييرات
                 </Button>
                 <Button
+                  className="mx-3"
                   variant="outline"
                   onClick={() => {
                     if (profile) {
