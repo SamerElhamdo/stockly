@@ -1,6 +1,6 @@
 from django.urls import path
 from .admin_api import (
-    admin_system_stats, admin_search_products, admin_get_invoice_details,
+    admin_search_products, admin_get_invoice_details,
     admin_get_company_by_phone, admin_get_company_products_by_phone,
     admin_get_company_customers_by_phone, admin_get_company_invoices_by_phone,
     admin_get_company_returns_by_phone, admin_get_company_payments_by_phone,
@@ -11,7 +11,7 @@ from .admin_api import (
 
 urlpatterns = [
     # System Management
-    path('system/stats/', admin_system_stats, name='admin_system_stats'),
+    # path('system/stats/', admin_system_stats, name='admin_system_stats'),
     
     # Products Search
     path('products/search/', admin_search_products, name='admin_search_products'),
