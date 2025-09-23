@@ -126,39 +126,39 @@ def admin_get_invoice_details(request, invoice_id):
 
 # ==================== SYSTEM STATISTICS ====================
 
-@api_view(["GET"])
-@api_superuser_required
-def admin_system_stats(request):
-    """Get system-wide statistics (superuser only)"""
-    total_companies = Company.objects.count()
-    total_users = User.objects.filter(account_type__in=['company_owner', 'company_staff']).count()
-    total_products = Product.objects.count()
-    total_customers = Customer.objects.count()
-    total_invoices = Invoice.objects.count()
-    total_sales = Invoice.objects.filter(status='confirmed').aggregate(
-        total=Sum('total_amount'))['total'] or 0
+#@api_view(["GET"])
+#@api_superuser_required
+#def admin_system_stats(request):
+    # """Get system-wide statistics (superuser only)"""
+    # total_companies = Company.objects.count()
+    # total_users = User.objects.filter(account_type__in=['company_owner', 'company_staff']).count()
+    # total_products = Product.objects.count()
+    # total_customers = Customer.objects.count()
+    # total_invoices = Invoice.objects.count()
+    # total_sales = Invoice.objects.filter(status='confirmed').aggregate(
+    #     total=Sum('total_amount'))['total'] or 0
     
-    # Get recent activity
-    recent_invoices = Invoice.objects.select_related('company', 'customer').order_by('-created_at')[:10]
+    # # Get recent activity
+    # recent_invoices = Invoice.objects.select_related('company', 'customer').order_by('-created_at')[:10]
     
-    return Response({
-        "system_stats": {
-            "total_companies": total_companies,
-            "total_users": total_users,
-            "total_products": total_products,
-            "total_customers": total_customers,
-            "total_invoices": total_invoices,
-            "total_sales": float(total_sales)
-        },
-        "recent_activity": [{
-            "id": inv.id,
-            "company": inv.company.name,
-            "customer": inv.customer.name,
-            "amount": float(inv.total_amount),
-            "status": inv.status,
-            "created_at": inv.created_at.isoformat()
-        } for inv in recent_invoices]
-    })
+    # return Response({
+    #     "system_stats": {
+    #         "total_companies": total_companies,
+    #         "total_users": total_users,
+    #         "total_products": total_products,
+    #         "total_customers": total_customers,
+    #         "total_invoices": total_invoices,
+    #         "total_sales": float(total_sales)
+    #     },
+    #     "recent_activity": [{
+    #         "id": inv.id,
+    #         "company": inv.company.name,
+    #         "customer": inv.customer.name,
+    #         "amount": float(inv.total_amount),
+    #         "status": inv.status,
+    #         "created_at": inv.created_at.isoformat()
+    #     } for inv in recent_invoices]
+    # })
 
 # ==================== CATEGORIES MANAGEMENT ====================
 
@@ -590,14 +590,6 @@ def admin_api_docs(request):
             "description": "Documentation for all admin API endpoints. All endpoints require superuser authentication via Token header.",
             "authentication": "Use 'Authorization: Token <your_token>' in headers. User must be superuser.",
             "endpoints": {
-                f"{base_url}system/stats/": {
-                    "method": "GET",
-                    "description": "Get system-wide statistics including companies, users, products, etc.",
-                    "parameters": {
-                        "required": [],
-                        "optional": []
-                    }
-                },
                 f"{base_url}products/search/": {
                     "method": "GET",
                     "description": "Search products across all companies or filter by company.",
