@@ -14,7 +14,7 @@ import { Amount } from '../components/Amount';
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  value: React.ReactNode;
   icon: React.ComponentType<React.ComponentProps<'svg'>>;
   trend?: {
     value: number;
@@ -80,6 +80,17 @@ interface DashboardStatsResponse {
     status: string;
     created_at: string;
   }>;
+  sales_today?: number;
+  sales_month?: number;
+  draft_invoices?: number;
+  cancelled_invoices?: number;
+  payments_today?: number;
+  payments_month?: number;
+  returns_today_count?: number;
+  returns_today_amount?: number;
+  inventory_value_cost?: number;
+  inventory_value_retail?: number;
+  outstanding_receivables?: number;
 }
 
 export const Dashboard: React.FC = () => {
@@ -140,10 +151,35 @@ export const Dashboard: React.FC = () => {
   const customersCount = customersCountData ?? 0;
   const recentInvoices = statsData?.recent_invoices ?? [];
 
+  // Backend-provided metrics
+  const salesToday = Number(statsData?.sales_today || 0);
+  const salesMonth = Number(statsData?.sales_month || 0);
+  const draftInvoicesCount = Number(statsData?.draft_invoices || 0);
+  const cancelledInvoicesCount = Number(statsData?.cancelled_invoices || 0);
+  const paymentsToday = Number(statsData?.payments_today || 0);
+  const paymentsMonth = Number(statsData?.payments_month || 0);
+  const returnsTodayCount = Number(statsData?.returns_today_count || 0);
+  const returnsTodayAmount = Number(statsData?.returns_today_amount || 0);
+  const inventoryValueCost = Number(statsData?.inventory_value_cost || 0);
+  const inventoryValueRetail = Number(statsData?.inventory_value_retail || 0);
+  const outstandingReceivables = Number(statsData?.outstanding_receivables || 0);
+
   const allStats = [
     {
       title: 'إجمالي المبيعات',
-      value: statsLoading ? '...' : undefined,
+      value: statsLoading ? '...' : <Amount value={totalSales} digits={2} />,
+      icon: CurrencyDollarIcon,
+      color: 'success' as const,
+    },
+    {
+      title: 'مبيعات اليوم',
+      value: <Amount value={salesToday} digits={2} />,
+      icon: CurrencyDollarIcon,
+      color: 'success' as const,
+    },
+    {
+      title: 'مبيعات هذا الشهر',
+      value: <Amount value={salesMonth} digits={2} />,
       icon: CurrencyDollarIcon,
       color: 'success' as const,
     },
@@ -165,13 +201,85 @@ export const Dashboard: React.FC = () => {
       icon: UsersIcon,
       color: 'destructive' as const,
     },
+    {
+      title: 'فواتير مسودة',
+      value: draftInvoicesCount,
+      icon: DocumentTextIcon,
+      color: 'warning' as const,
+    },
+    {
+      title: 'فواتير ملغاة',
+      value: cancelledInvoicesCount,
+      icon: DocumentTextIcon,
+      color: 'destructive' as const,
+    },
+    {
+      title: 'منتجات منخفضة المخزون',
+      value: lowStockCount,
+      icon: CubeIcon,
+      color: 'warning' as const,
+    },
+    {
+      title: 'الرصيد المستحق',
+      value: <Amount value={outstandingReceivables} digits={2} />,
+      icon: CurrencyDollarIcon,
+      color: 'primary' as const,
+    },
+    {
+      title: 'دفعات اليوم',
+      value: <Amount value={paymentsToday} digits={2} />,
+      icon: CurrencyDollarIcon,
+      color: 'primary' as const,
+    },
+    {
+      title: 'دفعات هذا الشهر',
+      value: <Amount value={paymentsMonth} digits={2} />,
+      icon: CurrencyDollarIcon,
+      color: 'primary' as const,
+    },
+    {
+      title: 'عدد المرتجعات اليوم',
+      value: returnsTodayCount,
+      icon: ArrowTrendingDownIcon,
+      color: 'warning' as const,
+    },
+    {
+      title: 'قيمة المرتجعات اليوم',
+      value: <Amount value={returnsTodayAmount} digits={2} />,
+      icon: ArrowTrendingDownIcon,
+      color: 'warning' as const,
+    },
+    {
+      title: 'قيمة المخزون (تكلفة)',
+      value: <Amount value={inventoryValueCost} digits={2} />,
+      icon: CubeIcon,
+      color: 'warning' as const,
+    },
+    {
+      title: 'قيمة المخزون (بيع)',
+      value: <Amount value={inventoryValueRetail} digits={2} />,
+      icon: CubeIcon,
+      color: 'warning' as const,
+    },
   ];
 
   const mapTitleToKey: Record<string, string> = {
     'إجمالي المبيعات': 'total_sales',
+    'مبيعات اليوم': 'sales_today',
+    'مبيعات هذا الشهر': 'sales_month',
     'فواتير اليوم': 'today_invoices',
     'المنتجات النشطة': 'products',
     'العملاء': 'customers',
+    'فواتير مسودة': 'draft_invoices',
+    'فواتير ملغاة': 'cancelled_invoices',
+    'منتجات منخفضة المخزون': 'low_stock_count',
+    'الرصيد المستحق': 'outstanding_receivables',
+    'دفعات اليوم': 'payments_today',
+    'دفعات هذا الشهر': 'payments_month',
+    'عدد المرتجعات اليوم': 'returns_today_count',
+    'قيمة المرتجعات اليوم': 'returns_today_amount',
+    'قيمة المخزون (تكلفة)': 'inventory_value_cost',
+    'قيمة المخزون (بيع)': 'inventory_value_retail',
   };
   const hasDashboardPref = Array.isArray(profile?.dashboard_cards);
   const cardsPref = new Set(profile?.dashboard_cards || []);
@@ -200,13 +308,7 @@ export const Dashboard: React.FC = () => {
         {stats.length === 0 ? (
           <div className="md:col-span-2 lg:col-span-4 text-sm text-muted-foreground">لا توجد كروت محددة للعرض. يمكنك تفعيلها من الإعدادات.</div>
         ) : stats.map((stat, index) => (
-          <StatCard
-            key={index}
-            {...stat}
-            value={stat.title === 'إجمالي المبيعات' ? (
-              statsLoading ? '...' : <Amount value={totalSales} digits={2} />
-            ) : stat.value}
-          />
+          <StatCard key={index} {...stat} />
         ))}
       </div>
 

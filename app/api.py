@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsCompanyStaff
 from django.db import transaction
-from django.db.models import Count, Q, Sum, Q, Max
+from django.db.models import Count, Q, Sum, Max, F, Case, When, DecimalField
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
@@ -351,11 +351,46 @@ def api_recent_invoices(request):
 @permission_classes([IsCompanyStaff])
 def api_dashboard_stats(request):
     today = timezone.now().date()
-    today_invoices = company_queryset(Invoice, request.user).filter(created_at__date=today).count()
-    total_sales = company_queryset(Invoice, request.user).filter(status=Invoice.CONFIRMED).aggregate(
-        total=Sum('total_amount'))['total'] or 0
-    low_stock_items = company_queryset(Product, request.user).filter(stock_qty__lt=5).count()
-    recent_invoices = company_queryset(Invoice, request.user).select_related('customer').order_by('-created_at')[:5]
+    start_month = today.replace(day=1)
+
+    invoices_qs = company_queryset(Invoice, request.user)
+    products_qs = company_queryset(Product, request.user)
+    payments_qs = company_queryset(Payment, request.user)
+    returns_qs = company_queryset(Return, request.user)
+
+    today_invoices = invoices_qs.filter(created_at__date=today).count()
+    total_sales = invoices_qs.filter(status=Invoice.CONFIRMED).aggregate(total=Sum('total_amount'))['total'] or 0
+    low_stock_items = products_qs.filter(stock_qty__lt=5).count()
+    recent_invoices = invoices_qs.select_related('customer').order_by('-created_at')[:5]
+
+    # New metrics
+    sales_today = invoices_qs.filter(status=Invoice.CONFIRMED, created_at__date=today).aggregate(total=Sum('total_amount'))['total'] or 0
+    sales_month = invoices_qs.filter(status=Invoice.CONFIRMED, created_at__date__gte=start_month).aggregate(total=Sum('total_amount'))['total'] or 0
+    draft_invoices = invoices_qs.filter(status=Invoice.DRAFT).count()
+    cancelled_invoices = invoices_qs.filter(status=Invoice.CANCELLED).count()
+    payments_today = payments_qs.filter(payment_date__date=today).aggregate(total=Sum('amount'))['total'] or 0
+    payments_month = payments_qs.filter(payment_date__date__gte=start_month).aggregate(total=Sum('amount'))['total'] or 0
+    returns_today_count = returns_qs.filter(return_date__date=today).count()
+    returns_today_amount = returns_qs.filter(return_date__date=today).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    # Outstanding receivables (sum of positive customer balances)
+    outstanding_receivables = company_queryset(CustomerBalance, request.user).aggregate(
+        total=Sum(Case(
+            When(balance__gt=0, then='balance'),
+            default=0,
+            output_field=DecimalField(max_digits=14, decimal_places=4)
+        ))
+    )['total'] or 0
+
+    # Inventory values (may be heavy for large datasets but acceptable for small/medium)
+    inventory_value_cost = products_qs.exclude(cost_price=None).aggregate(total=Sum(F('cost_price') * F('stock_qty')))['total'] or 0
+    inventory_value_retail = products_qs.aggregate(total=Sum(F('price') * F('stock_qty')))['total'] or 0
+
+    # Missing cost metrics
+    missing_cost_qs = products_qs.filter(Q(cost_price__isnull=True))
+    missing_cost_count = missing_cost_qs.count()
+    missing_cost_estimate = missing_cost_qs.aggregate(total=Sum(F('price') * F('stock_qty')))['total'] or 0
+
     return Response({
         "today_invoices": today_invoices,
         "total_sales": float(total_sales),
@@ -366,7 +401,21 @@ def api_dashboard_stats(request):
             "total_amount": float(inv.total_amount),
             "status": inv.status,
             "created_at": inv.created_at.isoformat()
-        } for inv in recent_invoices]
+        } for inv in recent_invoices],
+        # New fields
+        "sales_today": float(sales_today),
+        "sales_month": float(sales_month),
+        "draft_invoices": draft_invoices,
+        "cancelled_invoices": cancelled_invoices,
+        "payments_today": float(payments_today),
+        "payments_month": float(payments_month),
+        "returns_today_count": returns_today_count,
+        "returns_today_amount": float(returns_today_amount),
+        "inventory_value_cost": float(inventory_value_cost),
+        "inventory_value_retail": float(inventory_value_retail),
+        "outstanding_receivables": float(outstanding_receivables),
+        "missing_cost_count": int(missing_cost_count),
+        "missing_cost_estimate": float(missing_cost_estimate),
     })
 
 # Delete endpoints
