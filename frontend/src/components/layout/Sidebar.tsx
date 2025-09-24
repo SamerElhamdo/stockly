@@ -136,7 +136,7 @@ export const Sidebar: React.FC = () => {
           )}
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-lg border border-sidebar-border bg-sidebar-accent/20 hover:bg-sidebar-accent/50 transition-colors shadow-sm"
+            className="p-2 rounded-xl bg-card transition-all shadow-neo hover:shadow-neo-hover active:shadow-neo-inset"
             title={isCollapsed ? 'توسيع الشريط الجانبي' : 'طي الشريط الجانبي'}
           >
             {isCollapsed ? (
@@ -161,10 +161,10 @@ export const Sidebar: React.FC = () => {
                   <Tooltip content={item.name}>
                     <NavLink
                       to={item.path}
-                      className={`sidebar-link flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors ${
+                      className={`sidebar-link flex items-center justify-center px-3 py-2.5 rounded-xl transition-all ${
                         isActive
-                          ? 'bg-sidebar-accent text-sidebar-primary font-medium'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                          ? 'bg-card text-sidebar-primary font-medium shadow-neo hover:shadow-neo-hover active:shadow-neo-inset'
+                          : 'text-sidebar-foreground hover:bg-card hover:shadow-neo'
                       }`}
                     >
                       <Icon className="sidebar-icon h-5 w-5" />
@@ -173,10 +173,10 @@ export const Sidebar: React.FC = () => {
                 ) : (
                   <NavLink
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
                       isActive
-                        ? 'bg-sidebar-accent text-sidebar-primary font-medium'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                        ? 'bg-card text-sidebar-primary font-medium shadow-neo hover:shadow-neo-hover active:shadow-neo-inset'
+                        : 'text-sidebar-foreground hover:bg-card hover:shadow-neo'
                     }`}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />

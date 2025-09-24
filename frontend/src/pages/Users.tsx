@@ -118,7 +118,8 @@ export const Users: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiClient.delete(endpoints.deleteUser(id));
+      // No delete endpoint defined in endpoints; use users detail path
+      const res = await apiClient.delete(`${endpoints.users}${id}/`);
       return res.data;
     },
     onSuccess: () => {
@@ -158,7 +159,7 @@ export const Users: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <UserGroupIcon className="h-5 w-5 text-primary" />
@@ -169,7 +170,7 @@ export const Users: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-success-light rounded-full">
               <ShieldCheckIcon className="h-5 w-5 text-success" />
@@ -180,7 +181,7 @@ export const Users: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <KeyIcon className="h-5 w-5 text-primary" />

@@ -123,7 +123,7 @@ export const Returns: React.FC = () => {
   const [returnItems, setReturnItems] = useState<ReturnFormItem[]>([]);
   const [returnNotes, setReturnNotes] = useState('');
 
-  const { data, isLoading, isFetching, isError } = useQuery({
+  const { data, isLoading, isFetching, isError } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiReturn[] }>({
     queryKey: ['returns', statusFilter, page],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.returns, {
@@ -134,7 +134,7 @@ export const Returns: React.FC = () => {
       });
       return normalizeListResponse<ApiReturn>(res.data);
     },
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
   const list = data?.results ?? [];
@@ -337,7 +337,7 @@ export const Returns: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <ArrowUturnLeftIcon className="h-5 w-5 text-primary" />
@@ -348,7 +348,7 @@ export const Returns: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-success-light rounded-full">
               <CheckCircleIcon className="h-5 w-5 text-success" />
@@ -359,7 +359,7 @@ export const Returns: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-warning-light rounded-full">
               <ClockIcon className="h-5 w-5 text-warning" />
@@ -370,7 +370,7 @@ export const Returns: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <span className="font-semibold text-primary">ر.س</span>

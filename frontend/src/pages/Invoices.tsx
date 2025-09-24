@@ -320,7 +320,7 @@ export const Invoices: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <DocumentTextIcon className="h-5 w-5 text-primary" />
@@ -332,7 +332,7 @@ export const Invoices: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-success-light rounded-full">
               <CheckCircleIcon className="h-5 w-5 text-success" />
@@ -344,7 +344,7 @@ export const Invoices: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-warning-light rounded-full">
               <ClockIcon className="h-5 w-5 text-warning" />
@@ -356,7 +356,7 @@ export const Invoices: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <span className="text-primary font-bold">ر.س</span>

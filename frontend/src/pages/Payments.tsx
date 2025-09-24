@@ -103,7 +103,7 @@ export const Payments: React.FC = () => {
   const [methodInput, setMethodInput] = useState<PaymentMethod>('cash');
   const [notesInput, setNotesInput] = useState('');
 
-  const { data, isLoading, isFetching, isError } = useQuery({
+  const { data, isLoading, isFetching, isError } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiPayment[] }>({
     queryKey: ['payments', methodFilter, page],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.payments, {
@@ -114,7 +114,7 @@ export const Payments: React.FC = () => {
       });
       return normalizeListResponse<ApiPayment>(res.data);
     },
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 
   const payments = data?.results ?? [];
@@ -271,7 +271,7 @@ export const Payments: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <CreditCardIcon className="h-5 w-5 text-primary" />
@@ -282,7 +282,7 @@ export const Payments: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-success-light rounded-full">
               <CheckIcon className="h-5 w-5 text-success" />
@@ -293,7 +293,7 @@ export const Payments: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-warning-light rounded-full">
               <BanknotesIcon className="h-5 w-5 text-warning" />
@@ -304,7 +304,7 @@ export const Payments: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <DocumentTextIcon className="h-5 w-5 text-primary" />

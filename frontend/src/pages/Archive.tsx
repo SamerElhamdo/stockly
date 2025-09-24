@@ -134,7 +134,7 @@ export const Archive: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <ArchiveBoxIcon className="h-5 w-5 text-primary" />
@@ -145,7 +145,7 @@ export const Archive: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
               <UsersIcon className="h-5 w-5 text-primary" />
@@ -156,7 +156,7 @@ export const Archive: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-4">
+        <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-success-light rounded-full">
               <CubeIcon className="h-5 w-5 text-success" />
