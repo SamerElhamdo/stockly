@@ -6,6 +6,7 @@ import { Button } from '../components/ui/custom-button';
 import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
 import { apiClient, endpoints } from '../lib/api';
 
 interface CompanyProfile {
@@ -55,6 +56,15 @@ export const Settings: React.FC = () => {
   const [secondaryCurrency, setSecondaryCurrency] = useState<string>('');
   const [secondaryPerUsd, setSecondaryPerUsd] = useState<string>('');
   const [priceDisplayMode, setPriceDisplayMode] = useState<'both' | 'primary' | 'secondary'>('both');
+  const dashboardOptions = useMemo(
+    () => [
+      { key: 'total_sales', label: 'إجمالي المبيعات' },
+      { key: 'today_invoices', label: 'فواتير اليوم' },
+      { key: 'products', label: 'المنتجات النشطة' },
+      { key: 'customers', label: 'العملاء' },
+    ],
+    []
+  );
 
   useEffect(() => {
     if (profile) {
@@ -106,6 +116,7 @@ export const Settings: React.FC = () => {
     onSuccess: () => {
       toast({ title: 'تم الحفظ', description: 'تم تحديث إعدادات الشركة بنجاح' });
       queryClient.invalidateQueries({ queryKey: ['company-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر تحديث الإعدادات';
@@ -265,6 +276,38 @@ export const Settings: React.FC = () => {
                     </Select>
                   </div>
                 </div>
+              <div className="bg-card rounded-lg border border-border p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-light rounded-full">
+                    <ShieldCheckIcon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">كروت لوحة التحكم</h2>
+                    <p className="text-sm text-muted-foreground">اختر الكروت التي ستظهر في صفحة لوحة التحكم</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {dashboardOptions.map((opt) => {
+                    const checked = (dashboardCards || []).includes(opt.key);
+                    return (
+                      <label key={opt.key} className="flex items-center justify-between rounded-xl border border-border bg-card p-3 shadow-neo hover:shadow-neo-hover overflow-hidden cursor-pointer select-none">
+                        <span className="text-sm text-foreground">{opt.label}</span>
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) =>
+                            setDashboardCards((prev) => {
+                              const set = new Set(prev || []);
+                              if (value) set.add(opt.key);
+                              else set.delete(opt.key);
+                              return Array.from(set);
+                            })
+                          }
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               </div>
               <div className="bg-card rounded-lg border border-border p-6 space-y-4">
                 <div className="flex items-center gap-3">
@@ -369,6 +412,12 @@ export const Settings: React.FC = () => {
                       setLogoPreview(profile.logo_url || null);
                       setLogoFile(null);
                       setRemoveLogo(false);
+                      setLanguage(profile.language || 'ar');
+                      setNavbarMessage(profile.navbar_message || '');
+                      setDashboardCards(profile.dashboard_cards || []);
+                      setSecondaryCurrency(profile.secondary_currency || '');
+                      setSecondaryPerUsd(profile.secondary_per_usd ? String(profile.secondary_per_usd) : '');
+                      setPriceDisplayMode(profile.price_display_mode || 'both');
                     }
                   }}
                 >

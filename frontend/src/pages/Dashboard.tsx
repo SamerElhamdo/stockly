@@ -167,18 +167,16 @@ export const Dashboard: React.FC = () => {
     },
   ];
 
-  const cardsPref = profile?.dashboard_cards && profile.dashboard_cards.length > 0 ? new Set(profile.dashboard_cards) : null;
-  const stats = cardsPref
-    ? allStats.filter((s) => {
-        const map: Record<string, string> = {
-          'إجمالي المبيعات': 'total_sales',
-          'فواتير اليوم': 'today_invoices',
-          'المنتجات النشطة': 'products',
-          'العملاء': 'customers',
-        };
-        const key = map[s.title] || '';
-        return cardsPref.has(key);
-      })
+  const mapTitleToKey: Record<string, string> = {
+    'إجمالي المبيعات': 'total_sales',
+    'فواتير اليوم': 'today_invoices',
+    'المنتجات النشطة': 'products',
+    'العملاء': 'customers',
+  };
+  const hasDashboardPref = Array.isArray(profile?.dashboard_cards);
+  const cardsPref = new Set(profile?.dashboard_cards || []);
+  const stats = hasDashboardPref
+    ? allStats.filter((s) => cardsPref.has(mapTitleToKey[s.title] || ''))
     : allStats;
 
   return (
@@ -199,7 +197,9 @@ export const Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {stats.length === 0 ? (
+          <div className="md:col-span-2 lg:col-span-4 text-sm text-muted-foreground">لا توجد كروت محددة للعرض. يمكنك تفعيلها من الإعدادات.</div>
+        ) : stats.map((stat, index) => (
           <StatCard
             key={index}
             {...stat}
