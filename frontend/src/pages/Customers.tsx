@@ -25,6 +25,7 @@ import {
 } from '../components/ui/dialog';
 import { useToast } from '../components/ui/use-toast';
 import { Amount } from '../components/Amount';
+import { Skeleton } from '../components/ui/skeleton';
 import { useCompany } from '../contexts/CompanyContext';
 
 interface ApiCustomer {
@@ -293,7 +294,15 @@ export const Customers: React.FC = () => {
             </thead>
             <tbody>
               {isLoading || isFetching ? (
-                <tr><td className="py-6 px-6 text-muted-foreground" colSpan={5}>...جاري التحميل</td></tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-5 w-28" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-6 w-40" /></td>
+                  </tr>
+                ))
               ) : isError ? (
                 <tr><td className="py-6 px-6 text-destructive" colSpan={5}>تعذر جلب البيانات</td></tr>
               ) : sortedList.length === 0 ? (

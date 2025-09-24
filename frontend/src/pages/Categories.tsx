@@ -13,6 +13,7 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../components/ui/use-toast';
+import { Skeleton } from '../components/ui/skeleton';
 
 interface ApiCategory {
   id: number;
@@ -215,11 +216,13 @@ export const Categories: React.FC = () => {
             </thead>
             <tbody>
               {isLoading || isFetching ? (
-                <tr>
-                  <td className="py-6 px-6 text-muted-foreground" colSpan={3}>
-                    ...جاري التحميل
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-40" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-36" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-6 w-24" /></td>
+                  </tr>
+                ))
               ) : isError ? (
                 <tr>
                   <td className="py-6 px-6 text-destructive" colSpan={3}>

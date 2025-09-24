@@ -7,6 +7,7 @@ import { Input } from '../components/ui/custom-input';
 import { Amount } from '../components/Amount';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import { useToast } from '../components/ui/use-toast';
+import { Skeleton } from '../components/ui/skeleton';
 
 interface ArchivedProduct {
   id: number;
@@ -221,11 +222,16 @@ export const Archive: React.FC = () => {
                 </thead>
                 <tbody>
                   {productsLoading ? (
-                    <tr>
-                      <td className="py-6 px-6 text-muted-foreground" colSpan={6}>
-                        ...جاري التحميل
-                      </td>
-                    </tr>
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={i}>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-40" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-16" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-6 w-24" /></td>
+                      </tr>
+                    ))
                   ) : productsError ? (
                     <tr>
                       <td className="py-6 px-6 text-destructive" colSpan={6}>
@@ -293,11 +299,15 @@ export const Archive: React.FC = () => {
                 </thead>
                 <tbody>
                   {customersLoading ? (
-                    <tr>
-                      <td className="py-6 px-6 text-muted-foreground" colSpan={5}>
-                        ...جاري التحميل
-                      </td>
-                    </tr>
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={i}>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-40" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-36" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-4 w-48" /></td>
+                        <td className="py-4 px-6"><Skeleton className="h-6 w-24" /></td>
+                      </tr>
+                    ))
                   ) : customersError ? (
                     <tr>
                       <td className="py-6 px-6 text-destructive" colSpan={5}>

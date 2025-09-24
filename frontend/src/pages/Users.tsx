@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
+import { Skeleton } from '../components/ui/skeleton';
 
 interface CompanyUser {
   id: number;
@@ -241,11 +242,24 @@ export const Users: React.FC = () => {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr>
-                  <td className="py-6 px-6 text-muted-foreground" colSpan={6}>
-                    ...جاري التحميل
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-36" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-32" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-6 w-20" /></td>
+                  </tr>
+                ))
               ) : isError ? (
                 <tr>
                   <td className="py-6 px-6 text-destructive" colSpan={6}>

@@ -8,11 +8,13 @@ import {
   XMarkIcon,
   ClockIcon,
   PrinterIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
+import { Skeleton } from '../components/ui/skeleton';
 import { Textarea } from '../components/ui/textarea';
 import {
   Dialog,
@@ -373,7 +375,7 @@ export const Returns: React.FC = () => {
         <div className="bg-card rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-light rounded-full">
-              <span className="font-semibold text-primary">ر.س</span>
+             <BanknotesIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المبالغ</p>
@@ -451,11 +453,17 @@ export const Returns: React.FC = () => {
             </thead>
             <tbody>
               {isLoading || isFetching ? (
-                <tr>
-                  <td className="py-6 px-6 text-muted-foreground" colSpan={7}>
-                    ...جاري التحميل
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-20" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-16" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-6 w-20" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-6 w-28" /></td>
+                  </tr>
+                ))
               ) : isError ? (
                 <tr>
                   <td className="py-6 px-6 text-destructive" colSpan={7}>

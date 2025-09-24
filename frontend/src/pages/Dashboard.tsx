@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import { useCompany } from '../contexts/CompanyContext';
 import { Amount } from '../components/Amount';
+import { Skeleton } from '../components/ui/skeleton';
 
 interface StatCardProps {
   title: string;
@@ -305,7 +306,20 @@ export const Dashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.length === 0 ? (
+        {statsLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-card rounded-lg border border-border p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+            </div>
+          ))
+        ) : stats.length === 0 ? (
           <div className="md:col-span-2 lg:col-span-4 text-sm text-muted-foreground">لا توجد كروت محددة للعرض. يمكنك تفعيلها من الإعدادات.</div>
         ) : stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
@@ -319,7 +333,18 @@ export const Dashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-foreground mb-4">آخر الفواتير</h3>
           <div className="space-y-3">
             {statsLoading ? (
-              <p className="text-muted-foreground">...جاري التحميل</p>
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3 w-full">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              ))
             ) : recentInvoices.length === 0 ? (
               <p className="text-muted-foreground">لا توجد فواتير حديثة</p>
             ) : (
@@ -348,7 +373,18 @@ export const Dashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-foreground mb-4">تنبيهات المخزون</h3>
           <div className="space-y-3">
             {statsLoading ? (
-              <p className="text-muted-foreground">...جاري التحميل</p>
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3 w-full">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                </div>
+              ))
             ) : lowStockCount === 0 ? (
               <p className="text-muted-foreground">لا توجد منتجات منخفضة المخزون حالياً</p>
             ) : lowStockLoading ? (

@@ -12,6 +12,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
+import { Skeleton } from '../components/ui/skeleton';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
@@ -382,11 +383,16 @@ export const Payments: React.FC = () => {
             </thead>
             <tbody>
               {isLoading || isFetching ? (
-                <tr>
-                  <td className="py-6 px-6 text-muted-foreground" colSpan={6}>
-                    ...جاري التحميل
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-28" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-20" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-4 w-24" /></td>
+                    <td className="py-4 px-6"><Skeleton className="h-6 w-28" /></td>
+                  </tr>
+                ))
               ) : isError ? (
                 <tr>
                   <td className="py-6 px-6 text-destructive" colSpan={6}>
