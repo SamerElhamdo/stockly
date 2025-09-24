@@ -363,7 +363,7 @@ export const Invoices: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المبلغ</p>
-              <p className="text-xl font-bold text-foreground">{stats.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.totalAmount} digits={2} /></p>
             </div>
           </div>
         </div>

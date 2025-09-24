@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '../components/ui/custom-button';
 import { Input } from '../components/ui/custom-input';
+import { Amount } from '../components/Amount';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import { useToast } from '../components/ui/use-toast';
 
@@ -163,7 +164,7 @@ export const Archive: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">قيمة المخزون المؤرشف</p>
-              <p className="text-xl font-bold text-foreground">{totalArchivedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س</p>
+              <p className="text-xl font-bold text-foreground"><Amount value={totalArchivedValue} digits={2} /></p>
             </div>
           </div>
         </div>

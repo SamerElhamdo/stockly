@@ -197,7 +197,7 @@ export const Returns: React.FC = () => {
 
   const loadInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: number) => {
-      const res = await apiClient.get(endpoints.invoiceDetail(invoiceId));
+      const res = await apiClient.get(endpoints.invoiceDetails(invoiceId));
       return res.data as ApiInvoice;
     },
     onSuccess: (invoice) => {
@@ -377,7 +377,7 @@ export const Returns: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المبالغ</p>
-              <p className="text-xl font-bold text-foreground">{formatCurrency(stats.total)}</p>
+              <p className="text-xl font-bold text-foreground"><Amount value={stats.total} digits={2} /></p>
             </div>
           </div>
         </div>
