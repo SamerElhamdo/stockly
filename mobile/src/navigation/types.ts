@@ -1,0 +1,35 @@
+export type RootStackParamList = {
+  Auth: undefined;
+  Main: undefined;
+  PrintInvoice: { id: number };
+  PrintReturn: { id: number };
+};
+
+export type HomeStackParamList = {
+  Dashboard: undefined;
+};
+
+export type SalesStackParamList = {
+  Invoices: undefined;
+  Returns: undefined;
+  Payments: undefined;
+};
+
+export type InventoryStackParamList = {
+  Products: undefined;
+  Categories: undefined;
+  Archive: undefined;
+};
+
+export type MoreStackParamList = {
+  Customers: undefined;
+  Users: undefined;
+  Settings: undefined;
+};
+
+export type MainTabParamList = {
+  Home: undefined;
+  Sales: undefined;
+  Inventory: undefined;
+  More: undefined;
+};
