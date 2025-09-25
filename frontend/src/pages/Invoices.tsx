@@ -854,7 +854,7 @@ export const Invoices: React.FC = () => {
                     <button
                       key={p.id}
                       type="button"
-                      className={`w-full text-right p-3 hover:bg-card-hover transition-colors ${selectedProductId === String(p.id) ? 'bg-muted/50' : ''}`}
+                      className={`w-full text-right p-3 transition-colors ${selectedProductId === String(p.id) ? 'bg-primary/30 ring-2 ring-primary/70 hover:bg-primary/40' : 'hover:bg-card-hover'}`}
                       onClick={() => setSelectedProductId(String(p.id))}
                     >
                       <div className="flex items-center justify-between">
