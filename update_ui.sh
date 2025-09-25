@@ -1,5 +1,3 @@
-echo "Pulling latest changes"
-git pull
 
 echo "Installing dependencies"
 npm install
