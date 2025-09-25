@@ -11,7 +11,7 @@ import {
   setAuthTokens,
 } from '@/storage/auth-storage';
 
-export interface User extends StoredUser {}
+export type User = StoredUser;
 
 interface AuthContextValue {
   user: User | null;

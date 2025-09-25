@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import logo from '../../../assets/logo.png';
 
 import { ScreenContainer, SoftButton, SoftCard, SoftInput } from '@/components';
 import { useAuth } from '@/context';
@@ -25,7 +26,7 @@ export const LoginScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.logoWrapper}>
           <SoftCard variant="primary" style={styles.logoCard}>
-            <Image source={require('../../../assets/logo.png')} resizeMode="contain" style={styles.logo} />
+            <Image source={logo} resizeMode="contain" style={styles.logo} />
           </SoftCard>
           <Text style={[styles.title, { color: theme.textPrimary }]}>مرحباً بك في ستوكلي</Text>
           <Text style={[styles.subtitle, { color: theme.textMuted }]}>منصة متكاملة لإدارة المخزون والفواتير</Text>
