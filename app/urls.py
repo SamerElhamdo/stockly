@@ -5,14 +5,10 @@ from .api_v1 import (
     CategoryViewSet, ProductViewSet, CustomerViewSet,
     InvoiceViewSet, ReturnViewSet, PaymentViewSet,
     CustomerBalanceViewSet, CompanyProfileViewSet, UsersViewSet,
-    OTPRequestView, OTPVerifyView, ResetPasswordView
+    OTPRequestView, OTPVerifyView, ResetPasswordView,
+    DashboardStatsView, CompanyRegisterView, WhatsAppWebhookView, LegacyDeleteUserView
 )
-from .api import (
-    api_whatsapp_webhook,
-    api_delete_user, api_dashboard_stats,
-    api_register_company
-)
-from . import views
+# Note: This app exposes API endpoints only. No server-rendered templates.
 
 router = DefaultRouter()
 router.register(r'v1/categories', CategoryViewSet, basename='v1-categories')
@@ -32,19 +28,19 @@ urlpatterns = [
   path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
   path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
-  # Dashboard stats (DRF permissions)
-  path('api/dashboard/stats', api_dashboard_stats),
+  # Dashboard stats (moved to APIView)
+  path('api/dashboard/stats', DashboardStatsView.as_view()),
 
   # Auth/OTP (v1 public)
   path('api/v1/auth/otp/send/', OTPRequestView.as_view()),
   path('api/v1/auth/otp/verify/', OTPVerifyView.as_view()),
   path('api/v1/auth/reset-password/', ResetPasswordView.as_view()),
   # Public company registration
-  path('api/register-company/', api_register_company),
+  path('api/register-company/', CompanyRegisterView.as_view()),
 
-  # WhatsApp webhook (legacy integration kept)
-  path('api/whatsapp-webhook/', api_whatsapp_webhook),
+  # WhatsApp webhook (legacy integration kept via APIView)
+  path('api/whatsapp-webhook/', WhatsAppWebhookView.as_view()),
 
-  # User Management (delete)
-  path('api/users/<int:user_id>/', api_delete_user),
+  # Legacy explicit user delete endpoint (kept for backward compatibility)
+  path('api/users/<int:user_id>/', LegacyDeleteUserView.as_view()),
 ]
