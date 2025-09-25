@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleProp, StyleSheet, View, ViewProps, ViewStyle } from 'react-native';
+import { ColorValue, StyleProp, StyleSheet, View, ViewProps, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemeColors, useTheme } from '@/theme';
@@ -40,10 +40,12 @@ export const SoftCard: React.FC<SoftCardProps> = ({
   const { theme } = useTheme();
   const shadow = buildShadow(theme, variant);
 
-  const gradientColors =
+  const gradientColors: [ColorValue, ColorValue] =
     variant === 'default'
       ? [theme.surface, theme.surface]
-      : [theme.softPalette[variant].light, theme.softPalette[variant].main + '10'];
+      : [theme.softPalette[variant].light, `${theme.softPalette[variant].main}10`];
+
+  const fallbackColors: [ColorValue, ColorValue] = [shadow.backgroundColor, shadow.backgroundColor];
 
   return (
     <View
@@ -51,7 +53,7 @@ export const SoftCard: React.FC<SoftCardProps> = ({
       {...rest}
     >
       <LinearGradient
-        colors={gradient ? gradientColors : [shadow.backgroundColor, shadow.backgroundColor]}
+        colors={gradient ? gradientColors : fallbackColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.inner, { borderColor: shadow.borderColor }]}
