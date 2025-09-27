@@ -202,9 +202,11 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 26,
     fontWeight: '700',
+    textAlign: 'right',
   },
   pageSubtitle: {
     fontSize: 15,
+    textAlign: 'right',
   },
   summaryRow: {
     flexDirection: 'row',

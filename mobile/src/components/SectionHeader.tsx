@@ -13,7 +13,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, subtitle, a
   const { theme } = useTheme();
   return (
     <View style={[styles.container, style]} {...rest}>
-      <View>
+      <View style={styles.texts}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
         {subtitle ? <Text style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</Text> : null}
       </View>
@@ -24,16 +24,23 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, subtitle, a
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  texts: {
+    alignItems: 'flex-end',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   subtitle: {
     fontSize: 14,
     marginTop: 4,
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });

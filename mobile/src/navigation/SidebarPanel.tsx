@@ -42,7 +42,7 @@ export const SidebarPanel: React.FC = () => {
 
       <Animated.View
         pointerEvents={isOpen ? 'auto' : 'none'}
-        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.surface, borderColor: theme.border, transform: [{ translateX }] }]}
+        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.surface, borderColor: theme.border, transform: [{ translateX }], direction: 'rtl' }]}
       >
         <SafeAreaView style={styles.safe}> 
           <View style={styles.header}>
@@ -58,16 +58,16 @@ export const SidebarPanel: React.FC = () => {
           </View>
 
           <View style={styles.links}>
-            <LinkItem label="الرئيسية" icon="home-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Home', params: { screen: 'Dashboard' } } as never)} />
-            <LinkItem label="الفواتير" icon="receipt-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Sales', params: { screen: 'Invoices' } } as never)} />
-            <LinkItem label="الإرجاعات" icon="arrow-undo-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Sales', params: { screen: 'Returns' } } as never)} />
-            <LinkItem label="المدفوعات" icon="cash-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Sales', params: { screen: 'Payments' } } as never)} />
-            <LinkItem label="المنتجات" icon="cube-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Inventory', params: { screen: 'Products' } } as never)} />
-            <LinkItem label="التصنيفات" icon="pricetags-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Inventory', params: { screen: 'Categories' } } as never)} />
-            <LinkItem label="الأرشيف" icon="archive-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'Inventory', params: { screen: 'Archive' } } as never)} />
-            <LinkItem label="العملاء" icon="people-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'More', params: { screen: 'Customers' } } as never)} />
-            <LinkItem label="المستخدمون" icon="person-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'More', params: { screen: 'Users' } } as never)} />
-            <LinkItem label="الإعدادات" icon="settings-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main' as never, { screen: 'More', params: { screen: 'Settings' } } as never)} />
+            <LinkItem label="الرئيسية" icon="home-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Home', params: { screen: 'Dashboard' } } as any)} />
+            <LinkItem label="الفواتير" icon="receipt-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Invoices' } } as any)} />
+            <LinkItem label="الإرجاعات" icon="arrow-undo-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Returns' } } as any)} />
+            <LinkItem label="المدفوعات" icon="cash-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Payments' } } as any)} />
+            <LinkItem label="المنتجات" icon="cube-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Products' } } as any)} />
+            <LinkItem label="التصنيفات" icon="pricetags-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Categories' } } as any)} />
+            <LinkItem label="الأرشيف" icon="archive-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Archive' } } as any)} />
+            <LinkItem label="العملاء" icon="people-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Customers' } } as any)} />
+            <LinkItem label="المستخدمون" icon="person-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Users' } } as any)} />
+            <LinkItem label="الإعدادات" icon="settings-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Settings' } } as any)} />
           </View>
 
           <Pressable style={[styles.logout, { backgroundColor: theme.softPalette.destructive.main }]} onPress={() => void logout()}>
@@ -93,7 +93,7 @@ const LinkItem: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap; 
         { backgroundColor: pressed ? (theme.name === 'light' ? '#F1F5F9' : '#0B1220') : 'transparent', borderColor: theme.border },
       ]}
     >
-      <Ionicons name={icon} size={18} color={theme.textPrimary} style={{ marginLeft: 8 }} />
+      <Ionicons name={icon} size={18} color={theme.textPrimary} style={{ marginRight: 8 }} />
       <Text style={[styles.itemLabel, { color: theme.textPrimary }]}>{label}</Text>
     </Pressable>
   );
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  itemLabel: { fontSize: 15 },
+  itemLabel: { fontSize: 15, textAlign: 'right', writingDirection: 'rtl' },
   logout: { borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   logoutText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

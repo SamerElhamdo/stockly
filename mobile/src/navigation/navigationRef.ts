@@ -1,11 +1,11 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
+import type { RootStackParamList } from './types';
 
-export const navigationRef = createNavigationContainerRef();
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
-export const navigate = (name: never, params?: never) => {
+export const navigate = <Name extends keyof RootStackParamList>(name: Name, params?: RootStackParamList[Name]) => {
   if (navigationRef.isReady()) {
-    // @ts-expect-error dynamic
-    navigationRef.navigate(name as any, params);
+    navigationRef.navigate(name as any, params as any);
   }
 };
 

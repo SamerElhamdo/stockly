@@ -2,10 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftInput, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, SoftInput, SoftListItem, SoftButton } from '@/components';
+import { Modal, Pressable } from 'react-native';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
+import { navigationRef } from '@/navigation/navigationRef';
 
 interface CustomerItem {
   id: number;
@@ -20,6 +22,7 @@ export const CustomersScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
   const [search, setSearch] = useState('');
+  const [activeCustomer, setActiveCustomer] = useState<CustomerItem | null>(null);
 
   const { data: customers, isLoading, refetch, isRefetching } = useQuery<CustomerItem[]>({
     queryKey: ['customers'],
@@ -63,14 +66,40 @@ export const CustomersScreen: React.FC = () => {
       <View style={styles.listWrapper}>
         <SectionHeader title="قائمة العملاء" subtitle="أحدث العملاء في النظام" />
         {(filteredCustomers || []).map((customer) => (
-          <SoftListItem
-            key={customer.id}
-            title={customer.name}
-            subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
-            meta={formatAmount(Number(customer.balance || 0))}
-            right={Number(customer.balance) > 0 ? <SoftBadge label="رصيد مستحق" variant="destructive" /> : undefined}
-          />
+          <Pressable key={customer.id} onPress={() => setActiveCustomer(customer)}>
+            <SoftListItem
+              title={customer.name}
+              subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
+              meta={formatAmount(Number(customer.balance || 0))}
+              right={Number(customer.balance) > 0 ? <SoftBadge label="رصيد مستحق" variant="destructive" /> : undefined}
+            />
+          </Pressable>
         ))}
+
+        <Modal visible={!!activeCustomer} transparent animationType="fade" onRequestClose={() => setActiveCustomer(null)}>
+          <Pressable style={styles.backdrop} onPress={() => setActiveCustomer(null)} />
+          <View style={[styles.popover, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
+            <Text style={[styles.popoverTitle, { color: theme.textPrimary }]}>إجراءات للعميل</Text>
+            <Text style={[styles.popoverSubtitle, { color: theme.textMuted }]}>{activeCustomer?.name}</Text>
+            <View style={styles.actionsCol}>
+              <SoftButton title="فاتورة جديدة" variant="secondary" onPress={() => { setActiveCustomer(null);
+                if (navigationRef.isReady() && activeCustomer) {
+                  navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'InvoiceCreate', params: { customerId: activeCustomer.id, customerName: activeCustomer.name } } } as any);
+                }
+              }} />
+              <SoftButton title="إضافة دفعة" variant="secondary" onPress={() => { setActiveCustomer(null);
+                if (navigationRef.isReady() && activeCustomer) {
+                  navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'PaymentCreate', params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'add' } } } as any);
+                }
+              }} />
+              <SoftButton title="سحب دفعة" variant="secondary" onPress={() => { setActiveCustomer(null);
+                if (navigationRef.isReady() && activeCustomer) {
+                  navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'PaymentCreate', params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'withdraw' } } } as any);
+                }
+              }} />
+            </View>
+          </View>
+        </Modal>
         {!filteredCustomers?.length && (
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا يوجد عملاء مطابقون</Text>
         )}
@@ -86,9 +115,11 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 26,
     fontWeight: '700',
+    textAlign: 'right',
   },
   pageSubtitle: {
     fontSize: 15,
+    textAlign: 'right',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -101,4 +132,21 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
   },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  popover: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 40,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 16,
+    gap: 10,
+  },
+  popoverTitle: { fontSize: 16, fontWeight: '700', textAlign: 'right' },
+  popoverSubtitle: { fontSize: 13, textAlign: 'right' },
+  actionsCol: { gap: 8 },
 });

@@ -67,15 +67,18 @@ export const PaymentsScreen: React.FC = () => {
 
       <View style={styles.listWrapper}>
         <SectionHeader title="سجل المدفوعات" subtitle="أحدث العمليات المالية" />
-        {(filteredPayments || []).map((payment) => (
-          <SoftListItem
-            key={payment.id}
-            title={`${payment.customer_name}`}
-            subtitle={`${payment.method} • ${mergeDateTime(payment.created_at)}`}
-            meta={formatAmount(payment.amount)}
-            right={<SoftBadge label={statusMap[payment.status].label} variant={statusMap[payment.status].variant} />}
-          />
-        ))}
+        {(filteredPayments || []).map((payment) => {
+          const status = statusMap[payment.status] || { label: 'غير معروف', variant: 'info' };
+          return (
+            <SoftListItem
+              key={payment.id}
+              title={`${payment.customer_name}`}
+              subtitle={`${payment.method} • ${mergeDateTime(payment.created_at)}`}
+              meta={formatAmount(payment.amount)}
+              right={<SoftBadge label={status.label} variant={status.variant} />}
+            />
+          );
+        })}
         {!filteredPayments?.length && (
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد مدفوعات مطابقة</Text>
         )}
@@ -91,9 +94,11 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 26,
     fontWeight: '700',
+    textAlign: 'right',
   },
   pageSubtitle: {
     fontSize: 15,
+    textAlign: 'right',
   },
   summaryRow: {
     flexDirection: 'row',

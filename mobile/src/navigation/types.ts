@@ -13,6 +13,8 @@ export type SalesStackParamList = {
   Invoices: undefined;
   Returns: undefined;
   Payments: undefined;
+  PaymentCreate: { customerId: number; customerName: string; mode: 'add' | 'withdraw' };
+  InvoiceCreate: { customerId: number; customerName: string };
 };
 
 export type InventoryStackParamList = {

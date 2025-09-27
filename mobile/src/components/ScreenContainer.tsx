@@ -15,11 +15,11 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, styl
   const insets = useSafeAreaInsets();
 
   const content = noScroll ? (
-    <View style={[styles.inner, style]}>{children}</View>
+    <View style={[styles.inner, style, { direction: 'rtl', writingDirection: 'rtl' }]}>{children}</View>
   ) : (
     <ScrollView
-      style={[styles.scroll, { backgroundColor: theme.background }]}
-      contentContainerStyle={[styles.inner, style]}
+      style={[styles.scroll, { backgroundColor: theme.background, direction: 'rtl' }]}
+      contentContainerStyle={[styles.inner, style, { direction: 'rtl', writingDirection: 'rtl' }]}
       showsVerticalScrollIndicator={false}
       {...rest}
     >

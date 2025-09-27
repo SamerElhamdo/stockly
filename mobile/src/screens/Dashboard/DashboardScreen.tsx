@@ -158,9 +158,11 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 28,
     fontWeight: '700',
+    textAlign: 'right',
   },
   pageSubtitle: {
     fontSize: 15,
+    textAlign: 'right',
   },
   statsGrid: {
     flexDirection: 'row',

@@ -1,5 +1,7 @@
-export const formatDate = (value: string | Date) => {
+export const formatDate = (value: string | Date | undefined | null) => {
+  if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('ar-SY', {
     day: '2-digit',
     month: 'short',
@@ -7,15 +9,24 @@ export const formatDate = (value: string | Date) => {
   });
 };
 
-export const formatTime = (value: string | Date) => {
+export const formatTime = (value: string | Date | undefined | null) => {
+  if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
   return date.toLocaleTimeString('ar-SY', {
     hour: '2-digit',
     minute: '2-digit',
   });
 };
 
-export const mergeDateTime = (value: string | Date) => `${formatDate(value)} • ${formatTime(value)}`;
+export const mergeDateTime = (value: string | Date | undefined | null) => {
+  const d = formatDate(value);
+  const t = formatTime(value);
+  if (d === '—' && t === '—') return '—';
+  if (d === '—') return t;
+  if (t === '—') return d;
+  return `${d} • ${t}`;
+};
 
 // Smart number formatter for prices:
 // - Default to 2 decimals

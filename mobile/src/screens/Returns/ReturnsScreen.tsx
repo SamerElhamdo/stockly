@@ -68,15 +68,18 @@ export const ReturnsScreen: React.FC = () => {
 
       <View style={styles.listWrapper}>
         <SectionHeader title="طلبات مرتجعات" subtitle="طلبات تحتاج للمراجعة" />
-        {(returns || []).map((item) => (
-          <SoftListItem
-            key={item.id}
-            title={`مرتجع #${item.id}`}
-            subtitle={`فاتورة #${item.invoice_id} • ${mergeDateTime(item.created_at)}`}
-            meta={formatAmount(item.total_amount)}
-            right={<SoftBadge label={statusMap[item.status].label} variant={statusMap[item.status].variant} />}
-          />
-        ))}
+        {(returns || []).map((item) => {
+          const status = statusMap[item.status] || { label: 'غير معروف', variant: 'info' as const };
+          return (
+            <SoftListItem
+              key={item.id}
+              title={`مرتجع #${item.id}`}
+              subtitle={`فاتورة #${item.invoice_id} • ${mergeDateTime(item.created_at)}`}
+              meta={formatAmount(item.total_amount)}
+              right={<SoftBadge label={status.label} variant={status.variant} />}
+            />
+          );
+        })}
         {!returns?.length && (
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد مرتجعات حالياً</Text>
         )}
