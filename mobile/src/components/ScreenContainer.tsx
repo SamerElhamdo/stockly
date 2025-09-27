@@ -1,6 +1,6 @@
 import React from 'react';
-import { ScrollView, ScrollViewProps, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, ScrollViewProps, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
@@ -12,6 +12,7 @@ type ScreenContainerProps = ScrollViewProps & {
 
 export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, style, noScroll = false, footer, ...rest }) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const content = noScroll ? (
     <View style={[styles.inner, style]}>{children}</View>
@@ -28,8 +29,14 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, styl
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}> 
-      {content}
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      <KeyboardAvoidingView
+        style={styles.safeArea}
+        behavior={Platform.select({ ios: 'padding', android: undefined })}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 0 })}
+      >
+        {content}
+        {footer ? <View style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 8) }]}>{footer}</View> : null}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

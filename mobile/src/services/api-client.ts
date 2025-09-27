@@ -45,6 +45,10 @@ apiClient.interceptors.response.use(
 
 export const endpoints = {
   login: '/api/auth/login/',
+  sendOtp: '/api/v1/auth/otp/send/',
+  verifyOtp: '/api/v1/auth/otp/verify/',
+  resetPassword: '/api/v1/auth/reset-password/',
+  registerCompany: '/api/register-company/',
   dashboardStats: '/api/dashboard/stats',
   products: '/api/v1/products/',
   productDetail: (id: number) => `/api/v1/products/${id}/`,

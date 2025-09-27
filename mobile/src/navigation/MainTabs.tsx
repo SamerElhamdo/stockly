@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Keyboard } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -62,10 +63,25 @@ const MoreStackNavigator = () => (
   </MoreStack.Navigator>
 );
 
+const DrawerContentless = () => (
+  // Empty drawer content for now; we'll use default list of routes
+  <></>
+);
+
 export const MainTabs = () => {
   const { theme } = useTheme();
+  const [keyboardVisible, setKeyboardVisible] = React.useState(false);
 
-  return (
+  React.useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const Tabs = (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -74,6 +90,7 @@ export const MainTabs = () => {
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
+            display: keyboardVisible ? 'none' : 'flex',
         },
         tabBarIcon: ({ color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
@@ -106,4 +123,6 @@ export const MainTabs = () => {
       />
     </Tab.Navigator>
   );
+
+  return Tabs;
 };
