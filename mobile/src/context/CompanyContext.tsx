@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient, endpoints } from '@/services/api-client';
 import { useAuth } from './AuthContext';
+import { formatSmartDecimal } from '@/utils/format';
 
 type PriceDisplayMode = 'both' | 'primary' | 'secondary';
 
@@ -66,16 +67,13 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const secondaryCode = profile?.secondary_currency || undefined;
     const rate = Number(profile?.secondary_per_usd || 0);
 
-    const formatPrimary = (n: number) => `${sym.USD || '$'} ${n.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    const formatPrimary = (n: number) => `${sym.USD || '$'} ${formatSmartDecimal(n)}`;
 
     const formatSecondary = (n: number) => {
       if (!secondaryCode || !rate || rate <= 0) return undefined;
       const converted = n * rate;
       const symbol = sym[secondaryCode] || secondaryCode;
-      return `${symbol} ${converted.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      return `${symbol} ${formatSmartDecimal(converted)}`;
     };
 
     const formatAmountParts = (usdAmount: number) => {

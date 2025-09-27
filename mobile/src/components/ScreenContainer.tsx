@@ -28,7 +28,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, styl
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}> 
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}> 
       <KeyboardAvoidingView
         style={styles.safeArea}
         behavior={Platform.select({ ios: 'padding', android: undefined })}

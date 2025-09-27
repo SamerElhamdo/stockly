@@ -8,6 +8,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, CompanyProvider } from '@/context';
 import { AppNavigator } from '@/navigation/AppNavigator';
+import { SidebarProvider } from '@/context/SidebarContext';
+import { SidebarPanel } from '@/navigation/SidebarPanel';
 import { queryClient } from '@/services/query-client';
 import { ThemeProvider, useTheme } from '@/theme';
 
@@ -17,6 +19,7 @@ const AppContent = () => {
     <>
       <StatusBar style={theme.name === 'light' ? 'dark' : 'light'} />
       <AppNavigator />
+      <SidebarPanel />
     </>
   );
 };
@@ -27,11 +30,13 @@ const App = () => {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <AuthProvider>
-              <CompanyProvider>
-                <AppContent />
-              </CompanyProvider>
-            </AuthProvider>
+            <SidebarProvider>
+              <AuthProvider>
+                <CompanyProvider>
+                  <AppContent />
+                </CompanyProvider>
+              </AuthProvider>
+            </SidebarProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

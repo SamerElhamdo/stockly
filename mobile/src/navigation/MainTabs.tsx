@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/theme';
+import { HeaderMenuButton } from '@/components/HeaderMenuButton';
 import { ArchiveScreen } from '@/screens/Archive/ArchiveScreen';
 import { CategoriesScreen } from '@/screens/Categories/CategoriesScreen';
 import { CustomersScreen } from '@/screens/Customers/CustomersScreen';
@@ -30,18 +31,18 @@ const MoreStack = createNativeStackNavigator<MoreStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const screenOptions = {
-  headerShown: false,
+  headerShown: true,
 };
 
 const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={screenOptions}>
-    <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
+    <HomeStack.Screen name="Dashboard" component={DashboardScreen} options={{ headerLeft: () => <HeaderMenuButton /> }} />
   </HomeStack.Navigator>
 );
 
 const SalesStackNavigator = () => (
   <SalesStack.Navigator screenOptions={screenOptions}>
-    <SalesStack.Screen name="Invoices" component={InvoicesScreen} />
+    <SalesStack.Screen name="Invoices" component={InvoicesScreen} options={{ headerLeft: () => <HeaderMenuButton /> }} />
     <SalesStack.Screen name="Returns" component={ReturnsScreen} />
     <SalesStack.Screen name="Payments" component={PaymentsScreen} />
   </SalesStack.Navigator>
@@ -49,7 +50,7 @@ const SalesStackNavigator = () => (
 
 const InventoryStackNavigator = () => (
   <InventoryStack.Navigator screenOptions={screenOptions}>
-    <InventoryStack.Screen name="Products" component={ProductsScreen} />
+    <InventoryStack.Screen name="Products" component={ProductsScreen} options={{ headerLeft: () => <HeaderMenuButton /> }} />
     <InventoryStack.Screen name="Categories" component={CategoriesScreen} />
     <InventoryStack.Screen name="Archive" component={ArchiveScreen} />
   </InventoryStack.Navigator>
@@ -57,7 +58,7 @@ const InventoryStackNavigator = () => (
 
 const MoreStackNavigator = () => (
   <MoreStack.Navigator screenOptions={screenOptions}>
-    <MoreStack.Screen name="Customers" component={CustomersScreen} />
+    <MoreStack.Screen name="Customers" component={CustomersScreen} options={{ headerLeft: () => <HeaderMenuButton /> }} />
     <MoreStack.Screen name="Users" component={UsersScreen} />
     <MoreStack.Screen name="Settings" component={SettingsScreen} />
   </MoreStack.Navigator>

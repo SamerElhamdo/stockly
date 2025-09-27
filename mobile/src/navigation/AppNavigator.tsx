@@ -11,6 +11,7 @@ import { PrintReturnScreen } from '@/screens/Print/PrintReturnScreen';
 import { useAuth } from '@/context';
 import { useTheme } from '@/theme';
 import { RootStackParamList } from './types';
+import { navigationRef } from './navigationRef';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
@@ -40,7 +41,7 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} ref={navigationRef}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <RootStack.Screen name="Main" component={MainTabs} />
