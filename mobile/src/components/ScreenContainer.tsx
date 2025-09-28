@@ -15,11 +15,11 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, styl
   const insets = useSafeAreaInsets();
 
   const content = noScroll ? (
-    <View style={[styles.inner, style]}>{children}</View>
+    <View style={[styles.inner, style, { paddingBottom: Math.max(12, insets.bottom + 6) }]}>{children}</View>
   ) : (
     <ScrollView
       style={[styles.scroll, { backgroundColor: theme.background }]}
-      contentContainerStyle={[styles.inner, style]}
+      contentContainerStyle={[styles.inner, style, { paddingBottom: Math.max(12, insets.bottom + 6) }]}
       showsVerticalScrollIndicator={false}
       {...rest}
     >
@@ -28,7 +28,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({ children, styl
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["left", "right", "bottom"]}> 
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={["left", "right"]}> 
       <KeyboardAvoidingView
         style={styles.safeArea}
         behavior={Platform.select({ ios: 'padding', android: undefined })}
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 12,
     paddingTop: 16,
     gap: 16,
   },
