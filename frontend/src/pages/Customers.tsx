@@ -14,6 +14,7 @@ import {
   ArrowUturnLeftIcon,
   ArrowsUpDownIcon,
   EyeIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
@@ -71,6 +72,8 @@ export const Customers: React.FC = () => {
     address: '',
   });
   const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<ApiCustomer | null>(null);
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery<ApiResponse<ApiCustomerWithDues>>({
     queryKey: ['customers', effectiveSearch, page],
@@ -226,6 +229,23 @@ export const Customers: React.FC = () => {
     },
   });
 
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiClient.delete(endpoints.customerDetail(id));
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم الحذف', description: 'تم حذف العميل بنجاح' });
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+      refetch();
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر حذف العميل';
+      toast({ title: 'خطأ', description: message, variant: 'destructive' });
+    },
+  });
+
   const isSavingCustomer = createCustomerMutation.isPending || updateCustomerMutation.isPending;
 
   const createInvoice = (customer: ApiCustomer) => {
@@ -351,6 +371,14 @@ export const Customers: React.FC = () => {
                         <Button variant="ghost" size="sm" onClick={() => navigate(`/customers/${c.id}`)}>
                           <EyeIcon className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          onClick={() => { setCustomerToDelete(c); setDeleteDialogOpen(true); }}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(c)}>
                           <PencilIcon className="h-4 w-4" />
                         </Button>
@@ -418,6 +446,30 @@ export const Customers: React.FC = () => {
               disabled={paymentMutation.isPending}
             >
               حفظ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Customer Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف العميل</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">هل أنت متأكد من حذف العميل <span className="text-foreground font-medium">{customerToDelete?.name}</span>؟</p>
+            <p className="text-xs text-muted-foreground">سيتم حذف فواتيره ومدفوعاته ومرتجعاته المرتبطة به.</p>
+          </div>
+          <DialogFooter>
+            <Button className='mx-2' variant="outline" onClick={() => setDeleteDialogOpen(false)}>إلغاء</Button>
+            <Button
+              className='mx-2'
+              variant="destructive"
+              onClick={() => customerToDelete && deleteCustomerMutation.mutate(customerToDelete.id)}
+              disabled={deleteCustomerMutation.isPending}
+            >
+              حذف
             </Button>
           </DialogFooter>
         </DialogContent>

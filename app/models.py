@@ -228,7 +228,7 @@ class Invoice(models.Model):
     STATUS = [(DRAFT,'Draft'),(CONFIRMED,'Confirmed'),(CANCELLED,'Cancelled')]
     
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='invoices', verbose_name='الشركة')
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='invoices', verbose_name='العميل')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices', verbose_name='العميل')
     status = models.CharField(max_length=16, choices=STATUS, default=DRAFT, verbose_name='الحالة')
     created_at = models.DateTimeField(default=timezone.now, verbose_name='تاريخ الإنشاء')
     total_amount = models.DecimalField(max_digits=14, decimal_places=4, default=0, verbose_name='المبلغ الإجمالي')

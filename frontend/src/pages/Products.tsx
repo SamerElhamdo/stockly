@@ -67,9 +67,10 @@ export const Products: React.FC = () => {
   const { data, isLoading, isError, refetch, isFetching } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiProduct[]}>({
     queryKey: ['products', effectiveSearch, page],
     queryFn: async () => {
-      const res = await apiClient.get(endpoints.products, {
-        params: { search: effectiveSearch || undefined, page },
-      });
+      const params: Record<string, any> = { page };
+      if (effectiveSearch) params.search = effectiveSearch;
+      params.archived = false;
+      const res = await apiClient.get(endpoints.products, { params });
       return res.data as { count: number; next: string | null; previous: string | null; results: ApiProduct[] };
     },
     placeholderData: (prev) => prev,
@@ -247,7 +248,7 @@ export const Products: React.FC = () => {
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Button variant="outline" onClick={() => { setPage(1); setEffectiveSearch(searchTerm.trim()); refetch(); }}>بحث</Button>
           </div>
         </div>

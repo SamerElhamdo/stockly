@@ -14,6 +14,7 @@ import {
   XCircleIcon,
   PrinterIcon,
   BanknotesIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
@@ -193,6 +194,21 @@ export const Invoices: React.FC = () => {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إضافة العنصر';
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' });
+    },
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiClient.delete(endpoints.invoiceDetails(id));
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: 'تم الحذف', description: 'تم حذف الفاتورة' });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر حذف الفاتورة';
       toast({ title: 'خطأ', description: msg, variant: 'destructive' });
     },
   });
@@ -530,15 +546,24 @@ export const Invoices: React.FC = () => {
                               >
                                 إضافة عنصر
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => { setConfirmInvoice(invoice); setConfirmDialogOpen(true); }}
-                              >
-                                تأكيد
-                              </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setConfirmInvoice(invoice); setConfirmDialogOpen(true); }}
+                          >
+                            تأكيد
+                          </Button>
                             </>
                           )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive"
+                            onClick={() => deleteInvoiceMutation.mutate(invoice.id)}
+                            disabled={deleteInvoiceMutation.isPending}
+                          >
+                            حذف
+                          </Button>
                         </div>
                       </td>
                     </tr>
