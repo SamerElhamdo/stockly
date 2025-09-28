@@ -116,6 +116,7 @@ export const MainTabs = () => {
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
+          paddingTop: 10,
             display: keyboardVisible ? 'none' : 'flex',
         },
         tabBarIcon: ({ color, size }) => {
