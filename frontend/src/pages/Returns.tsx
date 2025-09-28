@@ -126,12 +126,13 @@ export const Returns: React.FC = () => {
   const [returnNotes, setReturnNotes] = useState('');
 
   const { data, isLoading, isFetching, isError } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiReturn[] }>({
-    queryKey: ['returns', statusFilter, page],
+    queryKey: ['returns', statusFilter, page, effectiveSearch],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.returns, {
         params: {
           page,
           status: statusFilter === 'all' ? undefined : statusFilter,
+          search: effectiveSearch || undefined,
         },
       });
       return normalizeListResponse<ApiReturn>(res.data);
@@ -144,15 +145,7 @@ export const Returns: React.FC = () => {
   const hasNext = Boolean(data?.next);
   const hasPrev = Boolean(data?.previous);
 
-  const filteredReturns = useMemo(() => {
-    if (!effectiveSearch.trim()) return list;
-    const keyword = effectiveSearch.trim().toLowerCase();
-    return list.filter((item) =>
-      item.return_number?.toLowerCase().includes(keyword) ||
-      item.customer_name?.toLowerCase().includes(keyword) ||
-      String(item.invoice_id).includes(keyword)
-    );
-  }, [effectiveSearch, list]);
+  const filteredReturns = list; // server-side search
 
   const stats = useMemo(() => {
     return filteredReturns.reduce(
@@ -392,6 +385,12 @@ export const Returns: React.FC = () => {
               placeholder="البحث برقم المرتجع أو العميل أو الفاتورة"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setEffectiveSearch(searchTerm);
+                  setPage(1);
+                }
+              }}
             />
           </div>
           <div className="flex gap-2">

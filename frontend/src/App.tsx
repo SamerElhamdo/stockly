@@ -28,6 +28,7 @@ import { Archive } from "./pages/Archive";
 import { Users } from "./pages/Users";
 import { Settings } from "./pages/Settings";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { CustomerDetails } from "./pages/CustomerDetails";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Customers />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/customers/:id" 
+                element={
+                  <ProtectedRoute>
+                    <CustomerDetails />
                   </ProtectedRoute>
                 } 
               />

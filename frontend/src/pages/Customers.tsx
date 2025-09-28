@@ -13,6 +13,7 @@ import {
   BanknotesIcon,
   ArrowUturnLeftIcon,
   ArrowsUpDownIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
@@ -254,6 +255,13 @@ export const Customers: React.FC = () => {
               placeholder="البحث في العملاء..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1);
+                  setEffectiveSearch(searchTerm.trim());
+                  refetch();
+                }
+              }}
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
           </div>
@@ -339,6 +347,9 @@ export const Customers: React.FC = () => {
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => { setActiveCustomer(c); setOpenPayment(true); setPaymentAmount('-'); setPaymentInvoiceId(''); }}>
                           <ArrowUturnLeftIcon className="h-4 w-4 ml-1" /> سحب دفعة
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/customers/${c.id}`)}>
+                          <EyeIcon className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(c)}>
                           <PencilIcon className="h-4 w-4" />

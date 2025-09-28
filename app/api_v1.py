@@ -170,6 +170,20 @@ class InvoiceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
     filterset_fields = ['status', 'customer']
     ordering_fields = ['created_at', 'total_amount']
 
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('customer')
+        search = (self.request.query_params.get('search') or '').strip()
+        if search:
+            try:
+                search_id = int(search)
+            except ValueError:
+                search_id = None
+            q = Q(customer__name__icontains=search)
+            if search_id is not None:
+                q |= Q(id=search_id)
+            qs = qs.filter(q)
+        return qs
+
     def perform_create(self, serializer):
         # Only owners can create invoices
         if not IsCompanyOwner().has_permission(self.request, self):
@@ -232,6 +246,20 @@ class ReturnViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
     permission_classes = [IsCompanyStaff]
     filterset_fields = ['status', 'customer']
     ordering_fields = ['return_date', 'total_amount']
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('customer', 'original_invoice')
+        search = (self.request.query_params.get('search') or '').strip()
+        if search:
+            try:
+                search_id = int(search)
+            except ValueError:
+                search_id = None
+            q = Q(return_number__icontains=search) | Q(customer__name__icontains=search)
+            if search_id is not None:
+                q |= Q(original_invoice__id=search_id)
+            qs = qs.filter(q)
+        return qs
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -324,6 +352,20 @@ class PaymentViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
             update_customer_balance(payment.customer, payment.company)
         except Exception:
             pass
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('customer', 'invoice')
+        search = (self.request.query_params.get('search') or '').strip()
+        if search:
+            try:
+                search_id = int(search)
+            except ValueError:
+                search_id = None
+            q = Q(customer__name__icontains=search) | Q(payment_method__icontains=search)
+            if search_id is not None:
+                q |= Q(invoice__id=search_id)
+            qs = qs.filter(q)
+        return qs
 
 
 class CustomerBalanceViewSet(CompanyScopedQuerysetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):

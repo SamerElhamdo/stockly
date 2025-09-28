@@ -203,6 +203,11 @@ export const Users: React.FC = () => {
               placeholder="البحث باسم المستخدم أو البريد"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setEffectiveSearch(searchTerm);
+                }
+              }}
             />
           </div>
           <div className="flex gap-2">

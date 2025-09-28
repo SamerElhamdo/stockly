@@ -105,12 +105,13 @@ export const Payments: React.FC = () => {
   const [notesInput, setNotesInput] = useState('');
 
   const { data, isLoading, isFetching, isError } = useQuery<{ count: number; next: string | null; previous: string | null; results: ApiPayment[] }>({
-    queryKey: ['payments', methodFilter, page],
+    queryKey: ['payments', methodFilter, page, effectiveSearch],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.payments, {
         params: {
           page,
           payment_method: methodFilter === 'all' ? undefined : methodFilter,
+          search: effectiveSearch || undefined,
         },
       });
       return normalizeListResponse<ApiPayment>(res.data);
@@ -133,17 +134,7 @@ export const Payments: React.FC = () => {
 
   const balances = balancesData?.results ?? [];
 
-  const filteredPayments = useMemo(() => {
-    if (!effectiveSearch.trim()) return payments;
-    const keyword = effectiveSearch.trim().toLowerCase();
-    return payments.filter((payment) =>
-      payment.customer_name?.toLowerCase().includes(keyword) ||
-      (payment.payment_method_display || paymentMethodLabels[payment.payment_method as PaymentMethod] || '')
-        .toLowerCase()
-        .includes(keyword) ||
-      String(payment.invoice || '').includes(keyword)
-    );
-  }, [effectiveSearch, payments]);
+  const filteredPayments = payments; // server-side search
 
   const stats = useMemo(() => {
     const totalPaid = filteredPayments.reduce((acc, payment) => acc + parseNumber(payment.amount), 0);
@@ -325,6 +316,12 @@ export const Payments: React.FC = () => {
               placeholder="البحث باسم العميل أو طريقة الدفع أو رقم الفاتورة"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setEffectiveSearch(searchTerm);
+                  setPage(1);
+                }
+              }}
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
           </div>

@@ -185,6 +185,13 @@ export const Categories: React.FC = () => {
               placeholder="البحث في الفئات..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1);
+                  setEffectiveSearch(searchTerm.trim());
+                  refetch();
+                }
+              }}
               leftIcon={<TagIcon className="h-4 w-4" />}
             />
           </div>

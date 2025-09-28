@@ -295,7 +295,7 @@ export const Invoices: React.FC = () => {
     window.print();
   };
 
-  const filteredInvoices = list; // server-side filtered already by params
+  const filteredInvoices = list; // server-side search
 
   // Debounce product search input for typeahead
   useEffect(() => {
@@ -376,9 +376,15 @@ export const Invoices: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <Input
-              placeholder="البحث في الفواتير..."
+              placeholder="البحث برقم الفاتورة أو اسم العميل"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1);
+                  setSearchKeyword(searchTerm.trim());
+                }
+              }}
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
           </div>

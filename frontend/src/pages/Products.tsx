@@ -237,6 +237,13 @@ export const Products: React.FC = () => {
               placeholder="البحث في المنتجات..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1);
+                  setEffectiveSearch(searchTerm.trim());
+                  refetch();
+                }
+              }}
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
             />
           </div>
@@ -397,7 +404,8 @@ export const Products: React.FC = () => {
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'تعديل منتج' : 'إضافة منتج جديد'}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="max-h-[70vh] overflow-y-auto p-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="اسم المنتج"
               placeholder="أدخل اسم المنتج"
@@ -414,7 +422,8 @@ export const Products: React.FC = () => {
                 disabled={categoriesLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={categoriesLoading ? '...جاري التحميل' : 'اختر الفئة'} />
+                  <SelectValue placeholder={categoriesLoading ? '...جاري التحميل' : categoryOptions[0].name} defaultValue={categoryOptions.length > 0 ? String(categoryOptions[0].id) : undefined} />
+                  
                 </SelectTrigger>
                 <SelectContent>
                   {categoryOptions.map((category) => (
@@ -519,6 +528,7 @@ export const Products: React.FC = () => {
                 </div>
               </>
             )}
+            </div>
           </div>
           <DialogFooter>
             <Button className='mx-2' variant="outline" onClick={() => { setProductFormOpen(false); resetProductForm(); }}>
