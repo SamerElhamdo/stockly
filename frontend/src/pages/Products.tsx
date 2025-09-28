@@ -422,8 +422,7 @@ export const Products: React.FC = () => {
                 disabled={categoriesLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={categoriesLoading ? '...جاري التحميل' : categoryOptions[0].name} defaultValue={categoryOptions.length > 0 ? String(categoryOptions[0].id) : undefined} />
-                  
+                  <SelectValue placeholder={categoriesLoading ? '...جاري التحميل' : 'اختر الفئة'} />
                 </SelectTrigger>
                 <SelectContent>
                   {categoryOptions.map((category) => (
