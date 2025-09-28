@@ -120,7 +120,7 @@ export const MainTabs = () => {
       <Tab.Screen
         name="Sales"
         component={SalesStackNavigator}
-        options={{ title: 'المبيعات', tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} /> }}
+        options={{ title: 'الفواتير', tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Inventory"
