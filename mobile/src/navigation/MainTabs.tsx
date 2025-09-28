@@ -18,7 +18,7 @@ import { ProductsScreen } from '@/screens/Products/ProductsScreen';
 import { ReturnsScreen } from '@/screens/Returns/ReturnsScreen';
 import { SettingsScreen } from '@/screens/Settings/SettingsScreen';
 import { UsersScreen } from '@/screens/Users/UsersScreen';
-import { InventoryHeaderSwitch } from './InventoryHeaderSwitch';
+// Removed inventory header switch per new UX
 import {
   HomeStackParamList,
   InventoryStackParamList,
@@ -53,33 +53,17 @@ const SalesStackNavigator = () => (
   </SalesStack.Navigator>
 );
 
-const InventoryStackNavigator = () => {
-  const [active, setActive] = React.useState<'products' | 'categories'>('products');
-  return (
-    <InventoryStack.Navigator screenOptions={screenOptions}>
-      {active === 'products' ? (
-        <InventoryStack.Screen
-          name="Products"
-          component={ProductsScreen}
-          options={{
-            headerRight: () => <HeaderMenuButton />,
-            headerTitle: () => <InventoryHeaderSwitch active={active} onChange={setActive} />,
-          }}
-        />
-      ) : (
-        <InventoryStack.Screen
-          name="Categories"
-          component={CategoriesScreen}
-          options={{
-            headerRight: () => <HeaderMenuButton />,
-            headerTitle: () => <InventoryHeaderSwitch active={active} onChange={setActive} />,
-          }}
-        />
-      )}
-      <InventoryStack.Screen name="Archive" component={ArchiveScreen} />
-    </InventoryStack.Navigator>
-  );
-};
+const InventoryStackNavigator = () => (
+  <InventoryStack.Navigator screenOptions={screenOptions}>
+    <InventoryStack.Screen
+      name="Products"
+      component={ProductsScreen}
+      options={{ headerRight: () => <HeaderMenuButton />, title: 'المنتجات' }}
+    />
+    <InventoryStack.Screen name="Categories" component={CategoriesScreen} />
+    <InventoryStack.Screen name="Archive" component={ArchiveScreen} />
+  </InventoryStack.Navigator>
+);
 
 const MoreStackNavigator = () => (
   <MoreStack.Navigator screenOptions={screenOptions}>
@@ -141,7 +125,7 @@ export const MainTabs = () => {
       <Tab.Screen
         name="Inventory"
         component={InventoryStackNavigator}
-        options={{ title: 'المخزون', tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> }}
+        options={{ title: 'المنتجات', tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="More"

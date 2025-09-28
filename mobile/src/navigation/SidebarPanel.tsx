@@ -42,7 +42,7 @@ export const SidebarPanel: React.FC = () => {
 
       <Animated.View
         pointerEvents={isOpen ? 'auto' : 'none'}
-        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.surface, borderColor: theme.border, transform: [{ translateX }] }]}
+        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.background, borderColor: theme.border, transform: [{ translateX }] }]}
       >
         <SafeAreaView style={styles.safe}> 
           <View style={styles.header}>
@@ -90,7 +90,25 @@ const LinkItem: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap; 
       }}
       style={({ pressed }) => [
         styles.item,
-        { backgroundColor: pressed ? (theme.name === 'light' ? '#F1F5F9' : '#0B1220') : 'transparent', borderColor: theme.border },
+        pressed
+          ? {
+              backgroundColor: theme.surfaceElevated,
+              borderColor: theme.border,
+              shadowColor: theme.cardShadow,
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 2,
+            }
+          : {
+              backgroundColor: theme.surfaceMuted,
+              borderColor: theme.border,
+              shadowColor: theme.cardShadow,
+              shadowOpacity: 0.06,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 1,
+            },
       ]}
     >
       <Ionicons name={icon} size={18} color={theme.textPrimary} style={{ marginRight: 8 }} />
