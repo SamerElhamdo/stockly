@@ -67,13 +67,13 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const secondaryCode = profile?.secondary_currency || undefined;
     const rate = Number(profile?.secondary_per_usd || 0);
 
-    const formatPrimary = (n: number) => `${sym.USD || '$'} ${formatSmartDecimal(n)}`;
+    const formatPrimary = (n: number) => `${sym.USD || '$'} ${formatSmartDecimal(n, 'en-US')}`;
 
     const formatSecondary = (n: number) => {
       if (!secondaryCode || !rate || rate <= 0) return undefined;
       const converted = n * rate;
       const symbol = sym[secondaryCode] || secondaryCode;
-      return `${symbol} ${formatSmartDecimal(converted)}`;
+      return `${symbol} ${formatSmartDecimal(converted, 'en-US')}`;
     };
 
     const formatAmountParts = (usdAmount: number) => {
@@ -86,7 +86,7 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { primary, secondary } = formatAmountParts(usdAmount);
       if (priceMode === 'primary') return primary;
       if (priceMode === 'secondary') return secondary || primary;
-      if (secondary) return `${primary} • ${secondary}`;
+      if (secondary) return `${primary} | ${secondary}`;
       return primary;
     };
 

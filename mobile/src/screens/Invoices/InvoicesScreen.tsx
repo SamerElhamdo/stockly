@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Modal, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Button, Input, ListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, Input, ListItem, AmountDisplay } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -88,7 +88,7 @@ export const InvoicesScreen: React.FC = () => {
               <ListItem
                 title={`فاتورة رقم #${invoice.id}`}
                 subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
-                meta={formatAmount(invoice.total_amount)}
+                meta={<AmountDisplay amount={invoice.total_amount} /> as any}
                 right={<SoftBadge label={status.label} variant={status.variant} />}
               />
               {invoice.status !== 'draft' ? (

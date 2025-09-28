@@ -32,7 +32,7 @@ export const mergeDateTime = (value: string | Date | undefined | null) => {
 // - Default to 2 decimals
 // - For very small numbers (< 0.01), increase decimals up to 6 until a non-zero digit appears
 // - Trim trailing zeros while keeping at least 2 decimals for numbers >= 0.01
-export const formatSmartDecimal = (value: number, locale: string = 'ar-SY') => {
+export const formatSmartDecimal = (value: number, locale: string = 'en-US') => {
   if (!isFinite(value)) return '0.00';
 
   const abs = Math.abs(value);

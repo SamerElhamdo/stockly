@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem, AmountDisplay } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -76,8 +76,8 @@ export const ProductsScreen: React.FC = () => {
           <ListItem
             key={product.id}
             title={product.name}
-            subtitle={`${product.category_name || 'غير مصنف'} • متوفر: ${product.stock_qty}`}
-            meta={formatAmount(parseNumber(product.price))}
+            subtitle={`متوفر: ${product.stock_qty}`}
+            meta={<AmountDisplay amount={parseNumber(product.price)} /> as any}
             right={Number(product.stock_qty) <= 5 ? <SoftBadge label="منخفض" variant="warning" /> : undefined}
           />
         ))}

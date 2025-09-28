@@ -28,11 +28,11 @@ export const ListItem: React.FC<ListItemProps> = ({ title, subtitle, meta, onPre
       ]}
     >
       <View style={styles.textContainer}>
-        <Text style={[styles.title, { color: theme.textPrimary }]} numberOfLines={1}>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: theme.textMuted }]} numberOfLines={1}>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
             {subtitle}
           </Text>
         ) : null}
@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 0,
     alignItems: 'flex-end',
   },
   title: {
@@ -86,12 +86,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   metaContainer: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 4,
   },
   meta: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
 });

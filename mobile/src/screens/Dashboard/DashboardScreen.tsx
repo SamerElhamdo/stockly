@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem, AmountDisplay } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -108,7 +108,11 @@ export const DashboardScreen: React.FC = () => {
         {statsCards.map((card) => (
           <SoftCard key={card.title} variant={card.variant === 'info' ? 'primary' : (card.variant as any)} style={styles.statCard}>
             <Text style={[styles.statTitle, { color: theme.textMuted }]}>{card.title}</Text>
-            <Text style={[styles.statValue, { color: theme.textPrimary }]}>{card.value}</Text>
+            {typeof card.value === 'string' && card.value.includes('$') ? (
+              <AmountDisplay amount={Number((card.value.match(/[\d\.\,]+/g) || ['0'])[0].replace(/,/g, ''))} />
+            ) : (
+              <Text style={[styles.statValue, { color: theme.textPrimary }]}>{card.value}</Text>
+            )}
           </SoftCard>
         ))}
       </View>

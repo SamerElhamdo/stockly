@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem, Button } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem, Button, AmountDisplay } from '@/components';
 import { Modal, Pressable } from 'react-native';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -70,7 +70,7 @@ export const CustomersScreen: React.FC = () => {
             <ListItem
               title={customer.name}
               subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
-              meta={formatAmount(Number(customer.balance || 0))}
+              meta={<AmountDisplay amount={Number(customer.balance || 0)} /> as any}
               right={Number(customer.balance) > 0 ? <SoftBadge label="رصيد مستحق" variant="destructive" /> : undefined}
             />
           </Pressable>
