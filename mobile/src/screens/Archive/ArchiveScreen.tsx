@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftButton, SoftInput, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, Input, ListItem } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -129,13 +129,13 @@ export const ArchiveScreen: React.FC = () => {
       </View>
 
       <View style={styles.tabRow}>
-        <SoftButton
+        <Button
           title="منتجات"
           variant={activeTab === 'products' ? 'primary' : 'secondary'}
           onPress={() => setActiveTab('products')}
           style={styles.tabButton}
         />
-        <SoftButton
+        <Button
           title="عملاء"
           variant={activeTab === 'customers' ? 'primary' : 'secondary'}
           onPress={() => setActiveTab('customers')}
@@ -145,16 +145,16 @@ export const ArchiveScreen: React.FC = () => {
 
       {activeTab === 'products' ? (
         <View style={styles.tabContent}>
-          <SoftInput placeholder="ابحث في المنتجات المؤرشفة" value={productSearch} onChangeText={setProductSearch} />
+          <Input placeholder="ابحث في المنتجات المؤرشفة" value={productSearch} onChangeText={setProductSearch} />
           <SectionHeader title="منتجات مؤرشفة" />
           {filteredProducts.map((product) => (
-            <SoftListItem
+            <ListItem
               key={product.id}
               title={product.name}
               subtitle={`${product.category_name || 'بدون فئة'} • كود: ${product.sku || 'غير متوفر'}`}
               meta={`كمية: ${product.stock_qty}`}
               right={
-                <SoftButton
+                <Button
                   title="استعادة"
                   variant="success"
                   onPress={() => restoreProduct.mutate(product.id)}
@@ -169,15 +169,15 @@ export const ArchiveScreen: React.FC = () => {
         </View>
       ) : (
         <View style={styles.tabContent}>
-          <SoftInput placeholder="ابحث في العملاء المؤرشفين" value={customerSearch} onChangeText={setCustomerSearch} />
+          <Input placeholder="ابحث في العملاء المؤرشفين" value={customerSearch} onChangeText={setCustomerSearch} />
           <SectionHeader title="عملاء مؤرشفون" />
           {filteredCustomers.map((customer) => (
-            <SoftListItem
+            <ListItem
               key={customer.id}
               title={customer.name}
               subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
               right={
-                <SoftButton
+                <Button
                   title="استعادة"
                   variant="success"
                   onPress={() => restoreCustomer.mutate(customer.id)}
@@ -198,6 +198,7 @@ export const ArchiveScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

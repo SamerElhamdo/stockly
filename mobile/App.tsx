@@ -32,7 +32,7 @@ const App = () => {
     try { I18nManager.forceRTL(true); } catch (e) { /* noop */ }
   }
   return (
-    <GestureHandlerRootView style={{ flex: 1, direction: 'rtl' }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>

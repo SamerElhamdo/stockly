@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingTop: 0 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 20,
     gap: 12,

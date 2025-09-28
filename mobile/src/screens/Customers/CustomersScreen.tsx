@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftInput, SoftListItem, SoftButton } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem, Button } from '@/components';
 import { Modal, Pressable } from 'react-native';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -61,13 +61,13 @@ export const CustomersScreen: React.FC = () => {
         <SoftBadge label={`إجمالي الأرصدة: ${formatAmount(totalBalances)}`} variant="warning" />
       </View>
 
-      <SoftInput placeholder="ابحث باسم العميل أو رقم الهاتف" value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input placeholder="ابحث باسم العميل أو رقم الهاتف" value={search} onChangeText={setSearch} autoCorrect={false} />
 
       <View style={styles.listWrapper}>
         <SectionHeader title="قائمة العملاء" subtitle="أحدث العملاء في النظام" />
         {(filteredCustomers || []).map((customer) => (
           <Pressable key={customer.id} onPress={() => setActiveCustomer(customer)}>
-            <SoftListItem
+            <ListItem
               title={customer.name}
               subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
               meta={formatAmount(Number(customer.balance || 0))}
@@ -82,17 +82,17 @@ export const CustomersScreen: React.FC = () => {
             <Text style={[styles.popoverTitle, { color: theme.textPrimary }]}>إجراءات للعميل</Text>
             <Text style={[styles.popoverSubtitle, { color: theme.textMuted }]}>{activeCustomer?.name}</Text>
             <View style={styles.actionsCol}>
-              <SoftButton title="فاتورة جديدة" variant="secondary" onPress={() => { setActiveCustomer(null);
+              <Button title="فاتورة جديدة" variant="secondary" onPress={() => { setActiveCustomer(null);
                 if (navigationRef.isReady() && activeCustomer) {
                   navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'InvoiceCreate', params: { customerId: activeCustomer.id, customerName: activeCustomer.name } } } as any);
                 }
               }} />
-              <SoftButton title="إضافة دفعة" variant="secondary" onPress={() => { setActiveCustomer(null);
+              <Button title="إضافة دفعة" variant="secondary" onPress={() => { setActiveCustomer(null);
                 if (navigationRef.isReady() && activeCustomer) {
                   navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'PaymentCreate', params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'add' } } } as any);
                 }
               }} />
-              <SoftButton title="سحب دفعة" variant="secondary" onPress={() => { setActiveCustomer(null);
+              <Button title="سحب دفعة" variant="secondary" onPress={() => { setActiveCustomer(null);
                 if (navigationRef.isReady() && activeCustomer) {
                   navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'PaymentCreate', params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'withdraw' } } } as any);
                 }
@@ -111,6 +111,7 @@ export const CustomersScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,
@@ -128,6 +129,8 @@ const styles = StyleSheet.create({
   },
   listWrapper: {
     gap: 12,
+
+
   },
   emptyText: {
     textAlign: 'center',

@@ -2,7 +2,7 @@ import React from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftButton, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, ListItem } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -71,7 +71,7 @@ export const ReturnsScreen: React.FC = () => {
         {(returns || []).map((item) => {
           const status = statusMap[item.status] || { label: 'غير معروف', variant: 'info' as const };
           return (
-            <SoftListItem
+            <ListItem
               key={item.id}
               title={`مرتجع #${item.id}`}
               subtitle={`فاتورة #${item.invoice_id} • ${mergeDateTime(item.created_at)}`}
@@ -86,7 +86,7 @@ export const ReturnsScreen: React.FC = () => {
       </View>
 
       <View style={styles.actionsRow}>
-        <SoftButton
+        <Button
           title="اعتماد أول مرتجع"
           variant="success"
           loading={approveReturn.isPending}
@@ -96,7 +96,7 @@ export const ReturnsScreen: React.FC = () => {
           }}
           style={styles.actionButton}
         />
-        <SoftButton
+        <Button
           title="رفض أول مرتجع"
           variant="destructive"
           loading={rejectReturn.isPending}
@@ -114,6 +114,7 @@ export const ReturnsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

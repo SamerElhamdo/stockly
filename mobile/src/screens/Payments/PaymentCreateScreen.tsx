@@ -47,7 +47,7 @@ export const PaymentCreateScreen: React.FC<Props> = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  header: { gap: 6, alignItems: 'flex-end' },
+  header: { gap: 6, alignItems: 'flex-start' },
   title: { fontSize: 20, fontWeight: '700', textAlign: 'right' },
   subtitle: { fontSize: 14, textAlign: 'right' },
   form: { gap: 12 },

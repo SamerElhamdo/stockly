@@ -72,7 +72,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    direction: 'rtl',
   },
   header: {
     width: '100%',
@@ -92,7 +91,6 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
     maxWidth: 420,
-    direction: 'rtl',
   },
   label: {
     fontSize: 13,

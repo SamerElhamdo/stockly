@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import logo from '../../../assets/logo.png';
 
-import { ScreenContainer, SoftButton, SoftCard, SoftInput, SoftBadge } from '@/components';
+import { ScreenContainer, SoftCard, SoftBadge, Button, Input } from '@/components';
 import { useAuth } from '@/context';
 import { useTheme } from '@/theme';
 import { apiClient, endpoints } from '@/services/api-client';
@@ -88,10 +88,10 @@ export const LoginScreen: React.FC = () => {
                 <Text style={[styles.formSubtitle, { color: theme.textMuted }]}>أدخل بيانات الحساب للوصول للنظام</Text>
               </View>
               <View style={styles.fieldGroup}>
-                <SoftInput label="اسم المستخدم" value={username} onChangeText={setUsername} placeholder="أدخل اسم المستخدم" autoCapitalize="none" textContentType="username" autoCorrect={false} />
-                <SoftInput label="كلمة المرور" value={password} onChangeText={setPassword} placeholder="أدخل كلمة المرور" secureTextEntry secureToggle textContentType="password" />
+                <Input label="اسم المستخدم" value={username} onChangeText={setUsername} placeholder="أدخل اسم المستخدم" autoCapitalize="none" textContentType="username" autoCorrect={false} />
+                <Input label="كلمة المرور" value={password} onChangeText={setPassword} placeholder="أدخل كلمة المرور" secureTextEntry secureToggle textContentType="password" />
               </View>
-              <SoftButton title="تسجيل الدخول" onPress={handleSubmit} loading={isAuthenticating} />
+              <Button title="تسجيل الدخول" onPress={handleSubmit} loading={isAuthenticating} />
             </>
           )}
 
@@ -102,17 +102,17 @@ export const LoginScreen: React.FC = () => {
                 <Text style={[styles.formSubtitle, { color: theme.textMuted }]}>أدخل بيانات الشركة وفعّل رقم الواتساب</Text>
               </View>
               <View style={styles.fieldGroup}>
-                <SoftInput label="اسم الشركة" value={companyName} onChangeText={setCompanyName} placeholder="مثال: شركة النجاح" />
-                <SoftInput label="رمز الشركة" value={companyCode} onChangeText={setCompanyCode} placeholder="رمز مميز للشركة" />
-                <SoftInput label="البريد الإلكتروني" value={companyEmail} onChangeText={setCompanyEmail} placeholder="example@company.com" autoCapitalize="none" keyboardType="email-address" />
-                <SoftInput label="رقم واتساب الشركة" value={companyPhone} onChangeText={(t)=>{setCompanyPhone(t); setRegisterOtpSession(null); setRegisterOtp(''); setRegisterOtpVerified(false);}} placeholder="9665XXXXXXXX" keyboardType="phone-pad" />
-                <SoftInput label="عنوان الشركة (اختياري)" value={companyAddress} onChangeText={setCompanyAddress} placeholder="العنوان التفصيلي" />
-                <SoftInput label="اسم المستخدم للمدير" value={adminUsername} onChangeText={setAdminUsername} placeholder="اختر اسم مستخدم" autoCapitalize="none" />
-                <SoftInput label="كلمة مرور المدير" value={adminPassword} onChangeText={setAdminPassword} placeholder="كلمة مرور قوية" secureTextEntry secureToggle />
-                <SoftInput label="تأكيد كلمة المرور" value={adminPasswordConfirm} onChangeText={setAdminPasswordConfirm} placeholder="أعد إدخال كلمة المرور" secureTextEntry secureToggle error={registerPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} />
+                <Input label="اسم الشركة" value={companyName} onChangeText={setCompanyName} placeholder="مثال: شركة النجاح" />
+                <Input label="رمز الشركة" value={companyCode} onChangeText={setCompanyCode} placeholder="رمز مميز للشركة" />
+                <Input label="البريد الإلكتروني" value={companyEmail} onChangeText={setCompanyEmail} placeholder="example@company.com" autoCapitalize="none" keyboardType="email-address" />
+                <Input label="رقم واتساب الشركة" value={companyPhone} onChangeText={(t)=>{setCompanyPhone(t); setRegisterOtpSession(null); setRegisterOtp(''); setRegisterOtpVerified(false);}} placeholder="9665XXXXXXXX" keyboardType="phone-pad" />
+                <Input label="عنوان الشركة (اختياري)" value={companyAddress} onChangeText={setCompanyAddress} placeholder="العنوان التفصيلي" />
+                <Input label="اسم المستخدم للمدير" value={adminUsername} onChangeText={setAdminUsername} placeholder="اختر اسم مستخدم" autoCapitalize="none" />
+                <Input label="كلمة مرور المدير" value={adminPassword} onChangeText={setAdminPassword} placeholder="كلمة مرور قوية" secureTextEntry secureToggle />
+                <Input label="تأكيد كلمة المرور" value={adminPasswordConfirm} onChangeText={setAdminPasswordConfirm} placeholder="أعد إدخال كلمة المرور" secureTextEntry secureToggle error={registerPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} />
               </View>
               <View style={styles.fieldGroup}>
-                <SoftButton
+                <Button
                   title={isSendingRegisterOtp ? 'جاري الإرسال...' : 'إرسال الرمز عبر واتساب'}
                   variant="secondary"
                   onPress={async () => {
@@ -131,8 +131,8 @@ export const LoginScreen: React.FC = () => {
                 />
                 {registerOtpSession ? (
                   <>
-                    <SoftInput label="رمز التحقق" value={registerOtp} onChangeText={setRegisterOtp} placeholder="6 أرقام" keyboardType="number-pad" />
-                    <SoftButton
+                    <Input label="رمز التحقق" value={registerOtp} onChangeText={setRegisterOtp} placeholder="6 أرقام" keyboardType="number-pad" />
+                    <Button
                       title={isVerifyingRegisterOtp ? 'جاري التحقق...' : 'تأكيد الرمز'}
                       variant="secondary"
                       onPress={async () => {
@@ -150,7 +150,7 @@ export const LoginScreen: React.FC = () => {
                   </>
                 ) : null}
               </View>
-              <SoftButton
+              <Button
                 title="إتمام التسجيل"
                 onPress={async () => {
                   if (registerPasswordMismatch || !registerOtpSession || !registerOtpVerified) return;
@@ -182,9 +182,9 @@ export const LoginScreen: React.FC = () => {
                 <Text style={[styles.formSubtitle, { color: theme.textMuted }]}>أدخل البيانات ثم فعّل الرمز عبر واتساب</Text>
               </View>
               <View style={styles.fieldGroup}>
-                <SoftInput label="اسم المستخدم" value={resetUsername} onChangeText={setResetUsername} placeholder="اسم المستخدم" autoCapitalize="none" />
-                <SoftInput label="رقم واتساب الحساب" value={resetPhone} onChangeText={(t)=>{setResetPhone(t); setResetOtpSession(null); setResetOtp(''); setResetOtpVerified(false);}} placeholder="9665XXXXXXXX" keyboardType="phone-pad" />
-                <SoftButton
+                <Input label="اسم المستخدم" value={resetUsername} onChangeText={setResetUsername} placeholder="اسم المستخدم" autoCapitalize="none" />
+                <Input label="رقم واتساب الحساب" value={resetPhone} onChangeText={(t)=>{setResetPhone(t); setResetOtpSession(null); setResetOtp(''); setResetOtpVerified(false);}} placeholder="9665XXXXXXXX" keyboardType="phone-pad" />
+                <Button
                   title={isSendingResetOtp ? 'جاري الإرسال...' : 'إرسال الرمز عبر واتساب'}
                   variant="secondary"
                   onPress={async () => {
@@ -203,8 +203,8 @@ export const LoginScreen: React.FC = () => {
                 />
                 {resetOtpSession ? (
                   <>
-                    <SoftInput label="رمز التحقق" value={resetOtp} onChangeText={setResetOtp} placeholder="6 أرقام" keyboardType="number-pad" />
-                    <SoftButton
+                    <Input label="رمز التحقق" value={resetOtp} onChangeText={setResetOtp} placeholder="6 أرقام" keyboardType="number-pad" />
+                    <Button
                       title={isVerifyingResetOtp ? 'جاري التحقق...' : 'تأكيد الرمز'}
                       variant="secondary"
                       onPress={async () => {
@@ -220,10 +220,10 @@ export const LoginScreen: React.FC = () => {
                     />
                   </>
                 ) : null}
-                <SoftInput label="كلمة المرور الجديدة" value={newPassword} onChangeText={setNewPassword} placeholder="كلمة مرور قوية" secureTextEntry secureToggle />
-                <SoftInput label="تأكيد كلمة المرور" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="أعد إدخال كلمة المرور" secureTextEntry secureToggle error={resetPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} />
+                <Input label="كلمة المرور الجديدة" value={newPassword} onChangeText={setNewPassword} placeholder="كلمة مرور قوية" secureTextEntry secureToggle />
+                <Input label="تأكيد كلمة المرور" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="أعد إدخال كلمة المرور" secureTextEntry secureToggle error={resetPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} />
               </View>
-              <SoftButton
+              <Button
                 title="تحديث كلمة المرور"
                 onPress={async () => {
                   if (resetPasswordMismatch || !resetOtpSession || !resetOtpVerified) return;

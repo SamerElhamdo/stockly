@@ -42,7 +42,7 @@ export const SidebarPanel: React.FC = () => {
 
       <Animated.View
         pointerEvents={isOpen ? 'auto' : 'none'}
-        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.surface, borderColor: theme.border, transform: [{ translateX }], direction: 'rtl' }]}
+        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.surface, borderColor: theme.border, transform: [{ translateX }] }]}
       >
         <SafeAreaView style={styles.safe}> 
           <View style={styles.header}>
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  itemLabel: { fontSize: 15, textAlign: 'right', writingDirection: 'rtl' },
+  itemLabel: { fontSize: 15, textAlign: 'right' },
   logout: { borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   logoutText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

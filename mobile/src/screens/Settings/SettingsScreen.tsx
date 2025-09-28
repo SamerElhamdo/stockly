@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftButton, SoftCard } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, SoftCard } from '@/components';
 import { useAuth, useCompany } from '@/context';
 import { useTheme } from '@/theme';
 
@@ -19,7 +19,7 @@ export const SettingsScreen: React.FC = () => {
 
       <SoftCard style={styles.sectionCard}>
         <SectionHeader title="المظهر" subtitle="بدّل بين الوضع الفاتح والداكن" />
-        <SoftButton
+        <Button
           title={theme.name === 'light' ? 'تفعيل الوضع الداكن' : 'تفعيل الوضع الفاتح'}
           onPress={toggleTheme}
           variant="secondary"
@@ -53,7 +53,7 @@ export const SettingsScreen: React.FC = () => {
           <Text style={[styles.infoLabel, { color: theme.textMuted }]}>البريد</Text>
           <Text style={[styles.infoValue, { color: theme.textPrimary }]}>{user?.email || '—'}</Text>
         </View>
-        <SoftButton
+        <Button
           title="تسجيل الخروج"
           variant="destructive"
           onPress={() => {
@@ -77,6 +77,7 @@ export const SettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

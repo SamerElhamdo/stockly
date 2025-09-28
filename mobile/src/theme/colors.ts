@@ -21,11 +21,12 @@ const createPalette = (main: string, light: string, dark: string, shadow: string
 });
 
 export const lightSoftPalette: SoftPalette = {
-  primary: createPalette('#3B82F6', '#EEF4FF', '#1D4ED8', 'rgba(59, 130, 246, 0.35)'),
-  success: createPalette('#10B981', '#E6F9F0', '#047857', 'rgba(16, 185, 129, 0.3)'),
-  warning: createPalette('#F59E0B', '#FFF4E5', '#B45309', 'rgba(245, 158, 11, 0.3)'),
-  destructive: createPalette('#EF4444', '#FEE8E8', '#B91C1C', 'rgba(239, 68, 68, 0.35)'),
-  info: createPalette('#6366F1', '#EEF2FF', '#4338CA', 'rgba(99, 102, 241, 0.35)'),
+  // Align with web: primary hsl(219 78% 58%) ≈ #2D73FF
+  primary: createPalette('#2D73FF', '#EAF0FF', '#1E55CC', 'rgba(45, 115, 255, 0.28)'),
+  success: createPalette('#16A34A', '#E9F7EF', '#0F7A37', 'rgba(22, 163, 74, 0.26)'),
+  warning: createPalette('#F59E0B', '#FFF4E5', '#B45309', 'rgba(245, 158, 11, 0.28)'),
+  destructive: createPalette('#EF4444', '#FEE8E8', '#B91C1C', 'rgba(239, 68, 68, 0.33)'),
+  info: createPalette('#6366F1', '#EEF2FF', '#4338CA', 'rgba(99, 102, 241, 0.30)'),
 };
 
 export const darkSoftPalette: SoftPalette = {
@@ -53,12 +54,12 @@ export type ThemeColors = {
 
 export const lightThemeColors: ThemeColors = {
   name: 'light',
-  background: '#F5F7FB',
+  background: '#F4F6FB',
   surface: '#FFFFFF',
-  surfaceElevated: '#EEF1F8',
-  surfaceMuted: '#E6EAF4',
-  border: 'rgba(15, 23, 42, 0.08)',
-  cardShadow: 'rgba(15, 23, 42, 0.07)',
+  surfaceElevated: '#EDF2FA',
+  surfaceMuted: '#E6ECF6',
+  border: 'rgba(15, 23, 42, 0.10)',
+  cardShadow: 'rgba(15, 23, 42, 0.06)',
   textPrimary: '#0F172A',
   textSecondary: 'rgba(15, 23, 42, 0.75)',
   textMuted: 'rgba(15, 23, 42, 0.55)',
@@ -72,8 +73,8 @@ export const darkThemeColors: ThemeColors = {
   surface: '#111827',
   surfaceElevated: '#1E293B',
   surfaceMuted: '#1F2937',
-  border: 'rgba(255, 255, 255, 0.08)',
-  cardShadow: 'rgba(15, 23, 42, 0.65)',
+  border: 'rgba(255, 255, 255, 0.10)',
+  cardShadow: 'rgba(15, 23, 42, 0.60)',
   textPrimary: '#F8FAFC',
   textSecondary: 'rgba(248, 250, 252, 0.88)',
   textMuted: 'rgba(248, 250, 252, 0.65)',

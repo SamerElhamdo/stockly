@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Modal, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftButton, SoftInput, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, Input, ListItem } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -77,7 +77,7 @@ export const InvoicesScreen: React.FC = () => {
         <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>أدر فواتير المبيعات وتابع حالتها</Text>
       </View>
 
-      <SoftInput placeholder="ابحث برقم الفاتورة أو اسم العميل" value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input placeholder="ابحث برقم الفاتورة أو اسم العميل" value={search} onChangeText={setSearch} autoCorrect={false} />
 
       <View style={styles.listWrapper}>
         <SectionHeader title="قائمة الفواتير" subtitle="أحدث الفواتير" />
@@ -85,7 +85,7 @@ export const InvoicesScreen: React.FC = () => {
           const status = statusMap[invoice.status] || { label: 'غير معروف', variant: 'info' as const };
           return (
             <View key={invoice.id} style={{ gap: 8 }}>
-              <SoftListItem
+              <ListItem
                 title={`فاتورة رقم #${invoice.id}`}
                 subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
                 meta={formatAmount(invoice.total_amount)}
@@ -93,7 +93,7 @@ export const InvoicesScreen: React.FC = () => {
               />
               {invoice.status !== 'draft' ? (
                 <View style={{ flexDirection: 'row-reverse' }}>
-                  <SoftButton
+                  <Button
                     title="إنشاء مرتجع"
                     variant="secondary"
                     onPress={() => {
@@ -112,7 +112,7 @@ export const InvoicesScreen: React.FC = () => {
         )}
       </View>
 
-      <SoftButton
+      <Button
         title="تأكيد كل الفواتير المعلقة"
         variant="success"
         loading={confirmInvoice.isPending}
@@ -131,7 +131,7 @@ export const InvoicesScreen: React.FC = () => {
           <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{returnInvoice ? `مرتجع لِفاتورة #${returnInvoice.id}` : 'مرتجع'}</Text>
           <View style={{ gap: 8 }}>
             {(invoiceDetailForReturn?.items || []).map((it: any) => (
-              <SoftListItem
+              <ListItem
                 key={it.id}
                 title={it.product_name}
                 subtitle={`المباع: ${it.qty}`}
@@ -152,7 +152,7 @@ export const InvoicesScreen: React.FC = () => {
             ) : null}
           </View>
           <View style={{ gap: 8 }}>
-            <SoftButton
+            <Button
               title="حفظ المرتجع"
               onPress={async () => {
                 if (!returnInvoice) return;
@@ -170,7 +170,7 @@ export const InvoicesScreen: React.FC = () => {
                 refetch();
               }}
             />
-            <SoftButton title="إغلاق" variant="secondary" onPress={() => setReturnOpen(false)} />
+            <Button title="إغلاق" variant="secondary" onPress={() => setReturnOpen(false)} />
           </View>
         </View>
       </Modal>
@@ -181,6 +181,7 @@ export const InvoicesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

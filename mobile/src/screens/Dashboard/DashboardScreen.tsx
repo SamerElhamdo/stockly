@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -117,7 +117,7 @@ export const DashboardScreen: React.FC = () => {
         <SectionHeader title="فواتير حديثة" subtitle="أحدث الفواتير التي تم إنشاؤها" />
         <View style={styles.listSpacing}>
           {(stats?.recent_invoices || []).map((invoice) => (
-            <SoftListItem
+            <ListItem
               key={invoice.id}
               title={`فاتورة رقم #${invoice.id}`}
               subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
@@ -135,7 +135,7 @@ export const DashboardScreen: React.FC = () => {
         <SectionHeader title="منتجات منخفضة المخزون" subtitle="راقب الكميات لتجنب نفاد المنتجات" />
         <View style={styles.listSpacing}>
           {(lowStockProducts || []).map((product) => (
-            <SoftListItem
+            <ListItem
               key={product.id}
               title={product.name}
               subtitle="كمية في المخزون"
@@ -154,6 +154,7 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 28,

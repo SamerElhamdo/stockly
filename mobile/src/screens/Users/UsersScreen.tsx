@@ -2,7 +2,7 @@ import React from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem } from '@/components';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 
@@ -48,7 +48,7 @@ export const UsersScreen: React.FC = () => {
       <View style={styles.listWrapper}>
         <SectionHeader title="قائمة المستخدمين" subtitle="أعضاء الفريق الحاليون" />
         {(users || []).map((user) => (
-          <SoftListItem
+          <ListItem
             key={user.id}
             title={user.username}
             subtitle={`${user.first_name || ''} ${user.last_name || ''}`.trim() || '—'}
@@ -65,6 +65,7 @@ export const UsersScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

@@ -3,16 +3,16 @@ import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-nativ
 
 import { useTheme } from '@/theme';
 
-export interface SoftListItemProps {
+export type ListItemProps = {
   title: string;
   subtitle?: string;
   meta?: string;
   onPress?: () => void;
   right?: React.ReactNode;
   style?: ViewStyle;
-}
+};
 
-export const SoftListItem: React.FC<SoftListItemProps> = ({ title, subtitle, meta, onPress, right, style }) => {
+export const ListItem: React.FC<ListItemProps> = ({ title, subtitle, meta, onPress, right, style }) => {
   const { theme } = useTheme();
 
   const content = (
@@ -62,13 +62,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 18,
     paddingVertical: 14,
-    borderRadius: 18,
-    marginBottom: 12,
+    borderRadius: 12,
+    marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
   },
   textContainer: {
     flex: 1,
@@ -95,3 +95,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default ListItem;
+
+

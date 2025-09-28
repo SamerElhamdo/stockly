@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftInput, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -68,12 +68,12 @@ export const ProductsScreen: React.FC = () => {
         <SoftBadge label={`قيمة المخزون: ${formatAmount(totalInventoryValue)}`} variant="success" />
       </View>
 
-      <SoftInput placeholder="ابحث باسم المنتج أو الكود" value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input placeholder="ابحث باسم المنتج أو الكود" value={search} onChangeText={setSearch} autoCorrect={false} />
 
       <View style={styles.listWrapper}>
         <SectionHeader title="المنتجات" subtitle="أحدث المنتجات النشطة" />
         {(filteredProducts || []).map((product) => (
-          <SoftListItem
+          <ListItem
             key={product.id}
             title={product.name}
             subtitle={`${product.category_name || 'غير مصنف'} • متوفر: ${product.stock_qty}`}
@@ -92,18 +92,16 @@ export const ProductsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,
     fontWeight: '700',
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
   pageSubtitle: {
     fontSize: 15,
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
   summaryRow: {
     flexDirection: 'row',

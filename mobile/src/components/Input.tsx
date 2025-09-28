@@ -4,15 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/theme';
 
-type SoftInputProps = TextInputProps & {
-  leading?: React.ReactNode;
-  trailing?: React.ReactNode;
+export type InputProps = TextInputProps & {
   label?: string;
   error?: string;
   secureToggle?: boolean;
+  leading?: React.ReactNode;
+  trailing?: React.ReactNode;
 };
 
-export const SoftInput: React.FC<SoftInputProps> = ({ leading, trailing, style, label, error, secureToggle = false, secureTextEntry, ...rest }) => {
+export const Input: React.FC<InputProps> = ({ label, error, style, secureToggle = false, secureTextEntry, leading, trailing, ...rest }) => {
   const { theme } = useTheme();
   const [isSecure, setIsSecure] = React.useState<boolean>(Boolean(secureTextEntry));
 
@@ -31,9 +31,10 @@ export const SoftInput: React.FC<SoftInputProps> = ({ leading, trailing, style, 
       >
         {leading}
         <TextInput
-          style={[styles.input, { color: theme.textPrimary }, style]}
+          style={[styles.input, { color: theme.textPrimary }, style as any]}
           placeholderTextColor={theme.textMuted}
           secureTextEntry={isSecure}
+          textAlign="right"
           {...rest}
         />
         {secureToggle ? (
@@ -55,14 +56,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderWidth: StyleSheet.hairlineWidth,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 2,
   },
   input: {
     flex: 1,
@@ -72,12 +73,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     paddingHorizontal: 4,
+    textAlign: 'right',
   },
   error: {
     fontSize: 12,
     paddingHorizontal: 4,
+    textAlign: 'right',
   },
   iconBtn: {
     paddingRight: 8,
   },
 });
+
+export default Input;
+
+

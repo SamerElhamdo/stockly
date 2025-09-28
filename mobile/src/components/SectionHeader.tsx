@@ -35,12 +35,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
   subtitle: {
     fontSize: 14,
     marginTop: 4,
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
 });

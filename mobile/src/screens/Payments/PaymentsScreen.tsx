@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftInput, SoftListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -63,14 +63,14 @@ export const PaymentsScreen: React.FC = () => {
         <SoftBadge label={`إجمالي المدفوعات: ${formatAmount(totalPayments)}`} variant="success" />
       </View>
 
-      <SoftInput placeholder="ابحث باسم العميل أو طريقة الدفع" value={search} onChangeText={setSearch} autoCorrect={false} />
+      <Input placeholder="ابحث باسم العميل أو طريقة الدفع" value={search} onChangeText={setSearch} autoCorrect={false} />
 
       <View style={styles.listWrapper}>
         <SectionHeader title="سجل المدفوعات" subtitle="أحدث العمليات المالية" />
         {(filteredPayments || []).map((payment) => {
           const status = statusMap[payment.status] || { label: 'غير معروف', variant: 'info' };
           return (
-            <SoftListItem
+            <ListItem
               key={payment.id}
               title={`${payment.customer_name}`}
               subtitle={`${payment.method} • ${mergeDateTime(payment.created_at)}`}
@@ -90,6 +90,7 @@ export const PaymentsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

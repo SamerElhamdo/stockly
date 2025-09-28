@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { ScreenContainer, SoftButton, SoftListItem, SoftInput, SectionHeader } from '@/components';
+import { ScreenContainer, SectionHeader, Button, ListItem, Input } from '@/components';
 import { useTheme } from '@/theme';
 import { SalesStackParamList } from '@/navigation/types';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -101,7 +101,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
       <SectionHeader title="العناصر المضافة" />
       <View style={{ gap: 8 }}>
         {(invoiceDetail?.items || []).map((it: any) => (
-          <SoftListItem key={it.id} title={it.product_name} subtitle={`الكمية: ${it.qty}`} meta={formatAmount(Number(it.price_at_add || 0) * Number(it.qty || 0))} />
+          <ListItem key={it.id} title={it.product_name} subtitle={`الكمية: ${it.qty}`} meta={formatAmount(Number(it.price_at_add || 0) * Number(it.qty || 0))} />
         ))}
         {!(invoiceDetail?.items || []).length ? <Text style={{ textAlign: 'center', color: theme.textMuted }}>لا توجد عناصر</Text> : null}
       </View>
@@ -109,12 +109,12 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
       {/* Search input only */}
       <SectionHeader title="بحث عن منتج" />
       <View style={{ gap: 8 }}>
-        <SoftInput placeholder="اكتب اسم المنتج" value={search} onChangeText={setSearch} />
+        <Input placeholder="اكتب اسم المنتج" value={search} onChangeText={setSearch} />
       </View>
 
       <View style={{ gap: 8 }}>
         {(products || []).map((p) => (
-          <SoftListItem
+          <ListItem
             key={p.id}
             title={p.name}
             subtitle={`متاح: ${p.stock_qty ?? 0}`}
@@ -150,7 +150,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {/* Footer add and confirm */}
       <View style={{ gap: 8, marginTop: 8 }}>
-        <SoftButton
+        <Button
           title="إضافة العنصر المحدد"
           variant="secondary"
           disabled={!selectedProductId}
@@ -162,14 +162,14 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
           }}
         />
         <Text style={{ textAlign: 'right', fontWeight: '700', color: theme.textPrimary }}>الإجمالي: {formatAmount(totalAmount)}</Text>
-        <SoftButton title="تأكيد الفاتورة" onPress={() => confirm.mutate()} loading={confirm.isPending} disabled={!invoiceId} />
+        <Button title="تأكيد الفاتورة" onPress={() => confirm.mutate()} loading={confirm.isPending} disabled={!invoiceId} />
       </View>
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  header: { gap: 6, alignItems: 'flex-end' },
+  header: { gap: 6, alignItems: 'flex-start' },
   title: { fontSize: 20, fontWeight: '700', textAlign: 'right' },
   subtitle: { fontSize: 14, textAlign: 'right' },
   qtyInput: { width: 56, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, textAlign: 'center' },
