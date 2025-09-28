@@ -104,9 +104,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 6,
   },
   listWrapper: {
     gap: 12,

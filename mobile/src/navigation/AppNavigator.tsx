@@ -12,6 +12,8 @@ import { useAuth } from '@/context';
 import { useTheme } from '@/theme';
 import { RootStackParamList } from './types';
 import { navigationRef } from './navigationRef';
+// Read dev bypass flag from environment (no need for app.json or helper)
+const DEV_NO_AUTH = String(process.env.EXPO_PUBLIC_DEV_NO_AUTH || '').toLowerCase() === 'true';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
@@ -43,7 +45,7 @@ export const AppNavigator: React.FC = () => {
   return (
     <NavigationContainer theme={navTheme} ref={navigationRef}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated ? (
+        {isAuthenticated || DEV_NO_AUTH ? (
           <RootStack.Screen name="Main" component={MainTabs} />
         ) : (
           <RootStack.Screen name="Auth" component={SimpleAuthScreen} />

@@ -166,20 +166,20 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    flexDirection: 'column',
+    gap: 8,
+    alignItems: 'flex-end',
   },
   statCard: {
-    flexBasis: '48%',
-    gap: 8,
+    width: '100%',
+    gap: 6,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
   },
   sectionCard: {

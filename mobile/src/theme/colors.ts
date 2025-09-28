@@ -32,9 +32,9 @@ export const lightSoftPalette: SoftPalette = {
 export const darkSoftPalette: SoftPalette = {
   primary: createPalette('#60A5FA', '#1E293B', '#1D4ED8', 'rgba(96, 165, 250, 0.4)'),
   success: createPalette('#34D399', '#1F2937', '#059669', 'rgba(52, 211, 153, 0.35)'),
-  warning: createPalette('#FBBF24', '#312E81', '#F59E0B', 'rgba(251, 191, 36, 0.35)'),
+  warning: createPalette('#FBBF24', '#1F2937', '#F59E0B', 'rgba(251, 191, 36, 0.35)'),
   destructive: createPalette('#F87171', '#3F1D2D', '#DC2626', 'rgba(248, 113, 113, 0.45)'),
-  info: createPalette('#818CF8', '#1F2937', '#4C1D95', 'rgba(129, 140, 248, 0.45)'),
+  info: createPalette('#818CF8', '#1F2937', '#34D399', 'rgba(129, 140, 248, 0.45)'),
 };
 
 export type ThemeColors = {
@@ -70,7 +70,7 @@ export const lightThemeColors: ThemeColors = {
 export const darkThemeColors: ThemeColors = {
   name: 'dark',
   background: '#0F172A',
-  surface: '#111827',
+  surface: '#1E293B',
   surfaceElevated: '#1E293B',
   surfaceMuted: '#1F2937',
   border: 'rgba(255, 255, 255, 0.10)',

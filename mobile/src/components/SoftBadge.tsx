@@ -26,21 +26,25 @@ export const SoftBadge: React.FC<SoftBadgeProps> = ({ label, variant = 'primary'
       ]}
       {...rest}
     >
-      <Text style={[styles.label, { color: palette.dark }]}>{label}</Text>
+      <Text style={[styles.label, { color: palette.dark }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-end',
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: StyleSheet.hairlineWidth,
+    maxWidth: '100%',
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    textAlign: 'right',
   },
 });
