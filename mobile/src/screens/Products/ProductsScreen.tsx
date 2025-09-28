@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem, AmountDisplay } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Input, ListItem, AmountDisplay, Button, FloatingActionButton } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -30,6 +30,10 @@ export const ProductsScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
   const [search, setSearch] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newPrice, setNewPrice] = useState('');
+  const [newSku, setNewSku] = useState('');
 
   const { data: products, isLoading, refetch, isRefetching } = useQuery<ProductItem[]>({
     queryKey: ['products'],
@@ -85,6 +89,28 @@ export const ProductsScreen: React.FC = () => {
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات مطابقة للبحث</Text>
         )}
       </View>
+
+      {/* Quick add product modal */}
+      {addOpen ? (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 90, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border, backgroundColor: theme.surface, padding: 12, gap: 8 }}>
+          <Text style={{ color: theme.textPrimary, fontWeight: '700', textAlign: 'right' }}>إضافة منتج</Text>
+          <Input placeholder="اسم المنتج" value={newName} onChangeText={setNewName} />
+          <Input placeholder="السعر" value={newPrice} onChangeText={setNewPrice} keyboardType="decimal-pad" />
+          <Input placeholder="الكود (اختياري)" value={newSku} onChangeText={setNewSku} />
+          <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+            <Button title="حفظ" onPress={async ()=>{ 
+              try {
+                await apiClient.post(endpoints.products, { name: newName.trim(), price: Number(newPrice||0), sku: newSku.trim()||undefined });
+                setAddOpen(false); setNewName(''); setNewPrice(''); setNewSku('');
+                refetch();
+              } catch {}
+            }} />
+            <Button title="إلغاء" variant="secondary" onPress={()=> setAddOpen(false)} />
+          </View>
+        </View>
+      ) : null}
+
+      <FloatingActionButton icon="add" onPress={()=> setAddOpen(true)} />
     </ScreenContainer>
   );
 };

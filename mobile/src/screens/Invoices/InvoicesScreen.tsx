@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Modal, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Button, Input, ListItem, AmountDisplay } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, Input, ListItem, AmountDisplay, FloatingActionButton } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -24,6 +24,8 @@ export const InvoicesScreen: React.FC = () => {
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnInvoice, setReturnInvoice] = useState<InvoiceItem | null>(null);
   const [returnInputs, setReturnInputs] = useState<Record<number, string>>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [customerIdForCreate, setCustomerIdForCreate] = useState('');
 
   const { data: invoices, isLoading, refetch, isRefetching } = useQuery<InvoiceItem[]>({
     queryKey: ['invoices'],
@@ -174,6 +176,26 @@ export const InvoicesScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Quick create invoice */}
+      {createOpen ? (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 90, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border, backgroundColor: theme.surface, padding: 12, gap: 8 }}>
+          <Text style={{ color: theme.textPrimary, fontWeight: '700', textAlign: 'right' }}>فاتورة جديدة</Text>
+          <Input placeholder="ID العميل" value={customerIdForCreate} onChangeText={setCustomerIdForCreate} keyboardType="number-pad" />
+          <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+            <Button title="إنشاء" onPress={async ()=>{ 
+              try {
+                const res = await apiClient.post(endpoints.invoices, { customer: Number(customerIdForCreate) });
+                setCreateOpen(false); setCustomerIdForCreate('');
+                refetch();
+              } catch {}
+            }} />
+            <Button title="إلغاء" variant="secondary" onPress={()=> setCreateOpen(false)} />
+          </View>
+        </View>
+      ) : null}
+
+      <FloatingActionButton icon="receipt-outline" onPress={()=> setCreateOpen(true)} />
     </ScreenContainer>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Button, ListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, ListItem, Input, FloatingActionButton } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
@@ -27,6 +27,8 @@ export const ReturnsScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
   const queryClient = useQueryClient();
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [invoiceId, setInvoiceId] = React.useState('');
 
   const { data: returns, isLoading, refetch, isRefetching } = useQuery<ReturnItem[]>({
     queryKey: ['returns'],
@@ -107,6 +109,26 @@ export const ReturnsScreen: React.FC = () => {
           style={styles.actionButton}
         />
       </View>
+
+      {/* Quick create return */}
+      {createOpen ? (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 90, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border, backgroundColor: theme.surface, padding: 12, gap: 8 }}>
+          <Text style={{ color: theme.textPrimary, fontWeight: '700', textAlign: 'right' }}>إنشاء مرتجع</Text>
+          <Input placeholder="رقم الفاتورة" value={invoiceId} onChangeText={setInvoiceId} keyboardType="number-pad" />
+          <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+            <Button title="إنشاء" onPress={async ()=>{ 
+              try {
+                await apiClient.post(endpoints.returns, { original_invoice: Number(invoiceId) });
+                setCreateOpen(false); setInvoiceId('');
+                refetch();
+              } catch {}
+            }} />
+            <Button title="إلغاء" variant="secondary" onPress={()=> setCreateOpen(false)} />
+          </View>
+        </View>
+      ) : null}
+
+      <FloatingActionButton icon="arrow-undo-outline" onPress={()=> setCreateOpen(true)} />
     </ScreenContainer>
   );
 };

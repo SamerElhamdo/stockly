@@ -2,7 +2,7 @@ import React from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem, Button, Input, FloatingActionButton } from '@/components';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 
@@ -15,6 +15,9 @@ interface CategoryItem {
 
 export const CategoriesScreen: React.FC = () => {
   const { theme } = useTheme();
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [name, setName] = React.useState('');
+  const [desc, setDesc] = React.useState('');
 
   const { data: categories, isLoading, refetch, isRefetching } = useQuery<CategoryItem[]>({
     queryKey: ['categories'],
@@ -53,6 +56,26 @@ export const CategoriesScreen: React.FC = () => {
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فئات مضافة بعد</Text>
         )}
       </View>
+
+      {addOpen ? (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 90, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border, backgroundColor: theme.surface, padding: 12, gap: 8 }}>
+          <Text style={{ color: theme.textPrimary, fontWeight: '700', textAlign: 'right' }}>إضافة فئة</Text>
+          <Input placeholder="اسم الفئة" value={name} onChangeText={setName} />
+          <Input placeholder="الوصف (اختياري)" value={desc} onChangeText={setDesc} />
+          <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+            <Button title="حفظ" onPress={async ()=>{ 
+              try {
+                await apiClient.post(endpoints.categories, { name: name.trim(), description: desc.trim()||undefined });
+                setAddOpen(false); setName(''); setDesc('');
+                refetch();
+              } catch {}
+            }} />
+            <Button title="إلغاء" variant="secondary" onPress={()=> setAddOpen(false)} />
+          </View>
+        </View>
+      ) : null}
+
+      <FloatingActionButton icon="add" onPress={()=> setAddOpen(true)} />
     </ScreenContainer>
   );
 };
