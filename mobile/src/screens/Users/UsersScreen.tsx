@@ -65,7 +65,7 @@ export const UsersScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
   },
   pageTitle: {
     fontSize: 26,
