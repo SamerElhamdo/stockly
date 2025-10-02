@@ -20,6 +20,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 export const AppNavigator: React.FC = () => {
   const { theme } = useTheme();
   const { isAuthenticated, isLoading } = useAuth();
+  
 
   const baseTheme = theme.name === 'light' ? DefaultTheme : DarkTheme;
   const navTheme: NavigationTheme = {
@@ -45,7 +46,7 @@ export const AppNavigator: React.FC = () => {
   return (
     <NavigationContainer theme={navTheme} ref={navigationRef}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated || DEV_NO_AUTH ? (
+        {isAuthenticated ? (
           <RootStack.Screen name="Main" component={MainTabs} />
         ) : (
           <RootStack.Screen name="Auth" component={SimpleAuthScreen} />

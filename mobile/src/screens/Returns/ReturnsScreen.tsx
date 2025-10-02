@@ -9,7 +9,6 @@ import {
   SoftBadge,
   Button,
   ListItem,
-  FloatingActionButton,
   Modal,
   AmountDisplay,
 } from '@/components';

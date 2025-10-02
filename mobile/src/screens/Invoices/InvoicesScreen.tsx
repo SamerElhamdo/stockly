@@ -364,13 +364,6 @@ export const InvoicesScreen: React.FC = () => {
           {!filteredInvoices?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فواتير</Text>}
         </View>
 
-        <FloatingActionButton
-          icon="receipt-outline"
-          onPress={() => {
-            setSelectedCustomerId('');
-            setCreateOpen(true);
-          }}
-        />
       </ScreenContainer>
 
       {/* Create Invoice Modal */}

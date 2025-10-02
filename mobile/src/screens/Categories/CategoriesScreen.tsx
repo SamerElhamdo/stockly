@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRoute, useNavigation } from '@react-navigation/native';
 
 import {
   ScreenContainer,
@@ -27,6 +28,8 @@ interface CategoryItem {
 export const CategoriesScreen: React.FC = () => {
   const { theme } = useTheme();
   const queryClient = useQueryClient();
+  const route = useRoute();
+  const navigation = useNavigation();
   
   const [search, setSearch] = useState('');
   
@@ -61,6 +64,15 @@ export const CategoriesScreen: React.FC = () => {
     setFormData({ name: '', parent: '' });
     setEditingCategory(null);
   };
+
+  // Handle openAdd parameter from navigation
+  useEffect(() => {
+    if (route?.params?.openAdd) {
+      resetForm();
+      setFormOpen(true);
+      navigation.setParams({ openAdd: undefined });
+    }
+  }, [route?.params?.openAdd, navigation]);
 
   const openEditForm = (category: CategoryItem) => {
     setEditingCategory(category);
@@ -185,13 +197,6 @@ export const CategoriesScreen: React.FC = () => {
           )}
         </View>
 
-        <FloatingActionButton
-          icon="add"
-          onPress={() => {
-            resetForm();
-            setFormOpen(true);
-          }}
-        />
       </ScreenContainer>
 
       {/* Category Form Modal */}

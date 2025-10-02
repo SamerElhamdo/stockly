@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/theme';
 import { HeaderMenuButton } from '@/components/HeaderMenuButton';
+import { navigationRef } from './navigationRef';
 import { ArchiveScreen } from '@/screens/Archive/ArchiveScreen';
 import { CategoriesScreen } from '@/screens/Categories/CategoriesScreen';
 import { CustomersScreen } from '@/screens/Customers/CustomersScreen';
@@ -39,15 +40,15 @@ const screenOptions = {
 
 const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={screenOptions}>
-    <HomeStack.Screen name="Dashboard" component={DashboardScreen} options={{ headerRight: () => <HeaderMenuButton /> }} />
+    <HomeStack.Screen name="Dashboard" component={DashboardScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'لوحة التحكم' }} />
   </HomeStack.Navigator>
 );
 
 const SalesStackNavigator = () => (
   <SalesStack.Navigator screenOptions={screenOptions}>
-    <SalesStack.Screen name="Invoices" component={InvoicesScreen} options={{ headerRight: () => <HeaderMenuButton /> }} />
-    <SalesStack.Screen name="Returns" component={ReturnsScreen} />
-    <SalesStack.Screen name="Payments" component={PaymentsScreen} />
+    <SalesStack.Screen name="Invoices" component={InvoicesScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الفواتير' }} />
+    <SalesStack.Screen name="Returns" component={ReturnsScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'المرتجعات' }} />
+    <SalesStack.Screen name="Payments" component={PaymentsScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'المدفوعات' }} />
     <SalesStack.Screen name="PaymentCreate" component={PaymentCreateScreen} options={{ title: 'دفعة' }} />
     <SalesStack.Screen name="InvoiceCreate" component={InvoiceCreateScreen} options={{ title: 'فاتورة' }} />
   </SalesStack.Navigator>
@@ -60,16 +61,16 @@ const InventoryStackNavigator = () => (
       component={ProductsScreen}
       options={{ headerRight: () => <HeaderMenuButton />, title: 'المنتجات' }}
     />
-    <InventoryStack.Screen name="Categories" component={CategoriesScreen} />
-    <InventoryStack.Screen name="Archive" component={ArchiveScreen} />
+    <InventoryStack.Screen name="Categories" component={CategoriesScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الفئات' }} />
+    <InventoryStack.Screen name="Archive" component={ArchiveScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الأرشيف' }} />
   </InventoryStack.Navigator>
 );
 
 const MoreStackNavigator = () => (
   <MoreStack.Navigator screenOptions={screenOptions}>
-    <MoreStack.Screen name="Customers" component={CustomersScreen} options={{ headerRight: () => <HeaderMenuButton /> }} />
-    <MoreStack.Screen name="Users" component={UsersScreen} />
-    <MoreStack.Screen name="Settings" component={SettingsScreen} />
+    <MoreStack.Screen name="Customers" component={CustomersScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'العملاء' }} />
+    <MoreStack.Screen name="Users" component={UsersScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'المستخدمون' }} />
+    <MoreStack.Screen name="Settings" component={SettingsScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الإعدادات' }} />
   </MoreStack.Navigator>
 );
 
@@ -82,9 +83,7 @@ export const MainTabs = () => {
   const { theme } = useTheme();
   const [keyboardVisible, setKeyboardVisible] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false);
-  const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const scaleAnims = React.useRef([
-    new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
@@ -101,14 +100,6 @@ export const MainTabs = () => {
 
   React.useEffect(() => {
     if (expanded) {
-      // Rotate main button
-      Animated.spring(rotateAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 7,
-      }).start();
-
       // Animate action buttons with stagger
       Animated.stagger(
         50,
@@ -123,22 +114,16 @@ export const MainTabs = () => {
       ).start();
     } else {
       // Reset animations
-      Animated.parallel([
-        Animated.spring(rotateAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 50,
-          friction: 7,
-        }),
-        ...scaleAnims.map((anim) =>
+      Animated.parallel(
+        scaleAnims.map((anim) =>
           Animated.spring(anim, {
             toValue: 0,
             useNativeDriver: true,
             tension: 50,
             friction: 7,
           })
-        ),
-      ]).start();
+        )
+      ).start();
     }
   }, [expanded]);
 
@@ -216,10 +201,12 @@ export const MainTabs = () => {
                 <Pressable
                   onPress={() => {
                     setExpanded(false);
-                    (global as any).navigationRef?.navigate('Main', {
-                      screen: 'Inventory',
-                      params: { screen: 'Products', params: { openAdd: true } },
-                    } as any);
+                    if (navigationRef.isReady()) {
+                      navigationRef.navigate('Main', {
+                        screen: 'Inventory',
+                        params: { screen: 'Products', params: { openAdd: true } },
+                      } as any);
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.action,
@@ -261,10 +248,12 @@ export const MainTabs = () => {
                 <Pressable
                   onPress={() => {
                     setExpanded(false);
-                    (global as any).navigationRef?.navigate('Main', {
-                      screen: 'Inventory',
-                      params: { screen: 'Categories', params: { openAdd: true } },
-                    } as any);
+                    if (navigationRef.isReady()) {
+                      navigationRef.navigate('Main', {
+                        screen: 'Inventory',
+                        params: { screen: 'Categories', params: { openAdd: true } },
+                      } as any);
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.action,
@@ -306,10 +295,12 @@ export const MainTabs = () => {
                 <Pressable
                   onPress={() => {
                     setExpanded(false);
-                    (global as any).navigationRef?.navigate('Main', {
-                      screen: 'Sales',
-                      params: { screen: 'Invoices', params: { openCreate: true } },
-                    } as any);
+                    if (navigationRef.isReady()) {
+                      navigationRef.navigate('Main', {
+                        screen: 'More',
+                        params: { screen: 'Customers', params: { openAdd: true } },
+                      } as any);
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.action,
@@ -321,74 +312,19 @@ export const MainTabs = () => {
                   ]}
                 >
                   <View style={styles.actionContent}>
-                    <Text style={[styles.actionText, { color: theme.textPrimary }]}>فاتورة جديدة</Text>
-                    <View style={[styles.iconWrapper, { backgroundColor: theme.softPalette.primary.main + '20' }]}>
-                      <Ionicons name="receipt" size={20} color={theme.softPalette.primary.main} />
+                    <Text style={[styles.actionText, { color: theme.textPrimary }]}>إضافة عميل</Text>
+                    <View style={[styles.iconWrapper, { backgroundColor: theme.softPalette.success.main + '20' }]}>
+                      <Ionicons name="person-add" size={20} color={theme.softPalette.success.main} />
                     </View>
                   </View>
                 </Pressable>
               </Animated.View>
 
-              <Animated.View
-                style={{
-                  transform: [
-                    {
-                      scale: scaleAnims[3].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, 1],
-                      }),
-                    },
-                    {
-                      translateY: scaleAnims[3].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [20, 0],
-                      }),
-                    },
-                  ],
-                  opacity: scaleAnims[3],
-                }}
-              >
-                <Pressable
-                  onPress={() => {
-                    setExpanded(false);
-                    (global as any).navigationRef?.navigate('Main', {
-                      screen: 'Sales',
-                      params: { screen: 'Returns', params: { openCreate: true } },
-                    } as any);
-                  }}
-                  style={({ pressed }) => [
-                    styles.action,
-                    {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
-                      opacity: pressed ? 0.8 : 1,
-                    },
-                  ]}
-                >
-                  <View style={styles.actionContent}>
-                    <Text style={[styles.actionText, { color: theme.textPrimary }]}>إنشاء مرتجع</Text>
-                    <View style={[styles.iconWrapper, { backgroundColor: theme.softPalette.warning.main + '20' }]}>
-                      <Ionicons name="arrow-undo" size={20} color={theme.softPalette.warning.main} />
-                    </View>
-                  </View>
-                </Pressable>
-              </Animated.View>
             </View>
           )}
 
           {/* Main FAB */}
-          <Animated.View
-            style={{
-              transform: [
-                {
-                  rotate: rotateAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '45deg'],
-                  }),
-                },
-              ],
-            }}
-          >
+          <View>
             <Pressable
               onPress={() => setExpanded((v) => !v)}
               style={({ pressed }) => [
@@ -400,9 +336,13 @@ export const MainTabs = () => {
                 },
               ]}
             >
-              <Ionicons name="add" size={28} color={theme.name === 'light' ? '#0F172A' : '#F8FAFC'} />
+              <Ionicons 
+                name={expanded ? "close" : "add"} 
+                size={28} 
+                color={theme.name === 'light' ? '#0F172A' : '#F8FAFC'} 
+              />
             </Pressable>
-          </Animated.View>
+          </View>
         </View>
       )}
     </>

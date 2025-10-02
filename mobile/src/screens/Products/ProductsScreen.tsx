@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Alert, Modal as RNModal } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -338,10 +338,6 @@ export const ProductsScreen: React.FC = () => {
           {!filteredProducts?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات</Text>}
         </View>
 
-        <FloatingActionButton icon="add" onPress={() => {
-          resetForm();
-          setFormOpen(true);
-        }} />
       </ScreenContainer>
 
       {/* Barcode Scanner */}
