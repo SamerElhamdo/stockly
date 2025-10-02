@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Alert, Modal as RNModal } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Alert, Modal as RNModal, ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import {
   FloatingActionButton,
   BarcodeScanner,
   Modal,
+  SimpleModal,
   Picker,
   type PickerOption,
 } from '@/components';
@@ -349,7 +350,12 @@ export const ProductsScreen: React.FC = () => {
       />
 
       {/* Product Form Modal */}
-      <Modal visible={formOpen} onClose={() => setFormOpen(false)} title={editingProduct ? 'تعديل منتج' : 'إضافة منتج'} size="large">
+      <SimpleModal
+        visible={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editingProduct ? 'تعديل منتج' : 'إضافة منتج'}
+        size="large"
+      >
         <Input
           label="اسم المنتج *"
           placeholder="اسم المنتج"
@@ -369,28 +375,31 @@ export const ProductsScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.scanIconButton, { backgroundColor: theme.primary }]}
             onPress={() => {
-              setScanMode('add');
-              setScannerVisible(true);
+              console.log('Barcode button pressed');
+              setFormOpen(false); // إغلاق المودال أولاً
+              setTimeout(() => {
+                setScanMode('add');
+                setScannerVisible(true);
+              }, 100);
             }}
+            activeOpacity={0.7}
           >
             <Ionicons name="barcode-outline" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        <Picker
+        <Input
           label="الفئة *"
-          placeholder="اختر الفئة"
-          options={categoryOptions}
+          placeholder="اكتب اسم الفئة"
           value={formData.category}
-          onChange={(value) => setFormData((prev) => ({ ...prev, category: String(value) }))}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, category: text }))}
         />
 
-        <Picker
+        <Input
           label="الوحدة"
-          placeholder="اختر الوحدة"
-          options={unitOptions}
+          placeholder="مثل: قطعة، كيلو، متر"
           value={formData.unit}
-          onChange={(value) => setFormData((prev) => ({ ...prev, unit: String(value) }))}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, unit: text }))}
         />
 
         <Input
@@ -457,7 +466,7 @@ export const ProductsScreen: React.FC = () => {
             loading={createProductMutation.isPending || updateProductMutation.isPending}
           />
         </View>
-      </Modal>
+      </SimpleModal>
 
       {/* Product Detail Modal */}
       <Modal visible={detailOpen} onClose={() => setDetailOpen(false)} title="تفاصيل المنتج" size="medium">

@@ -51,29 +51,31 @@ export const Input: React.FC<InputProps> = ({ label, error, style, secureToggle 
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: 6,
+    gap: 8,
   },
   container: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
   input: {
     flex: 1,
     fontSize: 16,
+    lineHeight: 20,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '500',
-    paddingHorizontal: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 6,
     textAlign: 'right',
+    marginBottom: 2,
   },
   error: {
     fontSize: 12,

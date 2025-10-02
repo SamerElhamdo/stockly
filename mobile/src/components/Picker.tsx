@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, FlatList } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, FlatList, Modal as RNModal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { Modal } from './Modal';
 
 export interface PickerOption {
   label: string;
@@ -70,16 +69,35 @@ export const Picker: React.FC<PickerProps> = ({
         </TouchableOpacity>
       </View>
 
-      <Modal
+      <RNModal
         visible={modalVisible}
-        onClose={() => {
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
           setModalVisible(false);
           setSearchQuery('');
         }}
-        title={label || placeholder}
-        size="medium"
       >
-        <FlatList
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}>
+          <View style={{
+            backgroundColor: theme.surface,
+            borderRadius: 20,
+            padding: 20,
+            width: '100%',
+            maxWidth: 400,
+            maxHeight: '70%',
+          }}>
+            <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
+              {label || placeholder}
+            </Text>
+            
+            <FlatList
           data={filteredOptions}
           keyExtractor={(item) => String(item.value)}
           renderItem={({ item }) => {
@@ -112,8 +130,10 @@ export const Picker: React.FC<PickerProps> = ({
           ItemSeparatorComponent={() => (
             <View style={[styles.separator, { backgroundColor: theme.border }]} />
           )}
-        />
-      </Modal>
+            />
+          </View>
+        </View>
+      </RNModal>
     </>
   );
 };

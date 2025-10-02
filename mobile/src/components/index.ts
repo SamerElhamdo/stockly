@@ -9,4 +9,5 @@ export * from './AmountDisplay';
 export * from './FloatingActionButton';
 export * from './BarcodeScanner';
 export * from './Modal';
+export * from './SimpleModal';
 export * from './Picker';

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
@@ -12,6 +12,7 @@ import {
   Button,
   FloatingActionButton,
   Modal,
+  SimpleModal,
   Picker,
   type PickerOption,
 } from '@/components';
@@ -200,7 +201,7 @@ export const CategoriesScreen: React.FC = () => {
       </ScreenContainer>
 
       {/* Category Form Modal */}
-      <Modal
+      <SimpleModal
         visible={formOpen}
         onClose={() => setFormOpen(false)}
         title={editingCategory ? 'تعديل فئة' : 'إضافة فئة'}
@@ -212,13 +213,14 @@ export const CategoriesScreen: React.FC = () => {
           value={formData.name}
           onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
         />
-        <Picker
+        
+        <Input
           label="الفئة الأب (اختياري)"
-          placeholder="بدون فئة أب"
-          options={parentOptions}
+          placeholder="اكتب اسم الفئة الأب أو اتركه فارغاً"
           value={formData.parent}
-          onChange={(value) => setFormData((prev) => ({ ...prev, parent: String(value) }))}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, parent: text }))}
         />
+        
         <View style={styles.buttonRow}>
           <Button title="إلغاء" variant="secondary" onPress={() => setFormOpen(false)} />
           <Button
@@ -227,7 +229,7 @@ export const CategoriesScreen: React.FC = () => {
             loading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
           />
         </View>
-      </Modal>
+      </SimpleModal>
     </>
   );
 };

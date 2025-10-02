@@ -13,6 +13,7 @@ import {
   AmountDisplay,
   FloatingActionButton,
   Modal,
+  SimpleModal,
 } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -214,15 +215,6 @@ export const CustomersScreen: React.FC = () => {
         </View>
 
         <Input placeholder="ابحث باسم العميل أو رقم الهاتف" value={search} onChangeText={setSearch} autoCorrect={false} />
-        
-        {/* Test Button */}
-        <Button 
-          title="اختبار المودال" 
-          onPress={() => {
-            resetForm();
-            setFormOpen(true);
-          }}
-        />
 
         <View style={styles.listWrapper}>
           <SectionHeader title="قائمة العملاء" subtitle={`${filteredCustomers.length} عميل`} />
@@ -250,13 +242,16 @@ export const CustomersScreen: React.FC = () => {
       </ScreenContainer>
 
       {/* Customer Actions Modal */}
-      <Modal
+      <SimpleModal
         visible={!!activeCustomer}
         onClose={() => setActiveCustomer(null)}
         title="إجراءات العميل"
         size="small"
       >
-        <Text style={[styles.customerName, { color: theme.textPrimary }]}>{activeCustomer?.name}</Text>
+        <Text style={[styles.customerName, { color: theme.textPrimary, textAlign: 'center', marginBottom: 20 }]}>
+          {activeCustomer?.name}
+        </Text>
+        
         <View style={styles.actionsCol}>
           <Button
             title="فاتورة جديدة"
@@ -313,86 +308,55 @@ export const CustomersScreen: React.FC = () => {
             onPress={() => activeCustomer && handleDelete(activeCustomer)}
           />
         </View>
-      </Modal>
+      </SimpleModal>
 
-      {/* Customer Form Modal - Simple Test */}
-      <RNModal
+      {/* Customer Form Modal */}
+      <SimpleModal
         visible={formOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFormOpen(false)}
+        onClose={() => setFormOpen(false)}
+        title={editingCustomer ? 'تعديل عميل' : 'إضافة عميل'}
+        size="medium"
       >
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20,
-        }}>
-          <View style={{
-            backgroundColor: theme.surface,
-            borderRadius: 20,
-            padding: 20,
-            width: '100%',
-            maxWidth: 400,
-            maxHeight: '80%',
-          }}>
-            <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
-              {editingCustomer ? 'تعديل عميل' : 'إضافة عميل'}
-            </Text>
-            
-            <Text style={{ color: theme.textPrimary, fontSize: 16, marginBottom: 10 }}>اختبار النص</Text>
-            
-            <Input
-              label="اسم العميل *"
-              placeholder="اسم العميل"
-              value={formData.name}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
-            />
-            
-            <View style={{ height: 10 }} />
-            
-            <Input
-              label="رقم الهاتف"
-              placeholder="رقم الهاتف"
-              value={formData.phone}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, phone: text }))}
-              keyboardType="phone-pad"
-            />
-            
-            <View style={{ height: 10 }} />
-            
-            <Input
-              label="البريد الإلكتروني"
-              placeholder="example@mail.com"
-              value={formData.email}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, email: text }))}
-              keyboardType="email-address"
-            />
-            
-            <View style={{ height: 10 }} />
-            
-            <Input
-              label="العنوان"
-              placeholder="عنوان العميل"
-              value={formData.address}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, address: text }))}
-              multiline
-            />
-            
-            <View style={{ height: 20 }} />
-            
-            <View style={styles.buttonRow}>
-              <Button title="إلغاء" variant="secondary" onPress={() => setFormOpen(false)} />
-              <Button
-                title={editingCustomer ? 'تحديث' : 'حفظ'}
-                onPress={handleSave}
-                loading={createCustomerMutation.isPending || updateCustomerMutation.isPending}
-              />
-            </View>
-          </View>
+        <Input
+          label="اسم العميل *"
+          placeholder="اسم العميل"
+          value={formData.name}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
+        />
+        
+        <Input
+          label="رقم الهاتف"
+          placeholder="رقم الهاتف"
+          value={formData.phone}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, phone: text }))}
+          keyboardType="phone-pad"
+        />
+        
+        <Input
+          label="البريد الإلكتروني"
+          placeholder="example@mail.com"
+          value={formData.email}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, email: text }))}
+          keyboardType="email-address"
+        />
+        
+        <Input
+          label="العنوان"
+          placeholder="عنوان العميل"
+          value={formData.address}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, address: text }))}
+          multiline
+        />
+        
+        <View style={styles.buttonRow}>
+          <Button title="إلغاء" variant="secondary" onPress={() => setFormOpen(false)} />
+          <Button
+            title={editingCustomer ? 'تحديث' : 'حفظ'}
+            onPress={handleSave}
+            loading={createCustomerMutation.isPending || updateCustomerMutation.isPending}
+          />
         </View>
-      </RNModal>
+      </SimpleModal>
     </>
   );
 };
