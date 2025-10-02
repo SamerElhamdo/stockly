@@ -90,6 +90,7 @@ export const MainTabs = () => {
     new Animated.Value(0),
     new Animated.Value(0),
   ]).current;
+  const overlayOpacity = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -102,6 +103,13 @@ export const MainTabs = () => {
 
   React.useEffect(() => {
     if (expanded) {
+      // Animate overlay
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      
       // Animate action buttons with stagger
       Animated.stagger(
         50,
@@ -115,6 +123,13 @@ export const MainTabs = () => {
         )
       ).start();
     } else {
+      // Hide overlay
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+      
       // Reset animations
       Animated.parallel(
         scaleAnims.map((anim) =>
@@ -176,8 +191,27 @@ export const MainTabs = () => {
   return (
     <>
       {Tabs}
+      {/* Overlay when FAB is expanded */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          zIndex: 1,
+          opacity: overlayOpacity,
+        }}
+        pointerEvents={expanded ? 'auto' : 'none'}
+      >
+        <Pressable
+          style={{ flex: 1 }}
+          onPress={() => setExpanded(false)}
+        />
+      </Animated.View>
       {!keyboardVisible && (
-        <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 90, left: 20, right: 20, alignItems: 'flex-start' }}>
+        <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 90, left: 20, right: 20, alignItems: 'flex-start', zIndex: 2 }}>
           {/* Action Buttons - Render before main button so they appear below it */}
           {expanded && (
             <View style={{ marginBottom: 70, gap: 12, alignItems: 'flex-start' }}>
