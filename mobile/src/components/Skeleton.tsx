@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
+import { useTheme } from '@/theme';
 
 interface SkeletonProps {
   width?: number | string;
@@ -14,6 +15,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   borderRadius = 8,
   style,
 }) => {
+  const { theme } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -39,7 +41,9 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
   const backgroundColor = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#E5E7EB', '#F3F4F6'],
+    outputRange: theme.name === 'light' 
+      ? ['#E5E7EB', '#F3F4F6'] 
+      : ['#374151', '#4B5563'],
   });
 
   return (
@@ -62,10 +66,12 @@ export const SkeletonList: React.FC<{ count?: number; itemHeight?: number }> = (
   count = 5,
   itemHeight = 80,
 }) => {
+  const { theme } = useTheme();
+  
   return (
     <View style={styles.listContainer}>
       {Array.from({ length: count }).map((_, index) => (
-        <View key={index} style={[styles.listItem, { height: itemHeight }]}>
+        <View key={index} style={[styles.listItem, { height: itemHeight, backgroundColor: theme.surface }]}>
           <View style={styles.listItemContent}>
             <Skeleton width={60} height={60} borderRadius={12} />
             <View style={styles.listItemText}>
@@ -81,8 +87,10 @@ export const SkeletonList: React.FC<{ count?: number; itemHeight?: number }> = (
 };
 
 export const SkeletonCard: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.surface }]}>
       <Skeleton width="100%" height={120} borderRadius={12} />
       <View style={styles.cardContent}>
         <Skeleton width="80%" height={18} />

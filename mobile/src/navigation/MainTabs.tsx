@@ -214,7 +214,7 @@ export const MainTabs = () => {
         <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 90, left: 20, right: 20, alignItems: 'flex-start', zIndex: 2 }}>
           {/* Action Buttons - Render before main button so they appear below it */}
           {expanded && (
-            <View style={{ marginBottom: 70, gap: 12, alignItems: 'flex-start' }}>
+            <View style={{ marginBottom: 20, gap: 8, alignItems: 'flex-start' }}>
               <Animated.View
                 style={{
                   transform: [
