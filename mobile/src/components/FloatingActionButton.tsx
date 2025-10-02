@@ -10,7 +10,7 @@ type FloatingActionButtonProps = PressableProps & {
   right?: number;
 };
 
-export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ icon = 'add', bottom = 20, right = 20, style, ...rest }) => {
+export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ icon = 'add', bottom = 120, right = 20, style, ...rest }) => {
   const { theme } = useTheme();
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', alignItems: 'flex-start' }]}> 

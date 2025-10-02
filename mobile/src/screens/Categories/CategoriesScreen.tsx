@@ -1,82 +1,229 @@
-import React from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ScreenContainer, SectionHeader, SoftBadge, SoftCard, ListItem, Button, Input, FloatingActionButton } from '@/components';
+import {
+  ScreenContainer,
+  SectionHeader,
+  SoftBadge,
+  Input,
+  ListItem,
+  Button,
+  FloatingActionButton,
+  Modal,
+  Picker,
+  type PickerOption,
+} from '@/components';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 
 interface CategoryItem {
   id: number;
   name: string;
-  description?: string | null;
-  products_count?: number;
+  parent?: number | null;
+  parent_name?: string | null;
 }
 
 export const CategoriesScreen: React.FC = () => {
   const { theme } = useTheme();
-  const [addOpen, setAddOpen] = React.useState(false);
-  const [name, setName] = React.useState('');
-  const [desc, setDesc] = React.useState('');
+  const queryClient = useQueryClient();
+  
+  const [search, setSearch] = useState('');
+  
+  // Form state
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    parent: '',
+  });
 
   const { data: categories, isLoading, refetch, isRefetching } = useQuery<CategoryItem[]>({
     queryKey: ['categories'],
     queryFn: async () => {
-      const res = await apiClient.get(endpoints.categories);
+      const res = await apiClient.get(endpoints.categories, { params: { page: 1 } });
       const normalized = normalizeListResponse<CategoryItem>(res.data);
       return normalized.results;
     },
   });
 
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return categories || [];
+    const keyword = search.trim().toLowerCase();
+    return (categories || []).filter((category) => category.name.toLowerCase().includes(keyword));
+  }, [categories, search]);
+
+  const parentOptions: PickerOption[] = useMemo(() => {
+    return (categories || []).map((cat) => ({ label: cat.name, value: cat.id }));
+  }, [categories]);
+
+  const resetForm = () => {
+    setFormData({ name: '', parent: '' });
+    setEditingCategory(null);
+  };
+
+  const openEditForm = (category: CategoryItem) => {
+    setEditingCategory(category);
+    setFormData({
+      name: category.name || '',
+      parent: category.parent ? String(category.parent) : '',
+    });
+    setFormOpen(true);
+  };
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await apiClient.post(endpoints.categories, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      Alert.alert('نجح', 'تم إضافة الفئة بنجاح');
+      setFormOpen(false);
+      resetForm();
+      refetch();
+    },
+    onError: (err: any) => {
+      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إضافة الفئة');
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await apiClient.patch(endpoints.categoryDetail(id), data);
+      return res.data;
+    },
+    onSuccess: () => {
+      Alert.alert('نجح', 'تم تحديث الفئة بنجاح');
+      setFormOpen(false);
+      resetForm();
+      refetch();
+    },
+    onError: (err: any) => {
+      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل تحديث الفئة');
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiClient.delete(endpoints.categoryDetail(id));
+      return res.data;
+    },
+    onSuccess: () => {
+      Alert.alert('نجح', 'تم حذف الفئة بنجاح');
+      refetch();
+    },
+    onError: (err: any) => {
+      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل حذف الفئة');
+    },
+  });
+
+  const handleSave = () => {
+    const name = formData.name.trim();
+    if (!name) {
+      Alert.alert('خطأ', 'يرجى إدخال اسم الفئة');
+      return;
+    }
+
+    const payload: any = { name };
+    if (formData.parent) {
+      payload.parent = Number(formData.parent);
+    }
+
+    if (editingCategory) {
+      updateCategoryMutation.mutate({ id: editingCategory.id, data: payload });
+    } else {
+      createCategoryMutation.mutate(payload);
+    }
+  };
+
+  const handleDelete = (category: CategoryItem) => {
+    Alert.alert('تأكيد الحذف', `هل تريد حذف الفئة "${category.name}"؟`, [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: 'حذف',
+        style: 'destructive',
+        onPress: () => deleteCategoryMutation.mutate(category.id),
+      },
+    ]);
+  };
+
   return (
-    <ScreenContainer
-      refreshControl={<RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={theme.textPrimary} />}
-    >
-      <View style={styles.headerBlock}>
-        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>الفئات</Text>
-        <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>نظّم المنتجات ضمن فئات منسقة</Text>
-      </View>
-
-      <SoftCard style={styles.summaryCard}>
-        <SectionHeader title="نظرة عامة" />
-        <SoftBadge label={`إجمالي الفئات: ${categories?.length || 0}`} variant="primary" />
-      </SoftCard>
-
-      <View style={styles.listWrapper}>
-        <SectionHeader title="قائمة الفئات" subtitle="تفاصيل الفئات المضافة" />
-        {(categories || []).map((category) => (
-          <ListItem
-            key={category.id}
-            title={category.name}
-            subtitle={category.description || 'بدون وصف'}
-            meta={`${category.products_count || 0} منتج`}
-          />
-        ))}
-        {!categories?.length && (
-          <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فئات مضافة بعد</Text>
-        )}
-      </View>
-
-      {addOpen ? (
-        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 90, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border, backgroundColor: theme.surface, padding: 12, gap: 8 }}>
-          <Text style={{ color: theme.textPrimary, fontWeight: '700', textAlign: 'right' }}>إضافة فئة</Text>
-          <Input placeholder="اسم الفئة" value={name} onChangeText={setName} />
-          <Input placeholder="الوصف (اختياري)" value={desc} onChangeText={setDesc} />
-          <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
-            <Button title="حفظ" onPress={async ()=>{ 
-              try {
-                await apiClient.post(endpoints.categories, { name: name.trim(), description: desc.trim()||undefined });
-                setAddOpen(false); setName(''); setDesc('');
-                refetch();
-              } catch {}
-            }} />
-            <Button title="إلغاء" variant="secondary" onPress={()=> setAddOpen(false)} />
-          </View>
+    <>
+      <ScreenContainer
+        refreshControl={
+          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={theme.textPrimary} />
+        }
+      >
+        <View style={styles.headerBlock}>
+          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>الفئات</Text>
+          <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>إدارة فئات المنتجات</Text>
         </View>
-      ) : null}
 
-      <FloatingActionButton icon="add" onPress={()=> setAddOpen(true)} />
-    </ScreenContainer>
+        <View style={styles.summaryRow}>
+          <SoftBadge label={`إجمالي الفئات: ${categories?.length || 0}`} variant="info" />
+        </View>
+
+        <Input placeholder="ابحث في الفئات..." value={search} onChangeText={setSearch} autoCorrect={false} />
+
+        <View style={styles.listWrapper}>
+          <SectionHeader title="قائمة الفئات" subtitle={`${filteredCategories.length} فئة`} />
+          {(filteredCategories || []).map((category) => (
+            <TouchableOpacity
+              key={category.id}
+              onLongPress={() => handleDelete(category)}
+              onPress={() => openEditForm(category)}
+            >
+              <ListItem
+                title={category.name}
+                subtitle={category.parent_name ? `الفئة الأب: ${category.parent_name}` : 'فئة رئيسية'}
+                right={!category.parent ? <SoftBadge label="رئيسية" variant="success" /> : undefined}
+              />
+            </TouchableOpacity>
+          ))}
+          {!filteredCategories?.length && (
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فئات</Text>
+          )}
+        </View>
+
+        <FloatingActionButton
+          icon="add"
+          onPress={() => {
+            resetForm();
+            setFormOpen(true);
+          }}
+        />
+      </ScreenContainer>
+
+      {/* Category Form Modal */}
+      <Modal
+        visible={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editingCategory ? 'تعديل فئة' : 'إضافة فئة'}
+        size="small"
+      >
+        <Input
+          label="اسم الفئة *"
+          placeholder="اسم الفئة"
+          value={formData.name}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
+        />
+        <Picker
+          label="الفئة الأب (اختياري)"
+          placeholder="بدون فئة أب"
+          options={parentOptions}
+          value={formData.parent}
+          onChange={(value) => setFormData((prev) => ({ ...prev, parent: String(value) }))}
+        />
+        <View style={styles.buttonRow}>
+          <Button title="إلغاء" variant="secondary" onPress={() => setFormOpen(false)} />
+          <Button
+            title={editingCategory ? 'تحديث' : 'حفظ'}
+            onPress={handleSave}
+            loading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+          />
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -94,13 +241,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'right',
   },
-  summaryCard: {
-    gap: 12,
+  summaryRow: {
+    gap: 6,
   },
   listWrapper: {
     gap: 12,
   },
   emptyText: {
     textAlign: 'center',
+    paddingVertical: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
 });

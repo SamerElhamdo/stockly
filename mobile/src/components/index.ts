@@ -7,3 +7,6 @@ export * from './Input';
 export * from './ListItem';
 export * from './AmountDisplay';
 export * from './FloatingActionButton';
+export * from './BarcodeScanner';
+export * from './Modal';
+export * from './Picker';
