@@ -17,6 +17,9 @@ import {
   Modal,
   SimpleModal,
   Picker,
+  Skeleton,
+  SkeletonList,
+  LoadingSpinner,
   type PickerOption,
 } from '@/components';
 import { useCompany } from '@/context';
@@ -69,7 +72,7 @@ export const ProductsScreen: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
-    category: '',
+    category: undefined as number | undefined,
     price: '',
     stock_qty: '',
     unit: 'piece',
@@ -148,7 +151,7 @@ export const ProductsScreen: React.FC = () => {
     setFormData({
       name: '',
       sku: '',
-      category: '',
+      category: undefined,
       price: '',
       stock_qty: '',
       unit: 'piece',
@@ -166,7 +169,7 @@ export const ProductsScreen: React.FC = () => {
     setFormData({
       name: product.name || '',
       sku: product.sku || '',
-      category: product.category ? String(product.category) : '',
+      category: product.category || undefined,
       price: String(product.price || ''),
       stock_qty: String(product.stock_qty || ''),
       unit: product.unit || 'piece',
@@ -302,7 +305,7 @@ export const ProductsScreen: React.FC = () => {
         {/* Search Bar with Barcode Button */}
         <View style={styles.searchRow}>
           <TouchableOpacity
-            style={[styles.scanButton, { backgroundColor: theme.primary }]}
+            style={[styles.scanButton, { backgroundColor: theme.softPalette.primary.main }]}
             onPress={() => {
               setScanMode('search');
               setScannerVisible(true);
@@ -316,27 +319,34 @@ export const ProductsScreen: React.FC = () => {
         </View>
 
         <View style={styles.listWrapper}>
-          <SectionHeader title="المنتجات" subtitle={`${filteredProducts.length} منتج`} />
-          {(filteredProducts || []).map((product) => {
-            const stockStatus = getStockStatus(product.stock_qty);
-            return (
-              <TouchableOpacity
-                key={product.id}
-                onPress={() => {
-                  setSelectedProduct(product);
-                  setDetailOpen(true);
-                }}
-              >
-                <ListItem
-                  title={product.name}
-                  subtitle={`${product.sku ? `رمز: ${product.sku} • ` : ''}متوفر: ${product.stock_qty}`}
-                  meta={<AmountDisplay amount={parseNumber(product.price)} /> as any}
-                  right={<SoftBadge label={stockStatus.label} variant={stockStatus.variant} />}
-                />
-              </TouchableOpacity>
-            );
-          })}
-          {!filteredProducts?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات</Text>}
+          <SectionHeader title="المنتجات" subtitle={isLoading ? 'جاري التحميل...' : `${filteredProducts.length} منتج`} />
+          
+          {isLoading ? (
+            <SkeletonList count={6} itemHeight={80} />
+          ) : (
+            <>
+              {(filteredProducts || []).map((product) => {
+                const stockStatus = getStockStatus(product.stock_qty);
+                return (
+                  <TouchableOpacity
+                    key={product.id}
+                    onPress={() => {
+                      setSelectedProduct(product);
+                      setDetailOpen(true);
+                    }}
+                  >
+                    <ListItem
+                      title={product.name}
+                      subtitle={`${product.sku ? `رمز: ${product.sku} • ` : ''}متوفر: ${product.stock_qty}`}
+                      meta={<AmountDisplay amount={parseNumber(product.price)} /> as any}
+                      right={<SoftBadge label={stockStatus.label} variant={stockStatus.variant} />}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+              {!filteredProducts?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات</Text>}
+            </>
+          )}
         </View>
 
       </ScreenContainer>
@@ -373,7 +383,7 @@ export const ProductsScreen: React.FC = () => {
             />
           </View>
           <TouchableOpacity
-            style={[styles.scanIconButton, { backgroundColor: theme.primary }]}
+            style={[styles.scanIconButton, { backgroundColor: theme.softPalette.primary.main }]}
             onPress={() => {
               console.log('Barcode button pressed');
               setFormOpen(false); // إغلاق المودال أولاً
@@ -388,18 +398,35 @@ export const ProductsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <Input
+        <Picker
           label="الفئة *"
-          placeholder="اكتب اسم الفئة"
-          value={formData.category}
-          onChangeText={(text) => setFormData((prev) => ({ ...prev, category: text }))}
+          placeholder="اختر فئة المنتج"
+          value={formData.category?.toString() || ''}
+          onChange={(value) => setFormData((prev) => ({ ...prev, category: value ? parseInt(value as string) : undefined }))}
+          options={
+            categories?.map((cat) => ({
+              label: cat.name,
+              value: cat.id.toString(),
+            })) || []
+          }
         />
 
-        <Input
+        <Picker
           label="الوحدة"
-          placeholder="مثل: قطعة، كيلو، متر"
-          value={formData.unit}
-          onChangeText={(text) => setFormData((prev) => ({ ...prev, unit: text }))}
+          placeholder="اختر الوحدة"
+          value={formData.unit || ''}
+          onChange={(value) => setFormData((prev) => ({ ...prev, unit: value as string }))}
+          options={[
+            { label: 'عدد', value: 'piece' },
+            { label: 'متر', value: 'meter' },
+            { label: 'كيلو', value: 'kg' },
+            { label: 'لتر', value: 'liter' },
+            { label: 'صندوق', value: 'box' },
+            { label: 'عبوة', value: 'pack' },
+            { label: 'لفة', value: 'roll' },
+            { label: 'ورقة', value: 'sheet' },
+            { label: 'أخرى', value: 'other' },
+          ]}
         />
 
         <Input
@@ -548,12 +575,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scanIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   listWrapper: {
     gap: 12,
@@ -563,12 +594,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     gap: 8,
     alignItems: 'flex-end',
   },
   buttonRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     gap: 12,
     marginTop: 8,
   },

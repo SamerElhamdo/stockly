@@ -47,11 +47,18 @@ export const Picker: React.FC<PickerProps> = ({
   return (
     <>
       <View style={styles.container}>
-        {label && <Text style={[styles.label, { color: theme.textPrimary }]}>{label}</Text>}
+        {label && (
+          <View style={[styles.labelContainer, { backgroundColor: theme.softPalette.primary.light }]}>
+            <Text style={[styles.label, { color: theme.softPalette.primary.main }]}>{label}</Text>
+          </View>
+        )}
         <TouchableOpacity
           style={[
             styles.pickerButton,
-            { backgroundColor: theme.surface, borderColor: theme.border },
+            { 
+              backgroundColor: theme.name === 'light' ? '#F8FAFC' : theme.surfaceElevated, 
+              borderColor: theme.softPalette.primary.main 
+            },
             disabled && { opacity: 0.5 },
           ]}
           onPress={() => !disabled && setModalVisible(true)}
@@ -106,19 +113,19 @@ export const Picker: React.FC<PickerProps> = ({
               <TouchableOpacity
                 style={[
                   styles.optionItem,
-                  { backgroundColor: isSelected ? theme.primary + '20' : 'transparent' },
+                  { backgroundColor: isSelected ? theme.softPalette.primary.light : 'transparent' },
                 ]}
                 onPress={() => handleSelect(item.value)}
               >
                 {isSelected && (
-                  <Ionicons name="checkmark" size={20} color={theme.primary} />
+                  <Ionicons name="checkmark" size={20} color={theme.softPalette.primary.main} />
                 )}
                 <Text
                   style={[
                     styles.optionText,
                     {
-                      color: isSelected ? theme.primary : theme.textPrimary,
-                      fontWeight: isSelected ? '600' : '400',
+                      color: isSelected ? theme.softPalette.primary.main : theme.textPrimary,
+                      fontWeight: isSelected ? '700' : '400',
                     },
                   ]}
                 >
@@ -142,19 +149,32 @@ const styles = StyleSheet.create({
   container: {
     gap: 8,
   },
+  labelContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+    marginBottom: 4,
+  },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     textAlign: 'right',
+    letterSpacing: 0.3,
   },
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 12,
+    minHeight: 48,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   pickerText: {
     fontSize: 15,

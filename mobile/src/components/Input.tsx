@@ -18,13 +18,17 @@ export const Input: React.FC<InputProps> = ({ label, error, style, secureToggle 
 
   return (
     <View style={styles.wrapper}>
-      {label ? <Text style={[styles.label, { color: theme.textMuted }]}>{label}</Text> : null}
+      {label ? (
+        <View style={[styles.labelContainer, { backgroundColor: theme.softPalette.primary.light }]}>
+          <Text style={[styles.label, { color: theme.softPalette.primary.main }]}>{label}</Text>
+        </View>
+      ) : null}
       <View
         style={[
           styles.container,
           {
-            backgroundColor: theme.surface,
-            borderColor: error ? theme.softPalette.destructive.main : theme.border,
+            backgroundColor: theme.name === 'light' ? '#F8FAFC' : theme.surfaceElevated,
+            borderColor: error ? theme.softPalette.destructive.main : theme.softPalette.primary.main,
             shadowColor: theme.cardShadow,
           },
         ]}
@@ -53,29 +57,37 @@ const styles = StyleSheet.create({
   wrapper: {
     gap: 8,
   },
+  labelContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+    marginBottom: 4,
+  },
   container: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    paddingVertical: 12,
+    minHeight: 48,
+    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '500',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    paddingHorizontal: 6,
+    fontSize: 13,
+    fontWeight: '700',
     textAlign: 'right',
-    marginBottom: 2,
+    letterSpacing: 0.3,
   },
   error: {
     fontSize: 12,

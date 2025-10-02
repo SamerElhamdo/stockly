@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    gap: 20,
+    gap: 24,
     paddingBottom: 40,
   },
 });

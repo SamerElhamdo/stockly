@@ -36,6 +36,8 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const screenOptions = {
   headerShown: true,
+  animation: 'slide_from_right' as const,
+  animationDuration: 300,
 };
 
 const HomeStackNavigator = () => (

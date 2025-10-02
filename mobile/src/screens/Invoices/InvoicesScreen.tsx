@@ -16,6 +16,9 @@ import {
   Picker,
   type PickerOption,
   BarcodeScanner,
+  Skeleton,
+  SkeletonList,
+  LoadingSpinner,
 } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -309,8 +312,13 @@ export const InvoicesScreen: React.FC = () => {
         </View>
 
         <View style={styles.listWrapper}>
-          <SectionHeader title="قائمة الفواتير" subtitle={`${filteredInvoices.length} فاتورة`} />
-          {(filteredInvoices || []).map((invoice) => {
+          <SectionHeader title="قائمة الفواتير" subtitle={isLoading ? 'جاري التحميل...' : `${filteredInvoices.length} فاتورة`} />
+          
+          {isLoading ? (
+            <SkeletonList count={5} itemHeight={90} />
+          ) : (
+            <>
+              {(filteredInvoices || []).map((invoice) => {
             const status = statusMap[invoice.status];
             const isDraft = invoice.status === 'draft';
             return (
@@ -361,7 +369,9 @@ export const InvoicesScreen: React.FC = () => {
               </View>
             );
           })}
-          {!filteredInvoices?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فواتير</Text>}
+              {!filteredInvoices?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فواتير</Text>}
+            </>
+          )}
         </View>
 
       </ScreenContainer>
@@ -395,7 +405,7 @@ export const InvoicesScreen: React.FC = () => {
       <Modal visible={addItemOpen} onClose={() => setAddItemOpen(false)} title={`إضافة منتج - فاتورة #${currentInvoiceId}`} size="medium">
         <View style={styles.searchRow}>
           <TouchableOpacity
-            style={[styles.scanButton, { backgroundColor: theme.primary }]}
+            style={[styles.scanButton, { backgroundColor: theme.softPalette.primary.main }]}
             onPress={() => setScannerVisible(true)}
           >
             <Ionicons name="barcode-outline" size={20} color="#fff" />
@@ -417,8 +427,8 @@ export const InvoicesScreen: React.FC = () => {
                   style={[
                     styles.productItem,
                     {
-                      backgroundColor: isSelected ? theme.primary + '20' : theme.surface,
-                      borderColor: isSelected ? theme.primary : theme.border,
+                      backgroundColor: isSelected ? theme.softPalette.primary.light : theme.surface,
+                      borderColor: isSelected ? theme.softPalette.primary.main : theme.border,
                     },
                   ]}
                   onPress={() => setSelectedProductId(String(item.id))}

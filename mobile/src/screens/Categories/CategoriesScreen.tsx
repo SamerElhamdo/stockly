@@ -14,6 +14,9 @@ import {
   Modal,
   SimpleModal,
   Picker,
+  Skeleton,
+  SkeletonList,
+  LoadingSpinner,
   type PickerOption,
 } from '@/components';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -179,20 +182,27 @@ export const CategoriesScreen: React.FC = () => {
         <Input placeholder="ابحث في الفئات..." value={search} onChangeText={setSearch} autoCorrect={false} />
 
         <View style={styles.listWrapper}>
-          <SectionHeader title="قائمة الفئات" subtitle={`${filteredCategories.length} فئة`} />
-          {(filteredCategories || []).map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              onLongPress={() => handleDelete(category)}
-              onPress={() => openEditForm(category)}
-            >
-              <ListItem
-                title={category.name}
-                subtitle={category.parent_name ? `الفئة الأب: ${category.parent_name}` : 'فئة رئيسية'}
-                right={!category.parent ? <SoftBadge label="رئيسية" variant="success" /> : undefined}
-              />
-            </TouchableOpacity>
-          ))}
+          <SectionHeader title="قائمة الفئات" subtitle={isLoading ? 'جاري التحميل...' : `${filteredCategories.length} فئة`} />
+          
+          {isLoading ? (
+            <SkeletonList count={4} itemHeight={70} />
+          ) : (
+            <>
+              {(filteredCategories || []).map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  onLongPress={() => handleDelete(category)}
+                  onPress={() => openEditForm(category)}
+                >
+                  <ListItem
+                    title={category.name}
+                    subtitle={category.parent_name ? `الفئة الأب: ${category.parent_name}` : 'فئة رئيسية'}
+                    right={!category.parent ? <SoftBadge label="رئيسية" variant="success" /> : undefined}
+                  />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
           {!filteredCategories?.length && (
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فئات</Text>
           )}

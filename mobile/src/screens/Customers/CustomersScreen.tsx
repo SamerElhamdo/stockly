@@ -14,6 +14,9 @@ import {
   FloatingActionButton,
   Modal,
   SimpleModal,
+  Skeleton,
+  SkeletonList,
+  LoadingSpinner,
 } from '@/components';
 import { useCompany } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -217,23 +220,30 @@ export const CustomersScreen: React.FC = () => {
         <Input placeholder="ابحث باسم العميل أو رقم الهاتف" value={search} onChangeText={setSearch} autoCorrect={false} />
 
         <View style={styles.listWrapper}>
-          <SectionHeader title="قائمة العملاء" subtitle={`${filteredCustomers.length} عميل`} />
-          {(filteredCustomers || []).map((customer) => (
-            <TouchableOpacity key={customer.id} onPress={() => setActiveCustomer(customer)}>
-              <ListItem
-                title={customer.name}
-                subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
-                meta={<AmountDisplay amount={Number(customer.balance || 0)} /> as any}
-                right={
-                  Number(customer.balance) > 0 ? (
-                    <SoftBadge label="رصيد مستحق" variant="destructive" />
-                  ) : Number(customer.balance) < 0 ? (
-                    <SoftBadge label="رصيد دائن" variant="success" />
-                  ) : undefined
-                }
-              />
-            </TouchableOpacity>
-          ))}
+          <SectionHeader title="قائمة العملاء" subtitle={isLoading ? 'جاري التحميل...' : `${filteredCustomers.length} عميل`} />
+          
+          {isLoading ? (
+            <SkeletonList count={5} itemHeight={80} />
+          ) : (
+            <>
+              {(filteredCustomers || []).map((customer) => (
+                <TouchableOpacity key={customer.id} onPress={() => setActiveCustomer(customer)}>
+                  <ListItem
+                    title={customer.name}
+                    subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
+                    meta={<AmountDisplay amount={Number(customer.balance || 0)} /> as any}
+                    right={
+                      Number(customer.balance) > 0 ? (
+                        <SoftBadge label="رصيد مستحق" variant="destructive" />
+                      ) : Number(customer.balance) < 0 ? (
+                        <SoftBadge label="رصيد دائن" variant="success" />
+                      ) : undefined
+                    }
+                  />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
           {!filteredCustomers?.length && (
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا يوجد عملاء</Text>
           )}
