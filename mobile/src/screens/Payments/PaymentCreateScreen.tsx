@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { ScreenContainer, SoftButton } from '@/components';
+import { useToast } from '@/context';
 import { useTheme } from '@/theme';
 import { SalesStackParamList } from '@/navigation/types';
 import { apiClient, endpoints } from '@/services/api-client';
@@ -11,17 +13,39 @@ type Props = NativeStackScreenProps<SalesStackParamList, 'PaymentCreate'>;
 
 export const PaymentCreateScreen: React.FC<Props> = ({ route, navigation }) => {
   const { theme } = useTheme();
+  const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
   const { customerId, customerName, mode } = route.params;
   const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const submit = async () => {
     const value = Number(amount);
-    if (!value || value <= 0) return;
-    await apiClient.post(endpoints.payments, {
-      customer_id: customerId,
-      amount: mode === 'withdraw' ? -Math.abs(value) : Math.abs(value),
-    });
-    navigation.goBack();
+    if (!value || value <= 0) {
+      showError('يرجى إدخال مبلغ صحيح');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiClient.post(endpoints.payments, {
+        customer: customerId,
+        amount: mode === 'withdraw' ? -Math.abs(value) : Math.abs(value),
+        payment_method: 'cash',
+      });
+      showSuccess(mode === 'withdraw' ? 'تم سحب الدفعة بنجاح' : 'تم إضافة الدفعة بنجاح');
+      // تحديث قائمة المدفوعات
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      navigation.goBack();
+    } catch (error: any) {
+      console.log('Payment creation error:', error?.response?.data);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          'فشل في حفظ الدفعة';
+      showError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,7 +64,7 @@ export const PaymentCreateScreen: React.FC<Props> = ({ route, navigation }) => {
           placeholder="0.00"
           placeholderTextColor={theme.textMuted}
         />
-        <SoftButton title="حفظ" onPress={submit} />
+        <SoftButton title="حفظ" onPress={submit} loading={loading} disabled={loading} />
       </View>
     </ScreenContainer>
   );

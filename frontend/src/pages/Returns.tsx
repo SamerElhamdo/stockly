@@ -411,10 +411,10 @@ export const Returns: React.FC = () => {
               }}
             >
               <SelectTrigger className="w-44">
-                <SelectValue placeholder="جميع الحالات" />
+                <SelectValue placeholder="الكل" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="all">الكل</SelectItem>
                 <SelectItem value="pending">قيد المراجعة</SelectItem>
                 <SelectItem value="approved">موافق عليها</SelectItem>
                 <SelectItem value="rejected">مرفوضة</SelectItem>

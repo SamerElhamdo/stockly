@@ -1,10 +1,10 @@
 import React from 'react';
 import { DrawerContentComponentProps, DrawerContentScrollView } from '@react-navigation/drawer';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAuth, useCompany } from '@/context';
+import { useAuth, useCompany, useConfirmation } from '@/context';
 import { useSidebar } from '@/context/SidebarContext';
 import { useTheme } from '@/theme';
 
@@ -13,6 +13,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
   const { user, logout, isAuthenticated } = useAuth();
   const { profile } = useCompany();
   const { close } = useSidebar();
+  const { showLogoutConfirmation } = useConfirmation();
 
   // لا تظهر السايد بار إلا إذا كان المستخدم مسجل دخول
   if (!isAuthenticated) {
@@ -134,20 +135,14 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
             styles.logoutBtn,
             { backgroundColor: theme.softPalette.destructive.main, opacity: pressed ? 0.8 : 1 },
           ]}
-          onPress={() => {
-            Alert.alert('تأكيد تسجيل الخروج', 'هل أنت متأكد من تسجيل الخروج من الحساب؟', [
-              { text: 'إلغاء', style: 'cancel' },
-              { 
-                text: 'تسجيل الخروج', 
-                style: 'destructive', 
-                onPress: () => {
-                  // إغلاق السايد بار أولاً
-                  close();
-                  // ثم تسجيل الخروج
-                  logout();
-                }
-              },
-            ]);
+          onPress={async () => {
+            const confirmed = await showLogoutConfirmation();
+            if (confirmed) {
+              // إغلاق السايد بار أولاً
+              close();
+              // ثم تسجيل الخروج
+              logout();
+            }
           }}
         >
           <Ionicons name="log-out-outline" size={20} color="#fff" />

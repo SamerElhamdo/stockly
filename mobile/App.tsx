@@ -7,7 +7,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AuthProvider, CompanyProvider } from '@/context';
+import { AuthProvider, CompanyProvider, ToastProvider, ConfirmationProvider } from '@/context';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { SidebarPanel } from '@/navigation/SidebarPanel';
@@ -38,9 +38,13 @@ const App = () => {
           <ThemeProvider>
             <AuthProvider>
               <CompanyProvider>
-                <SidebarProvider>
-                  <AppContent />
-                </SidebarProvider>
+                <ToastProvider>
+                  <ConfirmationProvider>
+                    <SidebarProvider>
+                      <AppContent />
+                    </SidebarProvider>
+                  </ConfirmationProvider>
+                </ToastProvider>
               </CompanyProvider>
             </AuthProvider>
           </ThemeProvider>

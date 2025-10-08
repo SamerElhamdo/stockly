@@ -281,7 +281,7 @@ export const InvoicesScreen: React.FC = () => {
   };
 
   const statusFilterOptions: PickerOption[] = [
-    { label: 'جميع الحالات', value: 'all' },
+    { label: 'الكل', value: 'all' },
     { label: 'مسودة', value: 'draft' },
     { label: 'مؤكدة', value: 'confirmed' },
     { label: 'ملغاة', value: 'cancelled' },

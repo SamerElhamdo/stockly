@@ -18,7 +18,7 @@ import {
   SkeletonList,
   LoadingSpinner,
 } from '@/components';
-import { useCompany } from '@/context';
+import { useCompany, useToast, useConfirmation } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 import { navigationRef } from '@/navigation/navigationRef';
@@ -35,6 +35,8 @@ interface CustomerItem {
 export const CustomersScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
+  const { showSuccess, showError } = useToast();
+  const { showDeleteConfirmation } = useConfirmation();
   const queryClient = useQueryClient();
   const route = useRoute();
   const navigation = useNavigation();
@@ -127,13 +129,13 @@ export const CustomersScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم إضافة العميل بنجاح');
+      showSuccess('تم إضافة العميل بنجاح');
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إضافة العميل');
+      showError(err?.response?.data?.detail || 'فشل إضافة العميل');
     },
   });
 
@@ -143,13 +145,13 @@ export const CustomersScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم تحديث العميل بنجاح');
+      showSuccess('تم تحديث العميل بنجاح');
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل تحديث العميل');
+      showError(err?.response?.data?.detail || 'فشل تحديث العميل');
     },
   });
 
@@ -159,19 +161,19 @@ export const CustomersScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم حذف العميل بنجاح');
+      showSuccess('تم حذف العميل بنجاح');
       setActiveCustomer(null);
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل حذف العميل');
+      showError(err?.response?.data?.detail || 'فشل حذف العميل');
     },
   });
 
   const handleSave = () => {
     const name = formData.name.trim();
     if (!name) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم العميل');
+      showError('يرجى إدخال اسم العميل');
       return;
     }
 
@@ -189,15 +191,11 @@ export const CustomersScreen: React.FC = () => {
     }
   };
 
-  const handleDelete = (customer: CustomerItem) => {
-    Alert.alert('تأكيد الحذف', `هل تريد حذف العميل "${customer.name}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف',
-        style: 'destructive',
-        onPress: () => deleteCustomerMutation.mutate(customer.id),
-      },
-    ]);
+  const handleDelete = async (customer: CustomerItem) => {
+    const confirmed = await showDeleteConfirmation(`العميل "${customer.name}"`);
+    if (confirmed) {
+      deleteCustomerMutation.mutate(customer.id);
+    }
   };
 
   return (
@@ -283,7 +281,6 @@ export const CustomersScreen: React.FC = () => {
             title="إضافة دفعة"
             variant="secondary"
             onPress={() => {
-              setActiveCustomer(null);
               if (navigationRef.isReady() && activeCustomer) {
                 navigationRef.navigate('Main', {
                   screen: 'Sales',
@@ -292,6 +289,7 @@ export const CustomersScreen: React.FC = () => {
                     params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'add' },
                   },
                 } as any);
+                setActiveCustomer(null);
               }
             }}
           />
@@ -299,7 +297,6 @@ export const CustomersScreen: React.FC = () => {
             title="سحب دفعة"
             variant="secondary"
             onPress={() => {
-              setActiveCustomer(null);
               if (navigationRef.isReady() && activeCustomer) {
                 navigationRef.navigate('Main', {
                   screen: 'Sales',
@@ -308,6 +305,7 @@ export const CustomersScreen: React.FC = () => {
                     params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'withdraw' },
                   },
                 } as any);
+                setActiveCustomer(null);
               }
             }}
           />

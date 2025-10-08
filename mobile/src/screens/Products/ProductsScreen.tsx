@@ -22,7 +22,7 @@ import {
   LoadingSpinner,
   type PickerOption,
 } from '@/components';
-import { useCompany } from '@/context';
+import { useCompany, useToast } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 
@@ -60,6 +60,7 @@ const parseNumber = (value: number | string | undefined | null): number => {
 export const ProductsScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
+  const { showSuccess, showError } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const route = useRoute<any>();
@@ -187,13 +188,13 @@ export const ProductsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم إضافة المنتج بنجاح');
+      showSuccess('تم إضافة المنتج بنجاح');
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إضافة المنتج');
+      showError(err?.response?.data?.detail || 'فشل إضافة المنتج');
     },
   });
 
@@ -203,13 +204,13 @@ export const ProductsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم تحديث المنتج بنجاح');
+      showSuccess('تم تحديث المنتج بنجاح');
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل تحديث المنتج');
+      showError(err?.response?.data?.detail || 'فشل تحديث المنتج');
     },
   });
 
@@ -219,11 +220,11 @@ export const ProductsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم أرشفة المنتج');
+      showSuccess('تم أرشفة المنتج');
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل أرشفة المنتج');
+      showError(err?.response?.data?.detail || 'فشل أرشفة المنتج');
     },
   });
 
