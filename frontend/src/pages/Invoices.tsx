@@ -422,10 +422,10 @@ export const Invoices: React.FC = () => {
               }}
             >
               <SelectTrigger className="w-44">
-                <SelectValue placeholder="جميع الحالات" />
+                <SelectValue placeholder="الكل" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="all">الكل</SelectItem>
                 <SelectItem value="draft">مسودة</SelectItem>
                 <SelectItem value="confirmed">مؤكدة</SelectItem>
                 <SelectItem value="cancelled">ملغاة</SelectItem>
