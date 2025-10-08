@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useAuth } from './AuthContext';
 
 interface SidebarContextValue {
   isOpen: boolean;
@@ -11,9 +12,28 @@ const SidebarContext = createContext<SidebarContextValue | undefined>(undefined)
 
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const open = useCallback(() => setIsOpen(true), []);
+  const { isAuthenticated } = useAuth();
+  
+  // إغلاق السايد بار تلقائياً عند تسجيل الخروج
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      setIsOpen(false);
+    }
+  }, [isAuthenticated]);
+  
+  const open = useCallback(() => {
+    if (isAuthenticated) {
+      setIsOpen(true);
+    }
+  }, [isAuthenticated]);
+  
   const close = useCallback(() => setIsOpen(false), []);
-  const toggle = useCallback(() => setIsOpen((s) => !s), []);
+  
+  const toggle = useCallback(() => {
+    if (isAuthenticated) {
+      setIsOpen((s) => !s);
+    }
+  }, [isAuthenticated]);
 
   const value = useMemo(() => ({ isOpen, open, close, toggle }), [isOpen, open, close, toggle]);
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;

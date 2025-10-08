@@ -5,12 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth, useCompany } from '@/context';
+import { useSidebar } from '@/context/SidebarContext';
 import { useTheme } from '@/theme';
 
 export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
   const { theme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { profile } = useCompany();
+  const { close } = useSidebar();
+
+  // لا تظهر السايد بار إلا إذا كان المستخدم مسجل دخول
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const menuItems = [
     {
@@ -77,8 +84,8 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
             {profile?.logo_url ? (
               <Image source={{ uri: profile.logo_url }} style={styles.logo} />
             ) : (
-              <View style={[styles.logoPlaceholder, { backgroundColor: theme.primary + '20' }]}>
-                <Ionicons name="business" size={28} color={theme.primary} />
+              <View style={[styles.logoPlaceholder, { backgroundColor: theme.softPalette.primary.main + '20' }]}>
+                <Ionicons name="business" size={28} color={theme.softPalette.primary.main} />
               </View>
             )}
           </View>
@@ -106,7 +113,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
               onPress={item.onPress}
             >
               <View style={[styles.iconWrapper, { backgroundColor: theme.surface }]}>
-                <Ionicons name={item.icon} size={22} color={theme.primary} />
+                <Ionicons name={item.icon} size={22} color={theme.softPalette.primary.main} />
               </View>
               <Text style={[styles.menuLabel, { color: theme.textPrimary }]}>{item.label}</Text>
               <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
@@ -130,7 +137,16 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
           onPress={() => {
             Alert.alert('تأكيد تسجيل الخروج', 'هل أنت متأكد من تسجيل الخروج من الحساب؟', [
               { text: 'إلغاء', style: 'cancel' },
-              { text: 'تسجيل الخروج', style: 'destructive', onPress: () => void logout() },
+              { 
+                text: 'تسجيل الخروج', 
+                style: 'destructive', 
+                onPress: () => {
+                  // إغلاق السايد بار أولاً
+                  close();
+                  // ثم تسجيل الخروج
+                  logout();
+                }
+              },
             ]);
           }}
         >
