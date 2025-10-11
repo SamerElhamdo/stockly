@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View, FlatList } from 'react-native';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View, FlatList, ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
 
 import {
   ScreenContainer,
@@ -19,8 +22,9 @@ import {
   Skeleton,
   SkeletonList,
   LoadingSpinner,
+  SimpleModal,
 } from '@/components';
-import { useCompany } from '@/context';
+import { useCompany, useToast, useConfirmation } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 import { mergeDateTime } from '@/utils/format';
@@ -63,6 +67,9 @@ export const InvoicesScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+  const { confirm } = useConfirmation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | InvoiceItem['status']>('all');
@@ -150,49 +157,58 @@ export const InvoicesScreen: React.FC = () => {
       return res.data as InvoiceItem;
     },
     onSuccess: (invoice) => {
-      Alert.alert('نجح', `تم إنشاء فاتورة #${invoice.id}`);
+      showSuccess(`✓ تم إنشاء فاتورة #${invoice.id}`);
+      // Reset form
       setCreateOpen(false);
       setSelectedCustomerId('');
-      refetch();
       // Open add item dialog
       setCurrentInvoiceId(invoice.id);
       setAddItemOpen(true);
+      // Refresh list
+      refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إنشاء الفاتورة');
+      showError(err?.response?.data?.detail || 'فشل إنشاء الفاتورة');
     },
   });
 
   const addItemMutation = useMutation({
-    mutationFn: async ({ invoiceId, productId, qty }: { invoiceId: number; productId: number; qty: number }) => {
+    mutationFn: async ({ invoiceId, productId, qty, keepOpen }: { invoiceId: number; productId: number; qty: number; keepOpen?: boolean }) => {
       const res = await apiClient.post(endpoints.invoiceAddItem(invoiceId), {
         product: productId,
         qty,
       });
-      return res.data;
+      return { data: res.data, keepOpen };
     },
-    onSuccess: () => {
-      Alert.alert('نجح', 'تم إضافة المنتج للفاتورة');
+    onSuccess: ({ keepOpen }) => {
+      showSuccess('✓ تم إضافة العنصر');
       setSelectedProductId('');
       setItemQty('1');
+      setProductSearch('');
       refetch();
+      if (!keepOpen) {
+        setAddItemOpen(false);
+        setCurrentInvoiceId(null);
+      }
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إضافة المنتج');
+      showError(err?.response?.data?.detail || 'فشل إضافة المنتج');
     },
   });
 
   const confirmInvoiceMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await apiClient.post(endpoints.invoiceConfirm(id));
-      return res.data;
+      return { data: res.data, invoiceId: id };
     },
-    onSuccess: () => {
-      Alert.alert('نجح', 'تم تأكيد الفاتورة');
+    onSuccess: ({ invoiceId }) => {
+      showSuccess('✓ تم تأكيد الفاتورة');
       refetch();
+      // Navigate to print invoice screen
+      navigation.navigate('PrintInvoice', { id: invoiceId });
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل تأكيد الفاتورة');
+      showError(err?.response?.data?.detail || 'فشل تأكيد الفاتورة');
     },
   });
 
@@ -202,11 +218,31 @@ export const InvoicesScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم حذف الفاتورة');
+      showSuccess('✓ تم حذف الفاتورة');
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل حذف الفاتورة');
+      showError(err?.response?.data?.detail || 'فشل حذف الفاتورة');
+    },
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: async ({ invoiceId, itemId }: { invoiceId: number; itemId: number }) => {
+      const res = await apiClient.post(endpoints.invoiceRemoveItem(invoiceId), {
+        item_id: itemId,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      showSuccess('✓ تم حذف العنصر');
+      refetch();
+      if (selectedInvoice) {
+        // Refresh selected invoice data
+        queryClient.invalidateQueries({ queryKey: ['invoice-detail', selectedInvoice.id] });
+      }
+    },
+    onError: (err: any) => {
+      showError(err?.response?.data?.detail || 'فشل حذف العنصر');
     },
   });
 
@@ -224,14 +260,14 @@ export const InvoicesScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم إنشاء المرتجع');
+      showSuccess('✓ تم إنشاء المرتجع');
       setReturnOpen(false);
       setReturnInvoice(null);
       setReturnInputs({});
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إنشاء المرتجع');
+      showError(err?.response?.data?.detail || 'فشل إنشاء المرتجع');
     },
   });
 
@@ -240,38 +276,46 @@ export const InvoicesScreen: React.FC = () => {
     const found = (products || []).find((p) => p.sku === data);
     if (found) {
       setSelectedProductId(String(found.id));
-      Alert.alert('تم العثور', `المنتج: ${found.name}`, [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'إضافة',
-          onPress: () => {
-            if (currentInvoiceId) {
-              addItemMutation.mutate({
-                invoiceId: currentInvoiceId,
-                productId: found.id,
-                qty: Number(itemQty) || 1,
-              });
-            }
-          },
+      confirm({
+        title: 'تم العثور على المنتج',
+        message: `المنتج: ${found.name}`,
+        confirmText: 'إضافة',
+        cancelText: 'إلغاء',
+        onConfirm: () => {
+          if (currentInvoiceId) {
+            addItemMutation.mutate({
+              invoiceId: currentInvoiceId,
+              productId: found.id,
+              qty: Number(itemQty) || 1,
+              keepOpen: false,
+            });
+          }
         },
-      ]);
+      });
     } else {
-      Alert.alert('لم يتم العثور', `لا يوجد منتج بالرمز: ${data}`);
+      showError(`لا يوجد منتج بالرمز: ${data}`);
     }
   };
 
   const handleConfirm = (invoice: InvoiceItem) => {
-    Alert.alert('تأكيد', `هل تريد تأكيد فاتورة #${invoice.id}؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'تأكيد', onPress: () => confirmInvoiceMutation.mutate(invoice.id) },
-    ]);
+    confirm({
+      title: 'تأكيد الفاتورة',
+      message: `هل تريد تأكيد فاتورة #${invoice.id}؟`,
+      confirmText: 'تأكيد',
+      cancelText: 'إلغاء',
+      onConfirm: () => confirmInvoiceMutation.mutate(invoice.id),
+    });
   };
 
   const handleDelete = (invoice: InvoiceItem) => {
-    Alert.alert('تأكيد الحذف', `هل تريد حذف فاتورة #${invoice.id}؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'حذف', style: 'destructive', onPress: () => deleteInvoiceMutation.mutate(invoice.id) },
-    ]);
+    confirm({
+      title: 'تأكيد الحذف',
+      message: `هل تريد حذف فاتورة #${invoice.id}؟`,
+      confirmText: 'حذف',
+      cancelText: 'إلغاء',
+      onConfirm: () => deleteInvoiceMutation.mutate(invoice.id),
+      confirmVariant: 'destructive',
+    });
   };
 
   const statusMap: Record<InvoiceItem['status'], { label: string; variant: 'info' | 'success' | 'destructive' }> = {
@@ -459,16 +503,34 @@ export const InvoicesScreen: React.FC = () => {
         <View style={styles.buttonRow}>
           <Button title="إلغاء" variant="secondary" onPress={() => setAddItemOpen(false)} />
           <Button
-            title="إضافة"
+            title="إضافة وإغلاق"
             onPress={() => {
               if (!selectedProductId || !currentInvoiceId) {
-                Alert.alert('خطأ', 'يرجى اختيار منتج');
+                showError('يرجى اختيار منتج');
                 return;
               }
               addItemMutation.mutate({
                 invoiceId: currentInvoiceId,
                 productId: Number(selectedProductId),
                 qty: Number(itemQty) || 1,
+                keepOpen: false,
+              });
+            }}
+            loading={addItemMutation.isPending}
+          />
+          <Button
+            title="إضافة وإضافة آخر"
+            variant="secondary"
+            onPress={() => {
+              if (!selectedProductId || !currentInvoiceId) {
+                showError('يرجى اختيار منتج');
+                return;
+              }
+              addItemMutation.mutate({
+                invoiceId: currentInvoiceId,
+                productId: Number(selectedProductId),
+                qty: Number(itemQty) || 1,
+                keepOpen: true,
               });
             }}
             loading={addItemMutation.isPending}
@@ -477,9 +539,13 @@ export const InvoicesScreen: React.FC = () => {
       </Modal>
 
       {/* Invoice Detail Modal */}
-      <Modal visible={detailOpen} onClose={() => setDetailOpen(false)} title={`تفاصيل فاتورة #${selectedInvoice?.id}`} size="medium">
+      <SimpleModal
+        visible={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={`تفاصيل فاتورة #${selectedInvoice?.id}`}
+      >
         {selectedInvoice && (
-          <View style={styles.detailContent}>
+          <ScrollView style={styles.detailContent}>
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: theme.textMuted }]}>العميل:</Text>
               <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedInvoice.customer_name}</Text>
@@ -497,20 +563,61 @@ export const InvoicesScreen: React.FC = () => {
               <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{mergeDateTime(selectedInvoice.created_at)}</Text>
             </View>
             {selectedInvoice.items && selectedInvoice.items.length > 0 && (
-              <View>
-                <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>المنتجات:</Text>
+              <View style={{ marginTop: 16 }}>
+                <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>المنتجات:</Text>
                 {selectedInvoice.items.map((item) => (
-                  <View key={item.id} style={[styles.itemRow, { borderColor: theme.border }]}>
-                    <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
-                    <Text style={[styles.itemQty, { color: theme.textMuted }]}>× {item.qty}</Text>
-                    <AmountDisplay amount={Number(item.price_at_add || 0)} />
+                  <View key={item.id} style={[styles.itemRow, { borderColor: theme.border, marginBottom: 8 }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
+                      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {item.qty}</Text>
+                        <AmountDisplay amount={Number(item.price_at_add || 0)} />
+                      </View>
+                    </View>
+                    {selectedInvoice.status === 'draft' && (
+                      <TouchableOpacity
+                        style={[styles.deleteItemButton, { backgroundColor: theme.softPalette.destructive?.light || '#fee' }]}
+                        onPress={() => {
+                          confirm({
+                            title: 'حذف العنصر',
+                            message: `هل تريد حذف ${item.product_name}؟`,
+                            confirmText: 'حذف',
+                            cancelText: 'إلغاء',
+                            confirmVariant: 'destructive',
+                            onConfirm: () => removeItemMutation.mutate({ invoiceId: selectedInvoice.id, itemId: item.id }),
+                          });
+                        }}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={theme.softPalette.destructive?.main || '#f00'} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 ))}
               </View>
             )}
-          </View>
+            <View style={[styles.buttonRow, { marginTop: 16 }]}>
+              {selectedInvoice.status === 'draft' && (
+                <Button
+                  title="إضافة عنصر"
+                  variant="secondary"
+                  onPress={() => {
+                    setCurrentInvoiceId(selectedInvoice.id);
+                    setAddItemOpen(true);
+                    setDetailOpen(false);
+                  }}
+                />
+              )}
+              <Button
+                title="طباعة الفاتورة"
+                onPress={() => {
+                  navigation.navigate('PrintInvoice', { id: selectedInvoice.id });
+                  setDetailOpen(false);
+                }}
+              />
+            </View>
+          </ScrollView>
         )}
-      </Modal>
+      </SimpleModal>
 
       {/* Return Modal */}
       <Modal visible={returnOpen} onClose={() => setReturnOpen(false)} title={`مرتجع - فاتورة #${returnInvoice?.id}`} size="medium">
@@ -652,9 +759,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   itemName: {
     flex: 1,
@@ -690,5 +798,12 @@ const styles = StyleSheet.create({
   returnItemQty: {
     fontSize: 12,
     marginTop: 2,
+  },
+  deleteItemButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

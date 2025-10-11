@@ -63,6 +63,7 @@ export const endpoints = {
   invoiceDetail: (id: number) => `/api/v1/invoices/${id}/`,
   invoiceConfirm: (id: number) => `/api/v1/invoices/${id}/confirm/`,
   invoiceAddItem: (id: number) => `/api/v1/invoices/${id}/add_item/`,
+  invoiceRemoveItem: (id: number) => `/api/v1/invoices/${id}/remove_item/`,
   returns: '/api/v1/returns/',
   returnDetail: (id: number) => `/api/v1/returns/${id}/`,
   returnApprove: (id: number) => `/api/v1/returns/${id}/approve/`,

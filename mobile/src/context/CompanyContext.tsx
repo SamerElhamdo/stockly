@@ -35,6 +35,7 @@ interface CompanyContextValue {
   formatAmount: (usdAmount: number) => string;
   formatAmountParts: (usdAmount: number) => { primary: string; secondary?: string };
   currencySymbols: Record<string, string>;
+  refetchProfile?: () => void;
 }
 
 const CompanyContext = createContext<CompanyContextValue | undefined>(undefined);
@@ -51,7 +52,7 @@ const DEFAULT_SYMBOLS: Record<string, string> = {
 
 export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  const { data: profile, isLoading } = useQuery<CompanyProfile>({
+  const { data: profile, isLoading, refetch } = useQuery<CompanyProfile>({
     queryKey: ['company-profile'],
     queryFn: async () => {
       const res = await apiClient.get(endpoints.companyProfile);
@@ -96,8 +97,9 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       formatAmount,
       formatAmountParts,
       currencySymbols: sym,
+      refetchProfile: refetch,
     };
-  }, [profile, isLoading]);
+  }, [profile, isLoading, refetch]);
 
   return <CompanyContext.Provider value={value}>{children}</CompanyContext.Provider>;
 };
