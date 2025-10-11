@@ -3,11 +3,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme, Theme as NavigationTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { LoginScreen } from '@/screens/Auth/LoginScreen';
-import { SimpleAuthScreen } from '@/screens/Auth/SimpleAuthScreen';
+import { SimpleAuthScreen, PrintInvoiceScreen, PrintReturnScreen } from '@/screens';
 import { MainTabs } from './MainTabs';
-import { PrintInvoiceScreen } from '@/screens/Print/PrintInvoiceScreen';
-import { PrintReturnScreen } from '@/screens/Print/PrintReturnScreen';
 import { useAuth } from '@/context';
 import { useTheme } from '@/theme';
 import { RootStackParamList } from './types';

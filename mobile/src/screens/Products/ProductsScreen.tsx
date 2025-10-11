@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Alert, Modal as RNModal, ScrollView } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal, ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +22,7 @@ import {
   LoadingSpinner,
   type PickerOption,
 } from '@/components';
-import { useCompany, useToast } from '@/context';
+import { useCompany, useToast, useConfirmation } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 
@@ -61,6 +61,7 @@ export const ProductsScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
   const { showSuccess, showError } = useToast();
+  const { confirm } = useConfirmation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const route = useRoute<any>();
@@ -231,7 +232,7 @@ export const ProductsScreen: React.FC = () => {
   const handleSave = () => {
     const name = formData.name.trim();
     if (!name || !formData.category || !formData.price || !formData.stock_qty) {
-      Alert.alert('خطأ', 'يرجى ملء جميع الحقول المطلوبة');
+      showError('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
 
@@ -265,7 +266,7 @@ export const ProductsScreen: React.FC = () => {
         setSelectedProduct(found);
         setDetailOpen(true);
       } else {
-        Alert.alert('لم يتم العثور', `لا يوجد منتج بالرمز: ${data}`);
+        showError(`لا يوجد منتج بالرمز: ${data}`);
       }
     } else {
       // Add product with scanned SKU
@@ -276,10 +277,14 @@ export const ProductsScreen: React.FC = () => {
   };
 
   const handleArchive = (product: ProductItem) => {
-    Alert.alert('تأكيد', `هل تريد أرشفة المنتج "${product.name}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'أرشفة', style: 'destructive', onPress: () => archiveProductMutation.mutate(product.id) },
-    ]);
+    confirm({
+      title: 'تأكيد الأرشفة',
+      message: `هل تريد أرشفة المنتج "${product.name}"؟`,
+      confirmText: 'أرشفة',
+      cancelText: 'إلغاء',
+      confirmVariant: 'destructive',
+      onConfirm: () => archiveProductMutation.mutate(product.id),
+    });
   };
 
   const getStockStatus = (stock: number) => {
@@ -497,51 +502,87 @@ export const ProductsScreen: React.FC = () => {
       </SimpleModal>
 
       {/* Product Detail Modal */}
-      <Modal visible={detailOpen} onClose={() => setDetailOpen(false)} title="تفاصيل المنتج" size="medium">
+      <SimpleModal
+        visible={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title="تفاصيل المنتج"
+        size="medium"
+      >
         {selectedProduct && (
-          <View style={styles.detailContent}>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الاسم:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.name}</Text>
-            </View>
-            {selectedProduct.sku && (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={[styles.infoCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الرمز:</Text>
-                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.sku}</Text>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.name}</Text>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الاسم</Text>
               </View>
-            )}
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الفئة:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.category_name || '-'}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>السعر:</Text>
-              <AmountDisplay amount={parseNumber(selectedProduct.price)} />
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المخزون:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.stock_qty}</Text>
-            </View>
-            {selectedProduct.unit_display && (
+              
+              {selectedProduct.sku && (
+                <>
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  <View style={styles.detailRow}>
+                    <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.sku}</Text>
+                    <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الرمز</Text>
+                  </View>
+                </>
+              )}
+              
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الوحدة:</Text>
-                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.unit_display}</Text>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.category_name || '-'}</Text>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الفئة</Text>
               </View>
-            )}
+              
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.detailRow}>
+                <AmountDisplay amount={parseNumber(selectedProduct.price)} />
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>السعر</Text>
+              </View>
+              
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.stock_qty}</Text>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المخزون</Text>
+              </View>
+              
+              {selectedProduct.unit_display && (
+                <>
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  <View style={styles.detailRow}>
+                    <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.unit_display}</Text>
+                    <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الوحدة</Text>
+                  </View>
+                </>
+              )}
+            </View>
 
-            <View style={styles.buttonRow}>
-              <Button title="تعديل" variant="secondary" onPress={() => {
-                setDetailOpen(false);
-                openEditForm(selectedProduct);
-              }} />
-              <Button title="أرشفة" variant="destructive" onPress={() => {
-                setDetailOpen(false);
-                handleArchive(selectedProduct);
-              }} />
+            <View style={styles.actionsSection}>
+              <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>الإجراءات</Text>
+              <View style={styles.actionsGrid}>
+                <View style={styles.actionRow}>
+                  <Button 
+                    title="تعديل" 
+                    variant="primary" 
+                    onPress={() => {
+                      setDetailOpen(false);
+                      openEditForm(selectedProduct);
+                    }}
+                    style={styles.actionButton}
+                  />
+                  <Button 
+                    title="أرشفة" 
+                    variant="destructive" 
+                    onPress={() => {
+                      setDetailOpen(false);
+                      handleArchive(selectedProduct);
+                    }}
+                    style={styles.actionButton}
+                  />
+                </View>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         )}
-      </Modal>
+      </SimpleModal>
     </>
   );
 };
@@ -607,17 +648,51 @@ const styles = StyleSheet.create({
   detailContent: {
     gap: 16,
   },
+  infoCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    textAlign: 'right',
   },
   detailValue: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
+    textAlign: 'left',
+    flex: 1,
+  },
+  divider: {
+    height: 1,
+  },
+  actionsSection: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 2,
+    borderTopColor: '#eee',
+  },
+  actionsGrid: {
+    gap: 12,
+  },
+  actionRow: {
+    flexDirection: 'row-reverse',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    minHeight: 42,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

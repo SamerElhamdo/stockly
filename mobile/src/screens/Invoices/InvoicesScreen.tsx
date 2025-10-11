@@ -68,7 +68,7 @@ export const InvoicesScreen: React.FC = () => {
   const { formatAmount } = useCompany();
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
-  const { confirm } = useConfirmation();
+  const { showConfirmation } = useConfirmation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [search, setSearch] = useState('');
@@ -271,51 +271,53 @@ export const InvoicesScreen: React.FC = () => {
     },
   });
 
-  const handleBarcodeScan = (data: string, type: string) => {
+  const handleBarcodeScan = async (data: string, type: string) => {
     // Find product by SKU
     const found = (products || []).find((p) => p.sku === data);
     if (found) {
       setSelectedProductId(String(found.id));
-      confirm({
+      const confirmed = await showConfirmation({
         title: 'تم العثور على المنتج',
         message: `المنتج: ${found.name}`,
         confirmText: 'إضافة',
         cancelText: 'إلغاء',
-        onConfirm: () => {
-          if (currentInvoiceId) {
-            addItemMutation.mutate({
-              invoiceId: currentInvoiceId,
-              productId: found.id,
-              qty: Number(itemQty) || 1,
-              keepOpen: false,
-            });
-          }
-        },
       });
+      if (confirmed && currentInvoiceId) {
+        addItemMutation.mutate({
+          invoiceId: currentInvoiceId,
+          productId: found.id,
+          qty: Number(itemQty) || 1,
+          keepOpen: false,
+        });
+      }
     } else {
       showError(`لا يوجد منتج بالرمز: ${data}`);
     }
   };
 
-  const handleConfirm = (invoice: InvoiceItem) => {
-    confirm({
+  const handleConfirm = async (invoice: InvoiceItem) => {
+    const confirmed = await showConfirmation({
       title: 'تأكيد الفاتورة',
       message: `هل تريد تأكيد فاتورة #${invoice.id}؟`,
       confirmText: 'تأكيد',
       cancelText: 'إلغاء',
-      onConfirm: () => confirmInvoiceMutation.mutate(invoice.id),
     });
+    if (confirmed) {
+      confirmInvoiceMutation.mutate(invoice.id);
+    }
   };
 
-  const handleDelete = (invoice: InvoiceItem) => {
-    confirm({
+  const handleDelete = async (invoice: InvoiceItem) => {
+    const confirmed = await showConfirmation({
       title: 'تأكيد الحذف',
       message: `هل تريد حذف فاتورة #${invoice.id}؟`,
       confirmText: 'حذف',
       cancelText: 'إلغاء',
-      onConfirm: () => deleteInvoiceMutation.mutate(invoice.id),
-      confirmVariant: 'destructive',
+      type: 'danger',
     });
+    if (confirmed) {
+      deleteInvoiceMutation.mutate(invoice.id);
+    }
   };
 
   const statusMap: Record<InvoiceItem['status'], { label: string; variant: 'info' | 'success' | 'destructive' }> = {
@@ -366,51 +368,20 @@ export const InvoicesScreen: React.FC = () => {
             const status = statusMap[invoice.status];
             const isDraft = invoice.status === 'draft';
             return (
-              <View key={invoice.id} style={styles.invoiceCard}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedInvoice(invoice);
-                    setDetailOpen(true);
-                  }}
-                >
-                  <ListItem
-                    title={`فاتورة #${invoice.id}`}
-                    subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
-                    meta={<AmountDisplay amount={invoice.total_amount} /> as any}
-                    right={<SoftBadge label={status.label} variant={status.variant} />}
-                  />
-                </TouchableOpacity>
-                <View style={styles.invoiceActions}>
-                  {isDraft && (
-                    <>
-                      <Button
-                        title="إضافة منتج"
-                        variant="secondary"
-                        onPress={() => {
-                          setCurrentInvoiceId(invoice.id);
-                          setSelectedProductId('');
-                          setItemQty('1');
-                          setProductSearch('');
-                          setAddItemOpen(true);
-                        }}
-                      />
-                      <Button title="تأكيد" variant="success" onPress={() => handleConfirm(invoice)} />
-                    </>
-                  )}
-                  {!isDraft && (
-                    <Button
-                      title="مرتجع"
-                      variant="secondary"
-                      onPress={() => {
-                        setReturnInvoice(invoice);
-                        setReturnInputs({});
-                        setReturnOpen(true);
-                      }}
-                    />
-                  )}
-                  <Button title="حذف" variant="destructive" onPress={() => handleDelete(invoice)} />
-                </View>
-              </View>
+              <TouchableOpacity 
+                key={invoice.id}
+                onPress={() => {
+                  setSelectedInvoice(invoice);
+                  setDetailOpen(true);
+                }}
+              >
+                <ListItem
+                  title={`فاتورة #${invoice.id}`}
+                  subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
+                  meta={<AmountDisplay amount={invoice.total_amount} /> as any}
+                  right={<SoftBadge label={status.label} variant={status.variant} />}
+                />
+              </TouchableOpacity>
             );
           })}
               {!filteredInvoices?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فواتير</Text>}
@@ -435,7 +406,7 @@ export const InvoicesScreen: React.FC = () => {
             title="إنشاء"
             onPress={() => {
               if (!selectedCustomerId) {
-                Alert.alert('خطأ', 'يرجى اختيار عميل');
+                showError('يرجى اختيار عميل');
                 return;
               }
               createInvoiceMutation.mutate(Number(selectedCustomerId));
@@ -543,24 +514,30 @@ export const InvoicesScreen: React.FC = () => {
         visible={detailOpen}
         onClose={() => setDetailOpen(false)}
         title={`تفاصيل فاتورة #${selectedInvoice?.id}`}
+        size="large"
       >
         {selectedInvoice && (
-          <ScrollView style={styles.detailContent}>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>العميل:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedInvoice.customer_name}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المبلغ الإجمالي:</Text>
-              <AmountDisplay amount={selectedInvoice.total_amount} />
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الحالة:</Text>
-              <SoftBadge label={statusMap[selectedInvoice.status].label} variant={statusMap[selectedInvoice.status].variant} />
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>التاريخ:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{mergeDateTime(selectedInvoice.created_at)}</Text>
+          <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
+            <View style={[styles.infoCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedInvoice.customer_name}</Text>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>العميل</Text>
+              </View>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.detailRow}>
+                <AmountDisplay amount={selectedInvoice.total_amount} />
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المبلغ الإجمالي</Text>
+              </View>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.detailRow}>
+                <SoftBadge label={statusMap[selectedInvoice.status].label} variant={statusMap[selectedInvoice.status].variant} />
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الحالة</Text>
+              </View>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{mergeDateTime(selectedInvoice.created_at)}</Text>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>التاريخ</Text>
+              </View>
             </View>
             {selectedInvoice.items && selectedInvoice.items.length > 0 && (
               <View style={{ marginTop: 16 }}>
@@ -577,15 +554,17 @@ export const InvoicesScreen: React.FC = () => {
                     {selectedInvoice.status === 'draft' && (
                       <TouchableOpacity
                         style={[styles.deleteItemButton, { backgroundColor: theme.softPalette.destructive?.light || '#fee' }]}
-                        onPress={() => {
-                          confirm({
+                        onPress={async () => {
+                          const confirmed = await showConfirmation({
                             title: 'حذف العنصر',
                             message: `هل تريد حذف ${item.product_name}؟`,
                             confirmText: 'حذف',
                             cancelText: 'إلغاء',
-                            confirmVariant: 'destructive',
-                            onConfirm: () => removeItemMutation.mutate({ invoiceId: selectedInvoice.id, itemId: item.id }),
+                            type: 'danger',
                           });
+                          if (confirmed) {
+                            removeItemMutation.mutate({ invoiceId: selectedInvoice.id, itemId: item.id });
+                          }
                         }}
                       >
                         <Ionicons name="trash-outline" size={20} color={theme.softPalette.destructive?.main || '#f00'} />
@@ -595,25 +574,65 @@ export const InvoicesScreen: React.FC = () => {
                 ))}
               </View>
             )}
-            <View style={[styles.buttonRow, { marginTop: 16 }]}>
-              {selectedInvoice.status === 'draft' && (
+            <View style={styles.actionsSection}>
+              <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>الإجراءات</Text>
+              <View style={styles.actionsGrid}>
+                {selectedInvoice.status === 'draft' && (
+                  <View style={styles.actionRow}>
+                    <Button
+                      title="تأكيد"
+                      variant="success"
+                      onPress={() => {
+                        handleConfirm(selectedInvoice);
+                        setDetailOpen(false);
+                      }}
+                      style={styles.actionButton}
+                    />
+                    <Button
+                      title="إضافة عنصر"
+                      variant="secondary"
+                      onPress={() => {
+                        setCurrentInvoiceId(selectedInvoice.id);
+                        setAddItemOpen(true);
+                        setDetailOpen(false);
+                      }}
+                      style={styles.actionButton}
+                    />
+                  </View>
+                )}
+                <View style={styles.actionRow}>
+                  <Button
+                    title="طباعة"
+                    variant="primary"
+                    onPress={() => {
+                      navigation.navigate('PrintInvoice', { id: selectedInvoice.id });
+                      setDetailOpen(false);
+                    }}
+                    style={styles.actionButton}
+                  />
+                  {selectedInvoice.status === 'confirmed' && (
+                    <Button
+                      title="مرتجع"
+                      variant="warning"
+                      onPress={() => {
+                        setReturnInvoice(selectedInvoice);
+                        setReturnInputs({});
+                        setReturnOpen(true);
+                        setDetailOpen(false);
+                      }}
+                      style={styles.actionButton}
+                    />
+                  )}
+                </View>
                 <Button
-                  title="إضافة عنصر"
-                  variant="secondary"
+                  title="حذف الفاتورة"
+                  variant="destructive"
                   onPress={() => {
-                    setCurrentInvoiceId(selectedInvoice.id);
-                    setAddItemOpen(true);
+                    handleDelete(selectedInvoice);
                     setDetailOpen(false);
                   }}
                 />
-              )}
-              <Button
-                title="طباعة الفاتورة"
-                onPress={() => {
-                  navigation.navigate('PrintInvoice', { id: selectedInvoice.id });
-                  setDetailOpen(false);
-                }}
-              />
+              </View>
             </View>
           </ScrollView>
         )}
@@ -696,14 +715,6 @@ const styles = StyleSheet.create({
   listWrapper: {
     gap: 12,
   },
-  invoiceCard: {
-    gap: 8,
-  },
-  invoiceActions: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 12,
-  },
   emptyText: {
     textAlign: 'center',
     paddingVertical: 20,
@@ -743,17 +754,48 @@ const styles = StyleSheet.create({
   detailContent: {
     gap: 16,
   },
+  infoCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    textAlign: 'right',
   },
   detailValue: {
     fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'left',
+    flex: 1,
+  },
+  divider: {
+    height: 1,
+  },
+  actionsSection: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 2,
+    borderTopColor: '#eee',
+  },
+  actionsGrid: {
+    gap: 12,
+  },
+  actionRow: {
+    flexDirection: 'row-reverse',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    minHeight: 42,
   },
   itemRow: {
     flexDirection: 'row',

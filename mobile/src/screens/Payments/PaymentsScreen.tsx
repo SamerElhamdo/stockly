@@ -10,18 +10,15 @@ import { mergeDateTime } from '@/utils/format';
 
 interface PaymentItem {
   id: number;
+  customer: number;
   customer_name: string;
-  amount: number;
-  method: string;
-  status: 'pending' | 'completed' | 'failed';
-  created_at: string;
+  amount: number | string;
+  payment_method: string;
+  payment_method_display?: string;
+  payment_date: string;
+  invoice?: number | null;
+  notes?: string;
 }
-
-const statusMap: Record<PaymentItem['status'], { label: string; variant: 'info' | 'success' | 'destructive' }> = {
-  pending: { label: 'قيد المعالجة', variant: 'info' },
-  completed: { label: 'مكتمل', variant: 'success' },
-  failed: { label: 'فشل', variant: 'destructive' },
-};
 
 export const PaymentsScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -41,12 +38,17 @@ export const PaymentsScreen: React.FC = () => {
     if (!search.trim()) return payments || [];
     const keyword = search.trim().toLowerCase();
     return (payments || []).filter((payment) =>
-      payment.customer_name.toLowerCase().includes(keyword) || payment.method.toLowerCase().includes(keyword),
+      payment.customer_name.toLowerCase().includes(keyword) || 
+      payment.payment_method.toLowerCase().includes(keyword) ||
+      (payment.payment_method_display?.toLowerCase() || '').includes(keyword),
     );
   }, [payments, search]);
 
   const totalPayments = useMemo(() => {
-    return (payments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    return (payments || []).reduce((sum, payment) => {
+      const amount = typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount;
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
   }, [payments]);
 
   return (
@@ -68,14 +70,18 @@ export const PaymentsScreen: React.FC = () => {
       <View style={styles.listWrapper}>
         <SectionHeader title="سجل المدفوعات" subtitle="أحدث العمليات المالية" />
         {(filteredPayments || []).map((payment) => {
-          const status = statusMap[payment.status] || { label: 'غير معروف', variant: 'info' };
+          const amount = typeof payment.amount === 'string' ? parseFloat(payment.amount) : payment.amount;
+          const isWithdraw = amount < 0;
+          const displayAmount = Math.abs(amount);
+          const paymentMethod = payment.payment_method_display || payment.payment_method || 'نقداً';
+          
           return (
             <ListItem
               key={payment.id}
-              title={`${payment.customer_name}`}
-              subtitle={`${payment.method} • ${mergeDateTime(payment.created_at)}`}
-              meta={formatAmount(payment.amount)}
-              right={<SoftBadge label={status.label} variant={status.variant} />}
+              title={payment.customer_name}
+              subtitle={`${paymentMethod} • ${mergeDateTime(payment.payment_date)}`}
+              meta={formatAmount(displayAmount)}
+              right={<SoftBadge label={isWithdraw ? 'سحب' : 'دفعة'} variant={isWithdraw ? 'warning' : 'success'} />}
             />
           );
         })}

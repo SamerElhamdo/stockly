@@ -1,24 +1,28 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Keyboard, Pressable, StyleSheet, Text, View, Animated } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, View, Animated, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 import { useTheme } from '@/theme';
 import { HeaderMenuButton } from '@/components/HeaderMenuButton';
 import { navigationRef } from './navigationRef';
-import { ArchiveScreen } from '@/screens/Archive/ArchiveScreen';
-import { CategoriesScreen } from '@/screens/Categories/CategoriesScreen';
-import { CustomersScreen } from '@/screens/Customers/CustomersScreen';
-import { DashboardScreen } from '@/screens/Dashboard/DashboardScreen';
-import { InvoicesScreen } from '@/screens/Invoices/InvoicesScreen';
-import { InvoiceCreateScreen } from '@/screens/Invoices/InvoiceCreateScreen';
-import { PaymentsScreen } from '@/screens/Payments/PaymentsScreen';
-import { PaymentCreateScreen } from '@/screens/Payments/PaymentCreateScreen';
-import { ProductsScreen } from '@/screens/Products/ProductsScreen';
-import { ReturnsScreen } from '@/screens/Returns/ReturnsScreen';
-import { SettingsScreen } from '@/screens/Settings/SettingsScreen';
-import { UsersScreen } from '@/screens/Users/UsersScreen';
+import {
+  DashboardScreen,
+  InvoicesScreen,
+  InvoiceCreateScreen,
+  PaymentsScreen,
+  PaymentCreateScreen,
+  ReturnsScreen,
+  ProductsScreen,
+  CategoriesScreen,
+  ArchiveScreen,
+  CustomersScreen,
+  CustomerDetailsScreen,
+  UsersScreen,
+  SettingsScreen,
+} from '@/screens';
 // Removed inventory header switch per new UX
 import {
   HomeStackParamList,
@@ -40,41 +44,226 @@ const screenOptions = {
   animationDuration: 300,
 };
 
-const HomeStackNavigator = () => (
-  <HomeStack.Navigator screenOptions={screenOptions}>
-    <HomeStack.Screen name="Dashboard" component={DashboardScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'لوحة التحكم' }} />
-  </HomeStack.Navigator>
-);
+const BackButton = () => {
+  const navigation = useNavigation();
+  const { theme } = useTheme();
+  
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.goBack()}
+      style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+    >
+      <Ionicons name="arrow-forward" size={24} color={theme.softPalette.primary.main} />
+    </TouchableOpacity>
+  );
+};
 
-const SalesStackNavigator = () => (
-  <SalesStack.Navigator screenOptions={screenOptions}>
-    <SalesStack.Screen name="Invoices" component={InvoicesScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الفواتير' }} />
-    <SalesStack.Screen name="Returns" component={ReturnsScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'المرتجعات' }} />
-    <SalesStack.Screen name="Payments" component={PaymentsScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'المدفوعات' }} />
-    <SalesStack.Screen name="PaymentCreate" component={PaymentCreateScreen} options={{ title: 'دفعة' }} />
-    <SalesStack.Screen name="InvoiceCreate" component={InvoiceCreateScreen} options={{ title: 'فاتورة' }} />
-  </SalesStack.Navigator>
-);
+const HomeStackNavigator = () => {
+  const { theme } = useTheme();
+  
+  return (
+    <HomeStack.Navigator 
+      screenOptions={{
+        headerShown: true,
+        animation: 'slide_from_right' as const,
+        animationDuration: 300,
+        headerStyle: {
+          backgroundColor: theme.surface,
+        },
+        headerTintColor: theme.softPalette.primary.main,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <HomeStack.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'لوحة التحكم',
+          headerBackVisible: false,
+        }} 
+      />
+    </HomeStack.Navigator>
+  );
+};
+
+const SalesStackNavigator = () => {
+  const { theme } = useTheme();
+  
+  return (
+    <SalesStack.Navigator 
+      screenOptions={{
+        headerShown: true,
+        animation: 'slide_from_right' as const,
+        animationDuration: 300,
+        headerStyle: {
+          backgroundColor: theme.surface,
+        },
+        headerTintColor: theme.softPalette.primary.main,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <SalesStack.Screen 
+        name="Invoices" 
+        component={InvoicesScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'الفواتير',
+          headerBackVisible: false,
+        }} 
+      />
+      <SalesStack.Screen 
+        name="Returns" 
+        component={ReturnsScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'المرتجعات',
+          headerBackVisible: false,
+        }} 
+      />
+      <SalesStack.Screen 
+        name="Payments" 
+        component={PaymentsScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'المدفوعات',
+          headerBackVisible: false,
+        }} 
+      />
+      <SalesStack.Screen 
+        name="PaymentCreate" 
+        component={PaymentCreateScreen} 
+        options={({ route }) => {
+          const mode = (route.params as any)?.mode;
+          return {
+            title: mode === 'withdraw' ? 'سحب دفعة' : 'إضافة دفعة',
+            headerBackVisible: true,
+            headerBackTitle: 'رجوع',
+            headerShown: true,
+            gestureEnabled: true,
+          };
+        }} 
+      />
+    <SalesStack.Screen 
+      name="InvoiceCreate" 
+      component={InvoiceCreateScreen} 
+      options={{ 
+        title: 'فاتورة جديدة',
+        headerBackVisible: true,
+        headerBackTitle: 'الفواتير',
+      }} 
+    />
+    </SalesStack.Navigator>
+  );
+};
 
 const InventoryStackNavigator = () => (
   <InventoryStack.Navigator screenOptions={screenOptions}>
     <InventoryStack.Screen
       name="Products"
       component={ProductsScreen}
-      options={{ headerRight: () => <HeaderMenuButton />, title: 'المنتجات' }}
+      options={{ 
+        headerRight: () => <HeaderMenuButton />, 
+        title: 'المنتجات',
+        headerBackVisible: false,
+      }}
     />
-    <InventoryStack.Screen name="Categories" component={CategoriesScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الفئات' }} />
-    <InventoryStack.Screen name="Archive" component={ArchiveScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الأرشيف' }} />
+    <InventoryStack.Screen 
+      name="Categories" 
+      component={CategoriesScreen} 
+      options={{ 
+        headerRight: () => <HeaderMenuButton />, 
+        title: 'الفئات',
+        headerBackVisible: false,
+      }} 
+    />
+    <InventoryStack.Screen 
+      name="Archive" 
+      component={ArchiveScreen} 
+      options={{ 
+        headerRight: () => <HeaderMenuButton />, 
+        title: 'الأرشيف',
+        headerBackVisible: false,
+      }} 
+    />
   </InventoryStack.Navigator>
 );
 
-const MoreStackNavigator = () => (
-  <MoreStack.Navigator screenOptions={screenOptions}>
-    <MoreStack.Screen name="Customers" component={CustomersScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'العملاء' }} />
-    <MoreStack.Screen name="Users" component={UsersScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'المستخدمون' }} />
-    <MoreStack.Screen name="Settings" component={SettingsScreen} options={{ headerRight: () => <HeaderMenuButton />, title: 'الإعدادات' }} />
-  </MoreStack.Navigator>
-);
+const MoreStackNavigator = () => {
+  const { theme } = useTheme();
+  
+  return (
+    <MoreStack.Navigator 
+      screenOptions={{
+        headerShown: true,
+        animation: 'slide_from_right' as const,
+        animationDuration: 300,
+        headerStyle: {
+          backgroundColor: theme.surface,
+        },
+        headerTintColor: theme.softPalette.primary.main,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+      }}
+    >
+      <MoreStack.Screen 
+        name="Customers" 
+        component={CustomersScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'العملاء',
+          headerBackVisible: false,
+        }} 
+      />
+      <MoreStack.Screen 
+        name="CustomerDetails" 
+        component={CustomerDetailsScreen} 
+        options={{ 
+          title: 'تفاصيل العميل',
+          headerBackVisible: true,
+          headerBackTitle: 'العملاء',
+        }} 
+      />
+      <MoreStack.Screen 
+        name="PaymentCreate" 
+        component={PaymentCreateScreen} 
+        options={({ route }) => {
+          const mode = (route.params as any)?.mode;
+          return {
+            title: mode === 'withdraw' ? 'سحب دفعة' : 'إضافة دفعة',
+            headerBackVisible: true,
+            headerBackTitle: 'العملاء',
+            headerShown: true,
+            gestureEnabled: true,
+          };
+        }} 
+      />
+      <MoreStack.Screen 
+        name="Users" 
+        component={UsersScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'المستخدمون',
+          headerBackVisible: false,
+        }} 
+      />
+      <MoreStack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'الإعدادات',
+          headerBackVisible: false,
+        }} 
+      />
+    </MoreStack.Navigator>
+  );
+};
 
 const DrawerContentless = () => (
   // Empty drawer content for now; we'll use default list of routes
@@ -168,22 +357,62 @@ export const MainTabs = () => {
       <Tab.Screen
         name="Home"
         component={HomeStackNavigator}
-        options={{ title: 'الرئيسية', tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
+        options={{ 
+          title: 'الرئيسية', 
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            if (navigation.isFocused()) {
+              navigation.navigate('Home', { screen: 'Dashboard' });
+            }
+          },
+        })}
       />
       <Tab.Screen
         name="Sales"
         component={SalesStackNavigator}
-        options={{ title: 'الفواتير', tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} /> }}
+        options={{ 
+          title: 'الفواتير', 
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            if (navigation.isFocused()) {
+              navigation.navigate('Sales', { screen: 'Invoices' });
+            }
+          },
+        })}
       />
       <Tab.Screen
         name="Inventory"
         component={InventoryStackNavigator}
-        options={{ title: 'المنتجات', tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> }}
+        options={{ 
+          title: 'المنتجات', 
+          tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} />,
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            if (navigation.isFocused()) {
+              navigation.navigate('Inventory', { screen: 'Products' });
+            }
+          },
+        })}
       />
       <Tab.Screen
         name="More"
         component={MoreStackNavigator}
-        options={{ title: 'العملاء', tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} /> }}
+        options={{ 
+          title: 'العملاء', 
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            if (navigation.isFocused()) {
+              navigation.navigate('More', { screen: 'Customers' });
+            }
+          },
+        })}
       />
     </Tab.Navigator>
   );

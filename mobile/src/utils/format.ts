@@ -2,21 +2,23 @@ export const formatDate = (value: string | Date | undefined | null) => {
   if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;
   if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('ar-SY', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
 };
 
 export const formatTime = (value: string | Date | undefined | null) => {
   if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;
   if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
-  return date.toLocaleTimeString('ar-SY', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${hours}:${minutes}`;
 };
 
 export const mergeDateTime = (value: string | Date | undefined | null) => {
@@ -29,26 +31,10 @@ export const mergeDateTime = (value: string | Date | undefined | null) => {
 };
 
 // Smart number formatter for prices:
-// - Default to 2 decimals
-// - For very small numbers (< 0.01), increase decimals up to 6 until a non-zero digit appears
-// - Trim trailing zeros while keeping at least 2 decimals for numbers >= 0.01
+// - Always show exactly 2 decimals for consistency
 export const formatSmartDecimal = (value: number, locale: string = 'en-US') => {
   if (!isFinite(value)) return '0.00';
-
-  const abs = Math.abs(value);
-  if (abs === 0) return (0).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  if (abs < 0.01) {
-    // Increase precision up to 6 to show the first significant digit
-    for (let d = 3; d <= 6; d += 1) {
-      const str = value.toLocaleString(locale, { minimumFractionDigits: d, maximumFractionDigits: d });
-      // Check if there is any non-zero after the decimal
-      const normalized = Number(value.toFixed(d));
-      if (normalized !== 0) return str;
-    }
-    return value.toLocaleString(locale, { minimumFractionDigits: 6, maximumFractionDigits: 6 });
-  }
-
-  // >= 0.01 → two decimals
+  
+  // Always format with exactly 2 decimals
   return value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };

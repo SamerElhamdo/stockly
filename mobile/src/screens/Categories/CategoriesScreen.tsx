@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
@@ -21,6 +21,7 @@ import {
 } from '@/components';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
+import { useToast, useConfirmation } from '@/context';
 
 interface CategoryItem {
   id: number;

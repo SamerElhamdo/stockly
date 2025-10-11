@@ -94,12 +94,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       transparent
       animationType="none"
       statusBarTranslucent
+      presentationStyle="overFullScreen"
     >
       <Animated.View
         style={[
           styles.overlay,
           {
             opacity: opacityAnim,
+            zIndex: 9999,
           },
         ]}
       >
@@ -187,7 +189,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 20,
+    zIndex: 10000,
   },
   iconContainer: {
     width: 64,

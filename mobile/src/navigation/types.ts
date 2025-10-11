@@ -24,7 +24,9 @@ export type InventoryStackParamList = {
 };
 
 export type MoreStackParamList = {
-  Customers: undefined;
+  Customers: { openAdd?: boolean } | undefined;
+  CustomerDetails: { customerId: number };
+  PaymentCreate: { customerId: number; customerName: string; mode: 'add' | 'withdraw' };
   Users: undefined;
   Settings: undefined;
 };

@@ -69,6 +69,7 @@ export const endpoints = {
   returnApprove: (id: number) => `/api/v1/returns/${id}/approve/`,
   returnReject: (id: number) => `/api/v1/returns/${id}/reject/`,
   payments: '/api/v1/payments/',
+  balances: '/api/v1/balances/',
   archiveProducts: '/api/v1/products/?archived=true',
   archiveCustomers: '/api/v1/customers/?archived=true',
   companyProfile: '/api/v1/company-profile/',

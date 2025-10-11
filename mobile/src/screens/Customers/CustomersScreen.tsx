@@ -1,7 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MoreStackParamList } from '@/navigation/types';
+import { Ionicons } from '@expo/vector-icons';
 
 import {
   ScreenContainer,
@@ -11,12 +14,8 @@ import {
   ListItem,
   Button,
   AmountDisplay,
-  FloatingActionButton,
-  Modal,
   SimpleModal,
-  Skeleton,
   SkeletonList,
-  LoadingSpinner,
 } from '@/components';
 import { useCompany, useToast, useConfirmation } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -39,7 +38,7 @@ export const CustomersScreen: React.FC = () => {
   const { showDeleteConfirmation } = useConfirmation();
   const queryClient = useQueryClient();
   const route = useRoute();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<MoreStackParamList>>();
   
   const [search, setSearch] = useState('');
   const [activeCustomer, setActiveCustomer] = useState<CustomerItem | null>(null);
@@ -104,12 +103,13 @@ export const CustomersScreen: React.FC = () => {
 
   // Handle openAdd parameter from navigation
   useEffect(() => {
-    if (route?.params?.openAdd) {
+    const params = route?.params as { openAdd?: boolean } | undefined;
+    if (params?.openAdd) {
       resetForm();
       setFormOpen(true);
-      navigation.setParams({ openAdd: undefined });
+      navigation.setParams({ openAdd: undefined } as any);
     }
-  }, [route?.params?.openAdd, navigation]);
+  }, [route?.params, navigation]);
 
   const openEditForm = (customer: CustomerItem) => {
     setEditingCustomer(customer);
@@ -191,11 +191,26 @@ export const CustomersScreen: React.FC = () => {
     }
   };
 
-  const handleDelete = async (customer: CustomerItem) => {
-    const confirmed = await showDeleteConfirmation(`العميل "${customer.name}"`);
-    if (confirmed) {
-      deleteCustomerMutation.mutate(customer.id);
-    }
+  const handleDelete = (customer: CustomerItem) => {
+    console.log('handleDelete called for customer:', customer.name);
+    
+    // إغلاق مودل الإجراءات أولاً
+    setActiveCustomer(null);
+    
+    // انتظار قصير ثم عرض التأكيد
+    setTimeout(() => {
+      showDeleteConfirmation(`العميل "${customer.name}"`).then((confirmed) => {
+        console.log('Confirmation result:', confirmed);
+        if (confirmed) {
+          console.log('Deleting customer with ID:', customer.id);
+          deleteCustomerMutation.mutate(customer.id);
+        } else {
+          console.log('User cancelled deletion');
+        }
+      }).catch((error) => {
+        console.error('Error in handleDelete:', error);
+      });
+    }, 200);
   };
 
   return (
@@ -229,12 +244,12 @@ export const CustomersScreen: React.FC = () => {
                   <ListItem
                     title={customer.name}
                     subtitle={`${customer.phone || 'بدون رقم'} • ${customer.email || 'بدون بريد'}`}
-                    meta={<AmountDisplay amount={Number(customer.balance || 0)} /> as any}
+                    meta={<AmountDisplay amount={Math.abs(Number(customer.balance || 0))} /> as any}
                     right={
-                      Number(customer.balance) > 0 ? (
-                        <SoftBadge label="رصيد مستحق" variant="destructive" />
-                      ) : Number(customer.balance) < 0 ? (
-                        <SoftBadge label="رصيد دائن" variant="success" />
+                      Number(customer.balance) < 0 ? (
+                        <SoftBadge label="له علينا" variant="destructive" />
+                      ) : Number(customer.balance) > 0 ? (
+                        <SoftBadge label="لنا عليه" variant="success" />
                       ) : undefined
                     }
                   />
@@ -254,68 +269,127 @@ export const CustomersScreen: React.FC = () => {
         visible={!!activeCustomer}
         onClose={() => setActiveCustomer(null)}
         title="إجراءات العميل"
-        size="small"
+        size="medium"
       >
-        <Text style={[styles.customerName, { color: theme.textPrimary, textAlign: 'center', marginBottom: 20 }]}>
-          {activeCustomer?.name}
-        </Text>
-        
-        <View style={styles.actionsCol}>
-          <Button
-            title="فاتورة جديدة"
-            variant="secondary"
-            onPress={() => {
-              setActiveCustomer(null);
-              if (navigationRef.isReady() && activeCustomer) {
-                navigationRef.navigate('Main', {
-                  screen: 'Sales',
-                  params: {
-                    screen: 'InvoiceCreate',
-                    params: { customerId: activeCustomer.id, customerName: activeCustomer.name },
-                  },
-                } as any);
-              }
-            }}
-          />
-          <Button
-            title="إضافة دفعة"
-            variant="secondary"
-            onPress={() => {
-              if (navigationRef.isReady() && activeCustomer) {
-                navigationRef.navigate('Main', {
-                  screen: 'Sales',
-                  params: {
-                    screen: 'PaymentCreate',
-                    params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'add' },
-                  },
-                } as any);
-                setActiveCustomer(null);
-              }
-            }}
-          />
-          <Button
-            title="سحب دفعة"
-            variant="secondary"
-            onPress={() => {
-              if (navigationRef.isReady() && activeCustomer) {
-                navigationRef.navigate('Main', {
-                  screen: 'Sales',
-                  params: {
-                    screen: 'PaymentCreate',
-                    params: { customerId: activeCustomer.id, customerName: activeCustomer.name, mode: 'withdraw' },
-                  },
-                } as any);
-                setActiveCustomer(null);
-              }
-            }}
-          />
-          <Button title="تعديل" variant="secondary" onPress={() => activeCustomer && openEditForm(activeCustomer)} />
-          <Button
-            title="حذف"
-            variant="destructive"
-            onPress={() => activeCustomer && handleDelete(activeCustomer)}
-          />
-        </View>
+        {activeCustomer && (
+          <>
+            <View style={[styles.customerInfoCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={[styles.customerIconCircle, { backgroundColor: theme.softPalette.primary.light }]}>
+                <Ionicons name="person" size={28} color={theme.softPalette.primary.main} />
+              </View>
+              <Text style={[styles.customerNameLarge, { color: theme.textPrimary }]}>
+                {activeCustomer.name}
+              </Text>
+              {activeCustomer.phone && (
+                <Text style={[styles.customerPhone, { color: theme.textMuted }]}>
+                  {activeCustomer.phone}
+                </Text>
+              )}
+            </View>
+            
+            <View style={styles.actionsSection}>
+              <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>الإجراءات</Text>
+              <View style={styles.actionsGrid}>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[styles.actionCard, { backgroundColor: theme.softPalette.primary.light, borderColor: theme.softPalette.primary.main }]}
+                    onPress={() => {
+                      if (navigationRef.isReady()) {
+                        navigationRef.navigate('Main', {
+                          screen: 'More',
+                          params: {
+                            screen: 'CustomerDetails',
+                            params: { customerId: activeCustomer.id },
+                          },
+                        } as any);
+                        setActiveCustomer(null);
+                      }
+                    }}
+                  >
+                    <Ionicons name="information-circle-outline" size={24} color={theme.softPalette.primary.main} />
+                    <Text style={[styles.actionText, { color: theme.softPalette.primary.main }]}>التفاصيل</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.actionCard, { backgroundColor: theme.softPalette.info.light, borderColor: theme.softPalette.info.main }]}
+                    onPress={() => {
+                      setActiveCustomer(null);
+                      if (navigationRef.isReady()) {
+                        navigationRef.navigate('Main', {
+                          screen: 'Sales',
+                          params: {
+                            screen: 'InvoiceCreate',
+                            params: { customerId: activeCustomer.id, customerName: activeCustomer.name },
+                          },
+                        } as any);
+                      }
+                    }}
+                  >
+                    <Ionicons name="document-text-outline" size={24} color={theme.softPalette.info.main} />
+                    <Text style={[styles.actionText, { color: theme.softPalette.info.main }]}>فاتورة جديدة</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[styles.actionCard, { backgroundColor: theme.softPalette.success?.light, borderColor: theme.softPalette.success?.main }]}
+                    onPress={() => {
+                      navigation.navigate('PaymentCreate', {
+                        customerId: activeCustomer.id,
+                        customerName: activeCustomer.name,
+                        mode: 'add',
+                      });
+                      setActiveCustomer(null);
+                    }}
+                  >
+                    <Ionicons name="wallet-outline" size={24} color={theme.softPalette.success?.main} />
+                    <Text style={[styles.actionText, { color: theme.softPalette.success?.main }]}>إضافة دفعة</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.actionCard, { backgroundColor: theme.softPalette.warning?.light, borderColor: theme.softPalette.warning?.main }]}
+                    onPress={() => {
+                      navigation.navigate('PaymentCreate', {
+                        customerId: activeCustomer.id,
+                        customerName: activeCustomer.name,
+                        mode: 'withdraw',
+                      });
+                      setActiveCustomer(null);
+                    }}
+                  >
+                    <Ionicons name="cash-outline" size={24} color={theme.softPalette.warning?.main} />
+                    <Text style={[styles.actionText, { color: theme.softPalette.warning?.main }]}>سحب دفعة</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[styles.actionCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    onPress={() => openEditForm(activeCustomer)}
+                  >
+                    <Ionicons name="create-outline" size={24} color={theme.textPrimary} />
+                    <Text style={[styles.actionText, { color: theme.textPrimary }]}>تعديل</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.actionCard, { backgroundColor: theme.softPalette.destructive?.light, borderColor: theme.softPalette.destructive?.main }]}
+                    onPress={() => {
+                      console.log('Delete button pressed, activeCustomer:', activeCustomer);
+                      if (activeCustomer) {
+                        handleDelete(activeCustomer);
+                      } else {
+                        console.log('No active customer!');
+                      }
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={24} color={theme.softPalette.destructive?.main} />
+                    <Text style={[styles.actionText, { color: theme.softPalette.destructive?.main }]}>حذف</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
       </SimpleModal>
 
       {/* Customer Form Modal */}
@@ -399,8 +473,64 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginBottom: 8,
   },
-  actionsCol: {
+  customerInfoCard: {
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 10,
+    marginBottom: 20,
+  },
+  customerIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customerNameLarge: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  customerPhone: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  actionsSection: {
+    gap: 0,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  actionsGrid: {
+    gap: 12,
+  },
+  actionRow: {
+    flexDirection: 'row-reverse',
+    gap: 12,
+  },
+  actionCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
+    minHeight: 80,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
