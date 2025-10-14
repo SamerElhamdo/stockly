@@ -129,7 +129,23 @@ export const Products: React.FC = () => {
   const handleProductFieldChange = (field: keyof typeof productForm) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setProductForm((prev) => ({ ...prev, [field]: event.target.value }));
+    const value = event.target.value;
+    
+    // Check if this is a price field
+    const isPriceField = ['price', 'cost_price', 'wholesale_price', 'retail_price'].includes(field);
+    
+    if (isPriceField && value !== '') {
+      // Check if the value has more than 4 decimal places
+      const parts = value.split('.');
+      if (parts.length === 2 && parts[1].length > 4) {
+        // If more than 4 decimal places, truncate to 4
+        const truncated = parts[0] + '.' + parts[1].slice(0, 4);
+        setProductForm((prev) => ({ ...prev, [field]: truncated }));
+        return;
+      }
+    }
+    
+    setProductForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const createProductMutation = useMutation({
@@ -456,7 +472,7 @@ export const Products: React.FC = () => {
               label="السعر"
               type="number"
               min="0"
-              step="0.01"
+              step="0.0001"
               placeholder="0.00"
               value={productForm.price}
               onChange={handleProductFieldChange('price')}
@@ -495,7 +511,7 @@ export const Products: React.FC = () => {
                   label="سعر التكلفة"
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="0.0001"
                   placeholder="اختياري"
                   value={productForm.cost_price}
                   onChange={handleProductFieldChange('cost_price')}
@@ -504,7 +520,7 @@ export const Products: React.FC = () => {
                   label="سعر الجملة"
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="0.0001"
                   placeholder="اختياري"
                   value={productForm.wholesale_price}
                   onChange={handleProductFieldChange('wholesale_price')}
@@ -513,7 +529,7 @@ export const Products: React.FC = () => {
                   label="سعر التجزئة"
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="0.0001"
                   placeholder="اختياري"
                   value={productForm.retail_price}
                   onChange={handleProductFieldChange('retail_price')}

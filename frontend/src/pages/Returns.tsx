@@ -167,7 +167,10 @@ export const Returns: React.FC = () => {
     },
     onSuccess: () => {
       toast({ title: 'تمت الموافقة', description: 'تمت الموافقة على المرتجع بنجاح' });
+      // تحديث قائمة المرتجعات والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['returns'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر الموافقة على المرتجع';
@@ -182,7 +185,10 @@ export const Returns: React.FC = () => {
     },
     onSuccess: () => {
       toast({ title: 'تم الرفض', description: 'تم رفض المرتجع' });
+      // تحديث قائمة المرتجعات والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['returns'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر رفض المرتجع';
@@ -232,7 +238,10 @@ export const Returns: React.FC = () => {
       setReturnInvoice(null);
       setReturnItems([]);
       setReturnNotes('');
+      // تحديث قائمة المرتجعات والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['returns'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر إنشاء المرتجع';

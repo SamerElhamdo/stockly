@@ -16,7 +16,7 @@ import {
   EyeIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import {
   Dialog,
@@ -50,6 +50,7 @@ export const Customers: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { formatAmount } = useCompany();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearch, setEffectiveSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -61,6 +62,7 @@ export const Customers: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentInvoiceId, setPaymentInvoiceId] = useState<string>('');
   const [activeCustomer, setActiveCustomer] = useState<ApiCustomer | null>(null);
+  const [isWithdrawal, setIsWithdrawal] = useState(false);
   const [createInvoiceLoading, setCreateInvoiceLoading] = useState(false);
 
   // Create / edit customer dialog state
@@ -186,7 +188,9 @@ export const Customers: React.FC = () => {
       setOpenPayment(false);
       setPaymentAmount('');
       setPaymentInvoiceId('');
-      refetch();
+      // تحديث كل من قائمة العملاء والأرصدة
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (err: any) => {
       toast({ title: 'خطأ', description: err?.response?.data?.detail || 'فشل تسجيل الدفعة', variant: 'destructive' });
@@ -203,7 +207,8 @@ export const Customers: React.FC = () => {
       setCustomerFormOpen(false);
       resetCustomerForm();
       setEditingCustomer(null);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (err: any) => {
       const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء العميل';
@@ -221,7 +226,8 @@ export const Customers: React.FC = () => {
       setCustomerFormOpen(false);
       resetCustomerForm();
       setEditingCustomer(null);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (err: any) => {
       const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تحديث بيانات العميل';
@@ -238,7 +244,8 @@ export const Customers: React.FC = () => {
       toast({ title: 'تم الحذف', description: 'تم حذف العميل بنجاح' });
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (err: any) => {
       const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر حذف العميل';
@@ -362,10 +369,10 @@ export const Customers: React.FC = () => {
                         <Button variant="outline" size="sm" onClick={() => createInvoice(c)} disabled={createInvoiceLoading}>
                           <DocumentTextIcon className="h-4 w-4 ml-1" /> فاتورة جديدة
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => { setActiveCustomer(c); setOpenPayment(true); setPaymentAmount(''); setPaymentInvoiceId(''); }}>
+                        <Button variant="outline" size="sm" onClick={() => { setActiveCustomer(c); setOpenPayment(true); setPaymentAmount(''); setPaymentInvoiceId(''); setIsWithdrawal(false); }}>
                           <BanknotesIcon className="h-4 w-4 ml-1" /> إضافة دفعة
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => { setActiveCustomer(c); setOpenPayment(true); setPaymentAmount('-'); setPaymentInvoiceId(''); }}>
+                        <Button variant="outline" size="sm" onClick={() => { setActiveCustomer(c); setOpenPayment(true); setPaymentAmount(''); setPaymentInvoiceId(''); setIsWithdrawal(true); }}>
                           <ArrowUturnLeftIcon className="h-4 w-4 ml-1" /> سحب دفعة
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => navigate(`/customers/${c.id}`)}>
@@ -420,14 +427,22 @@ export const Customers: React.FC = () => {
       <Dialog open={openPayment} onOpenChange={setOpenPayment}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{paymentAmount.startsWith('-') ? 'سحب دفعة' : 'إضافة دفعة'}</DialogTitle>
+            <DialogTitle>{isWithdrawal ? 'سحب دفعة' : 'إضافة دفعة'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="text-sm text-muted-foreground">العميل: <span className="text-foreground font-medium">{activeCustomer?.name}</span></div>
             <Input
-              placeholder="المبلغ (مثال: 100 أو -100 للسحب)"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="المبلغ (مثال: 100)"
               value={paymentAmount}
-              onChange={(e) => setPaymentAmount(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // تأكد من أن القيمة موجبة
+                if (value && Number(value) < 0) return;
+                setPaymentAmount(value);
+              }}
             />
             <Input
               placeholder="رقم الفاتورة (اختياري)"
@@ -439,8 +454,12 @@ export const Customers: React.FC = () => {
             <Button variant="outline" onClick={() => setOpenPayment(false)}>إلغاء</Button>
             <Button
               onClick={() => {
-                const amount = Number(paymentAmount);
+                let amount = Number(paymentAmount);
                 if (!activeCustomer || !amount) return;
+                // إذا كانت عملية سحب، نقوم بتحويل المبلغ إلى سالب
+                if (isWithdrawal) {
+                  amount = -amount;
+                }
                 paymentMutation.mutate({ customerId: activeCustomer.id, amount, invoiceId: paymentInvoiceId ? Number(paymentInvoiceId) : undefined });
               }}
               disabled={paymentMutation.isPending}

@@ -59,12 +59,26 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const secCode = profile?.secondary_currency || undefined;
     const rate = Number(profile?.secondary_per_usd || 0);
 
-    const formatPrimary = (n: number) => `${sym.USD || '$'} ${n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+    const formatPrimary = (n: number) => {
+      // If the number has more than 2 significant decimal places, show up to 4
+      const decimalPlaces = n.toString().split('.')[1]?.length || 0;
+      const maxDecimals = decimalPlaces > 2 ? 4 : 2;
+      return `${sym.USD || '$'} ${n.toLocaleString(undefined, { 
+        minimumFractionDigits: 2,
+        maximumFractionDigits: maxDecimals
+      })}`;
+    };
     const formatSecondary = (n: number) => {
       if (!secCode || !rate || rate <= 0) return undefined;
       const converted = n * rate;
       const symbol = sym[secCode] || secCode;
-      return `${symbol} ${converted.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      // Apply the same decimal place logic for secondary currency
+      const decimalPlaces = converted.toString().split('.')[1]?.length || 0;
+      const maxDecimals = decimalPlaces > 2 ? 4 : 2;
+      return `${symbol} ${converted.toLocaleString(undefined, { 
+        minimumFractionDigits: 2,
+        maximumFractionDigits: maxDecimals
+      })}`;
     };
 
     const formatAmountParts = (usdAmount: number) => {
