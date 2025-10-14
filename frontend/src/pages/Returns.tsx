@@ -105,7 +105,7 @@ const parseNumber = (value: number | string | undefined | null): number => {
 const formatCurrency = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 export const Returns: React.FC = () => {
-  const { formatAmount, profile } = useCompany();
+  const { formatAmount, profile, getProductsLabel } = useCompany();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 

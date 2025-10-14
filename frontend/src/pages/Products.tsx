@@ -154,14 +154,14 @@ export const Products: React.FC = () => {
       return res.data as ApiProduct;
     },
     onSuccess: () => {
-      toast({ title: 'تمت الإضافة', description: 'تم إنشاء المنتج بنجاح' });
+      toast({ title: 'تمت الإضافة', description: `تم إنشاء ${getProductsLabel(1)} بنجاح` });
       setProductFormOpen(false);
       resetProductForm();
       setPage(1);
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (err: any) => {
-      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إنشاء المنتج';
+      const message = err?.response?.data?.detail || err?.response?.data?.error || `تعذر إنشاء ${getProductsLabel(1)}`;
       toast({ title: 'خطأ', description: message, variant: 'destructive' });
     },
   });
@@ -172,13 +172,13 @@ export const Products: React.FC = () => {
       return res.data as ApiProduct;
     },
     onSuccess: () => {
-      toast({ title: 'تم التحديث', description: 'تم تعديل المنتج بنجاح' });
+      toast({ title: 'تم التحديث', description: `تم تعديل ${getProductsLabel(1)} بنجاح` });
       setProductFormOpen(false);
       resetProductForm();
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (err: any) => {
-      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر تعديل المنتج';
+      const message = err?.response?.data?.detail || err?.response?.data?.error || `تعذر تعديل ${getProductsLabel(1)}`;
       toast({ title: 'خطأ', description: message, variant: 'destructive' });
     },
   });
@@ -189,11 +189,11 @@ export const Products: React.FC = () => {
       return res.data as { archived: boolean };
     },
     onSuccess: () => {
-      toast({ title: 'تم الأرشفة', description: 'تم تحديث حالة المنتج' });
+      toast({ title: 'تم الأرشفة', description: `تم تحديث حالة ${getProductsLabel(1)}` });
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (err: any) => {
-      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر أرشفة المنتج';
+      const message = err?.response?.data?.detail || err?.response?.data?.error || `تعذر أرشفة ${getProductsLabel(1)}`;
       toast({ title: 'خطأ', description: message, variant: 'destructive' });
     },
   });
@@ -204,11 +204,11 @@ export const Products: React.FC = () => {
       return res.data as { archived: boolean };
     },
     onSuccess: () => {
-      toast({ title: 'تم الاستعادة', description: 'تم إعادة تنشيط المنتج' });
+      toast({ title: 'تم الاستعادة', description: `تم إعادة تنشيط ${getProductsLabel(1)}` });
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (err: any) => {
-      const message = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر استعادة المنتج';
+      const message = err?.response?.data?.detail || err?.response?.data?.error || `تعذر استعادة ${getProductsLabel(1)}`;
       toast({ title: 'خطأ', description: message, variant: 'destructive' });
     },
   });
@@ -224,13 +224,15 @@ export const Products: React.FC = () => {
     return { text: 'متوفر', color: 'text-success bg-success-light' };
   };
 
+  const { getProductsLabel } = useCompany();
+  
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">المنتجات</h1>
-          <p className="text-muted-foreground mt-1">إدارة منتجات المتجر</p>
+          <h1 className="text-3xl font-bold text-foreground">{getProductsLabel()}</h1>
+          <p className="text-muted-foreground mt-1">إدارة {getProductsLabel()} المتجر</p>
         </div>
         <Button
           variant="outline"
@@ -242,7 +244,7 @@ export const Products: React.FC = () => {
           }}
         >
           <PlusIcon className="h-4 w-4" />
-          إضافة منتج جديد
+          إضافة {getProductsLabel(1)} جديد
         </Button>
       </div>
 
@@ -251,7 +253,7 @@ export const Products: React.FC = () => {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <Input
-              placeholder="البحث في المنتجات..."
+              placeholder={`البحث في ${getProductsLabel()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => {
@@ -276,7 +278,7 @@ export const Products: React.FC = () => {
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">اسم المنتج</th>
+                <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">اسم {getProductsLabel(1)}</th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">SKU</th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">الفئة</th>
                 <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">السعر</th>
@@ -399,7 +401,7 @@ export const Products: React.FC = () => {
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">الإجمالي: {total.toLocaleString()} منتج</div>
+        <div className="text-sm text-muted-foreground">الإجمالي: {total.toLocaleString()} {getProductsLabel(total)}</div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" disabled={!hasPrev} onClick={() => setPage((p) => Math.max(1, p - 1))}>السابق</Button>
           <span className="text-sm text-muted-foreground">صفحة {page}</span>
@@ -419,13 +421,13 @@ export const Products: React.FC = () => {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingProduct ? 'تعديل منتج' : 'إضافة منتج جديد'}</DialogTitle>
+            <DialogTitle>{editingProduct ? `تعديل ${getProductsLabel(1)}` : `إضافة ${getProductsLabel(1)} جديد`}</DialogTitle>
           </DialogHeader>
           <div className="max-h-[70vh] overflow-y-auto p-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="اسم المنتج"
-              placeholder="أدخل اسم المنتج"
+              label={`اسم ${getProductsLabel(1)}`}
+              placeholder={`أدخل اسم ${getProductsLabel(1)}`}
               value={productForm.name}
               onChange={handleProductFieldChange('name')}
               required

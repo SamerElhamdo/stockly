@@ -49,7 +49,7 @@ interface ApiCustomerWithDues extends ApiCustomer {
 export const Customers: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { formatAmount } = useCompany();
+  const { formatAmount, getProductsLabel } = useCompany();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [effectiveSearch, setEffectiveSearch] = useState('');

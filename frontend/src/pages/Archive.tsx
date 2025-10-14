@@ -8,6 +8,7 @@ import { Amount } from '../components/Amount';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
 import { useToast } from '../components/ui/use-toast';
 import { Skeleton } from '../components/ui/skeleton';
+import { useCompany } from '../contexts/CompanyContext';
 
 interface ArchivedProduct {
   id: number;
@@ -40,6 +41,7 @@ const parseNumber = (value: number | string | undefined | null): number => {
 export const Archive: React.FC = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { getProductsLabel } = useCompany();
 
   const [activeTab, setActiveTab] = useState<ArchiveTab>('products');
   const [productSearch, setProductSearch] = useState('');
@@ -98,12 +100,12 @@ export const Archive: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      toast({ title: 'تمت الاستعادة', description: 'تمت استعادة المنتج بنجاح' });
+      toast({ title: 'تمت الاستعادة', description: `تمت استعادة ${getProductsLabel(1)} بنجاح` });
       queryClient.invalidateQueries({ queryKey: ['archived-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر استعادة المنتج';
+      const message = error?.response?.data?.detail || error?.response?.data?.error || `تعذر استعادة ${getProductsLabel(1)}`;
       toast({ title: 'خطأ', description: message, variant: 'destructive' });
     },
   });
@@ -142,7 +144,7 @@ export const Archive: React.FC = () => {
               <ArchiveBoxIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">إجمالي المنتجات المؤرشفة</p>
+              <p className="text-sm text-muted-foreground">إجمالي {getProductsLabel()} المؤرشفة</p>
               <p className="text-xl font-bold text-foreground">{archivedProducts.length}</p>
             </div>
           </div>
@@ -164,7 +166,7 @@ export const Archive: React.FC = () => {
               <CubeIcon className="h-5 w-5 text-success" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">قيمة المخزون المؤرشف</p>
+              <p className="text-sm text-muted-foreground">قيمة {getProductsLabel()} المؤرشفة</p>
               <p className="text-xl font-bold text-foreground"><Amount value={totalArchivedValue} digits={2} /></p>
             </div>
           </div>
@@ -180,7 +182,7 @@ export const Archive: React.FC = () => {
           }`}
           onClick={() => setActiveTab('products')}
         >
-          المنتجات
+          {getProductsLabel()}
         </button>
         <button
           className={`px-5 py-2 rounded-xl transition-all duration-200 focus-visible:shadow-neo-inset ${
@@ -200,19 +202,19 @@ export const Archive: React.FC = () => {
             <div className="flex-1 min-w-[260px]">
               <Input
                 className="w-full"
-                placeholder="البحث باسم المنتج أو SKU أو الفئة"
+                placeholder={`البحث باسم ${getProductsLabel(1)} أو SKU أو الفئة`}
                 value={productSearch}
                 onChange={(event) => setProductSearch(event.target.value)}
               />
             </div>
-            <span className="text-sm text-muted-foreground">{filteredProducts.length.toLocaleString()} منتج</span>
+            <span className="text-sm text-muted-foreground">{filteredProducts.length.toLocaleString()} {getProductsLabel(filteredProducts.length)}</span>
           </div>
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted">
                   <tr>
-                    <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">المنتج</th>
+                    <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">{getProductsLabel(1)}</th>
                     <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">SKU</th>
                     <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">الفئة</th>
                     <th className="text-right py-4 px-6 text-sm font-semibold text-foreground">المخزون</th>
@@ -235,13 +237,13 @@ export const Archive: React.FC = () => {
                   ) : productsError ? (
                     <tr>
                       <td className="py-6 px-6 text-destructive" colSpan={6}>
-                        تعذر جلب بيانات المنتجات المؤرشفة
+                        تعذر جلب بيانات {getProductsLabel()} المؤرشفة
                       </td>
                     </tr>
                   ) : filteredProducts.length === 0 ? (
                     <tr>
                       <td className="py-6 px-6 text-muted-foreground" colSpan={6}>
-                        لا توجد منتجات مؤرشفة مطابقة
+                        لا توجد {getProductsLabel()} مؤرشفة مطابقة
                       </td>
                     </tr>
                   ) : (

@@ -28,6 +28,7 @@ interface CompanyProfile {
   secondary_currency?: string | null;
   secondary_per_usd?: number | null;
   price_display_mode?: 'both' | 'primary' | 'secondary';
+  products_label?: 'منتجات' | 'أصناف' | 'مواد';
   updated_at: string;
 }
 
@@ -56,6 +57,7 @@ export const Settings: React.FC = () => {
   const [secondaryCurrency, setSecondaryCurrency] = useState<string>('');
   const [secondaryPerUsd, setSecondaryPerUsd] = useState<string>('');
   const [priceDisplayMode, setPriceDisplayMode] = useState<'both' | 'primary' | 'secondary'>('both');
+  const [productsLabel, setProductsLabel] = useState<'منتجات' | 'أصناف' | 'مواد'>('منتجات');
   const dashboardOptions = useMemo(
     () => [
       { key: 'total_sales', label: 'إجمالي المبيعات' },
@@ -92,6 +94,7 @@ export const Settings: React.FC = () => {
       setSecondaryCurrency(profile.secondary_currency || '');
       setSecondaryPerUsd(profile.secondary_per_usd ? String(profile.secondary_per_usd) : '');
       setPriceDisplayMode(profile.price_display_mode || 'both');
+      setProductsLabel(profile.products_label || 'منتجات');
     }
   }, [profile]);
 
@@ -104,7 +107,7 @@ export const Settings: React.FC = () => {
   }, [logoPreview, logoFile]);
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { return_policy: string; payment_policy: string; language: string; navbar_message: string; dashboard_cards: string[]; secondary_currency?: string | null; secondary_per_usd?: string | null; price_display_mode: string; logo?: File | null; remove_logo?: boolean }) => {
+    mutationFn: async (payload: { return_policy: string; payment_policy: string; language: string; navbar_message: string; dashboard_cards: string[]; secondary_currency?: string | null; secondary_per_usd?: string | null; price_display_mode: string; products_label: string; logo?: File | null; remove_logo?: boolean }) => {
       if (!profile) throw new Error('لا يوجد ملف شركة');
       const formData = new FormData();
       formData.append('return_policy', payload.return_policy);
@@ -115,6 +118,7 @@ export const Settings: React.FC = () => {
       if (payload.secondary_currency) formData.append('secondary_currency', payload.secondary_currency);
       if (payload.secondary_per_usd) formData.append('secondary_per_usd', payload.secondary_per_usd);
       formData.append('price_display_mode', payload.price_display_mode);
+      formData.append('products_label', payload.products_label || 'منتجات');
       if (payload.logo) {
         formData.append('logo', payload.logo);
       }
@@ -174,6 +178,7 @@ export const Settings: React.FC = () => {
       secondary_currency: secondaryCurrency,
       secondary_per_usd: secondaryPerUsd,
       price_display_mode: priceDisplayMode,
+      products_label: productsLabel,
       logo: logoFile || undefined,
       remove_logo: removeLogo || (!logoFile && !logoPreview),
     });
@@ -285,6 +290,22 @@ export const Settings: React.FC = () => {
                         <SelectItem value="both">كلا العملتين</SelectItem>
                         <SelectItem value="primary">الدولار فقط</SelectItem>
                         <SelectItem value="secondary">الثانوية فقط</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">تسمية المنتجات</label>
+                    <Select
+                      value={productsLabel}
+                      onValueChange={(value) => setProductsLabel(value as 'منتجات' | 'أصناف' | 'مواد')}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="اختر التسمية" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="منتجات">منتجات</SelectItem>
+                        <SelectItem value="أصناف">أصناف</SelectItem>
+                        <SelectItem value="مواد">مواد</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

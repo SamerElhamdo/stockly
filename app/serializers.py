@@ -20,7 +20,7 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'company', 'company_name', 'company_code', 'company_email', 'company_phone', 'company_address',
             'logo', 'logo_url', 'return_policy', 'payment_policy', 'language', 'navbar_message', 'dashboard_cards',
-            'primary_currency', 'secondary_currency', 'secondary_per_usd', 'price_display_mode',
+            'primary_currency', 'secondary_currency', 'secondary_per_usd', 'price_display_mode', 'products_label',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
@@ -58,7 +58,7 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
                 except Exception:
                     pass
 
-        for attr in ['return_policy', 'payment_policy', 'language', 'navbar_message', 'dashboard_cards', 'secondary_currency', 'secondary_per_usd', 'price_display_mode']:
+        for attr in ['return_policy', 'payment_policy', 'language', 'navbar_message', 'dashboard_cards', 'secondary_currency', 'secondary_per_usd', 'price_display_mode', 'products_label']:
             if attr in validated_data:
                 setattr(instance, attr, validated_data[attr])
 

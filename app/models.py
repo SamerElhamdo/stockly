@@ -47,6 +47,11 @@ class CompanyProfile(models.Model):
         ('primary', 'الأساسية فقط (USD)'),
         ('secondary', 'الثانوية فقط')
     ], default='both', verbose_name='عرض الأسعار')
+    products_label = models.CharField(max_length=10, choices=[
+        ('منتجات', 'منتجات'),
+        ('أصناف', 'أصناف'),
+        ('مواد', 'مواد')
+    ], default='منتجات', verbose_name='تسمية المنتجات')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
 

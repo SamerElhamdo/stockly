@@ -20,6 +20,7 @@ export interface CompanyProfile {
   secondary_currency?: string | null;
   secondary_per_usd?: number | null;
   price_display_mode?: 'both' | 'primary' | 'secondary';
+  products_label?: 'منتجات' | 'أصناف' | 'مواد';
 }
 
 type CompanyContextValue = {
@@ -28,6 +29,7 @@ type CompanyContextValue = {
   formatAmount: (usdAmount: number) => string;
   formatAmountParts: (usdAmount: number) => { primary: string; secondary?: string };
   currencySymbols: Record<string, string>;
+  getProductsLabel: (count?: number) => string;
 };
 
 const CompanyContext = createContext<CompanyContextValue | undefined>(undefined);
@@ -95,12 +97,48 @@ export const CompanyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return primary;
     };
 
+    const getProductsLabel = (count?: number) => {
+      const label = profile?.products_label || 'منتجات';
+      // إذا كان العدد 1، نحول الكلمة إلى المفرد
+      if (count === 1) {
+        switch (label) {
+          case 'منتجات':
+            return 'منتج';
+          case 'أصناف':
+            return 'صنف';
+          case 'مواد':
+            return 'مادة';
+          default:
+            return label;
+        }
+      }
+      return label;
+    };
+
+    const getProductLabel = (count: number = 1) => {
+      const label = profile?.products_label || 'منتجات';
+      if (count === 1) {
+        switch (label) {
+          case 'منتجات':
+            return 'منتج';
+          case 'أصناف':
+            return 'صنف';
+          case 'مواد':
+            return 'مادة';
+          default:
+            return label;
+        }
+      }
+      return label;
+    };
+
     return {
       profile: profile || null,
       isLoading,
       formatAmount,
       formatAmountParts,
       currencySymbols: sym,
+      getProductsLabel,
     };
   }, [profile, isLoading]);
 

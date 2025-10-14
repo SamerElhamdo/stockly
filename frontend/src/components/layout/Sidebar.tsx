@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useCompany } from '../../contexts/CompanyContext';
 import {
   HomeIcon,
   CubeIcon,
@@ -50,7 +51,7 @@ interface NavItem {
   activeIcon: React.ComponentType<React.ComponentProps<'svg'>>;
 }
 
-const navItems: NavItem[] = [
+const getNavItems = (productsLabel: string): NavItem[] => [
   {
     name: 'لوحة التحكم',
     path: '/dashboard',
@@ -58,7 +59,7 @@ const navItems: NavItem[] = [
     activeIcon: HomeIconSolid,
   },
   {
-    name: 'المنتجات',
+    name: productsLabel,
     path: '/products',
     icon: CubeIcon,
     activeIcon: CubeIconSolid,
@@ -115,7 +116,9 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const { profile, getProductsLabel } = useCompany();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const navItems = getNavItems(getProductsLabel());
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);

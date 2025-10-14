@@ -56,7 +56,7 @@ export const Invoices: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { formatAmount, profile } = useCompany();
+  const { formatAmount, profile, getProductsLabel } = useCompany();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -155,7 +155,10 @@ export const Invoices: React.FC = () => {
       setCreateDialogOpen(false);
       setSelectedCustomer('');
       setCustomerSearch(''); setCustomerSearchKeyword('');
+      // تحديث قائمة الفواتير والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
       // Open add item dialog directly
       setAddItemInvoiceId(inv.id);
       setAddItemOpen(true);
@@ -190,7 +193,10 @@ export const Invoices: React.FC = () => {
     onSuccess: () => {
       toast({ title: 'تمت الإضافة', description: 'تمت إضافة العنصر للفاتورة' });
       setItemQty('1'); setSelectedProductId('');
+      // تحديث قائمة الفواتير والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر إضافة العنصر';
@@ -205,7 +211,10 @@ export const Invoices: React.FC = () => {
     },
     onSuccess: () => {
       toast({ title: 'تم الحذف', description: 'تم حذف الفاتورة' });
+      // تحديث قائمة الفواتير والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.detail || err?.response?.data?.error || 'تعذر حذف الفاتورة';
@@ -220,7 +229,10 @@ export const Invoices: React.FC = () => {
     },
     onSuccess: () => {
       toast({ title: 'تم التأكيد', description: 'تم تأكيد الفاتورة' });
+      // تحديث قائمة الفواتير والعملاء والأرصدة
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
       setConfirmDialogOpen(false);
       setConfirmInvoice(null);
     },
@@ -544,7 +556,7 @@ export const Invoices: React.FC = () => {
                                 size="sm"
                                 onClick={() => { setAddItemInvoiceId(invoice.id); setAddItemOpen(true); }}
                               >
-                                إضافة عنصر
+                                إضافة {getProductsLabel(1)}
                               </Button>
                           <Button
                             variant="outline"
@@ -697,7 +709,7 @@ export const Invoices: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="text-right py-2 px-3">المنتج</th>
+                      <th className="text-right py-2 px-3">{getProductsLabel(1)}</th>
                       <th className="text-right py-2 px-3">الكمية</th>
                       <th className="text-right py-2 px-3">السعر</th>
                       <th className="text-right py-2 px-3">الإجمالي</th>
@@ -806,7 +818,7 @@ export const Invoices: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="text-right py-2 px-3">المنتج</th>
+                      <th className="text-right py-2 px-3">{getProductsLabel(1)}</th>
                       <th className="text-right py-2 px-3">المباع</th>
                       <th className="text-right py-2 px-3">تم إرجاعه</th>
                       <th className="text-right py-2 px-3">المتاح إرجاعه</th>
@@ -863,12 +875,12 @@ export const Invoices: React.FC = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إضافة عنصر للفاتورة #{addItemInvoiceId}</DialogTitle>
+            <DialogTitle>إضافة {getProductsLabel(1)} للفاتورة #{addItemInvoiceId}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <Input
-              label="بحث عن منتج"
-              placeholder="اكتب اسم المنتج أو SKU"
+              label={`بحث عن ${getProductsLabel(1)}`}
+              placeholder={`اكتب اسم ${getProductsLabel(1)} أو SKU`}
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
               leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
