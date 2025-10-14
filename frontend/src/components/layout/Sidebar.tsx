@@ -122,7 +122,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className={`bg-sidebar transition-all duration-300 ${
+    <aside className={`bg-sidebar transition-all duration-300 h-full flex flex-col ${
       isCollapsed ? 'w-16 sidebar-collapsed' : 'w-64'
     }`}>
       {/* Logo */}
@@ -149,7 +149,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="p-4">
+      <nav className="flex-1 overflow-y-auto p-4">
         <ul className="space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
