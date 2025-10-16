@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRoute } from '@react-navigation/native';
 
@@ -9,10 +9,10 @@ import {
   SoftBadge,
   Button,
   ListItem,
-  Modal,
+  SimpleModal,
   AmountDisplay,
 } from '@/components';
-import { useCompany } from '@/context';
+import { useCompany, useToast, useConfirmation } from '@/context';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
 import { useTheme } from '@/theme';
 import { mergeDateTime } from '@/utils/format';
@@ -40,6 +40,8 @@ const statusMap: Record<ReturnItem['status'], { label: string; variant: 'info' |
 export const ReturnsScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
+  const { showSuccess, showError } = useToast();
+  const { showConfirmation } = useConfirmation();
   const queryClient = useQueryClient();
   const route = useRoute<any>();
   
@@ -80,13 +82,13 @@ export const ReturnsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم اعتماد المرتجع بنجاح');
+      showSuccess('تم اعتماد المرتجع بنجاح');
       setDetailOpen(false);
       setSelectedReturn(null);
       queryClient.invalidateQueries({ queryKey: ['returns'] });
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل اعتماد المرتجع');
+      showError(err?.response?.data?.detail || 'فشل اعتماد المرتجع');
     },
   });
 
@@ -96,28 +98,42 @@ export const ReturnsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم رفض المرتجع');
+      showSuccess('تم رفض المرتجع');
       setDetailOpen(false);
       setSelectedReturn(null);
       queryClient.invalidateQueries({ queryKey: ['returns'] });
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل رفض المرتجع');
+      showError(err?.response?.data?.detail || 'فشل رفض المرتجع');
     },
   });
 
-  const handleApprove = (returnItem: ReturnItem) => {
-    Alert.alert('تأكيد الاعتماد', `هل تريد اعتماد المرتجع #${returnItem.id}؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'اعتماد', onPress: () => approveReturnMutation.mutate(returnItem.id) },
-    ]);
+  const handleApprove = async (returnItem: ReturnItem) => {
+    const confirmed = await showConfirmation({
+      title: 'تأكيد الاعتماد',
+      message: `هل تريد اعتماد المرتجع #${returnItem.id}؟`,
+      confirmText: 'اعتماد',
+      cancelText: 'إلغاء',
+      type: 'info',
+    });
+    
+    if (confirmed) {
+      approveReturnMutation.mutate(returnItem.id);
+    }
   };
 
-  const handleReject = (returnItem: ReturnItem) => {
-    Alert.alert('تأكيد الرفض', `هل تريد رفض المرتجع #${returnItem.id}؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      { text: 'رفض', style: 'destructive', onPress: () => rejectReturnMutation.mutate(returnItem.id) },
-    ]);
+  const handleReject = async (returnItem: ReturnItem) => {
+    const confirmed = await showConfirmation({
+      title: 'تأكيد الرفض',
+      message: `هل تريد رفض المرتجع #${returnItem.id}؟`,
+      confirmText: 'رفض',
+      cancelText: 'إلغاء',
+      type: 'danger',
+    });
+    
+    if (confirmed) {
+      rejectReturnMutation.mutate(returnItem.id);
+    }
   };
 
   return (
@@ -155,14 +171,14 @@ export const ReturnsScreen: React.FC = () => {
                   <ListItem
                     title={`مرتجع #${item.id}`}
                     subtitle={`فاتورة #${item.invoice_id} • ${item.customer_name}`}
-                    meta={<AmountDisplay amount={item.total_amount} /> as any}
+                    meta={<AmountDisplay amount={Number(item.total_amount)} /> as any}
                     right={<SoftBadge label={status.label} variant={status.variant} />}
                   />
                 </TouchableOpacity>
                 {isPending && (
                   <View style={styles.returnActions}>
                     <Button
-                      title="اعتماد"
+                      title="تأكيد"
                       variant="success"
                       onPress={() => handleApprove(item)}
                       loading={approveReturnMutation.isPending}
@@ -184,59 +200,94 @@ export const ReturnsScreen: React.FC = () => {
         </View>
       </ScreenContainer>
 
-      {/* Return Detail Modal */}
-      <Modal
+      {/* Enhanced Return Detail Modal */}
+      <SimpleModal
         visible={detailOpen}
         onClose={() => setDetailOpen(false)}
         title={`تفاصيل المرتجع #${selectedReturn?.id}`}
-        size="medium"
+        size="large"
       >
         {selectedReturn && (
-          <View style={styles.detailContent}>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>رقم الفاتورة:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>#{selectedReturn.invoice_id}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>العميل:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>
-                {selectedReturn.customer_name}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المبلغ:</Text>
-              <AmountDisplay amount={selectedReturn.total_amount} />
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الحالة:</Text>
+          <View style={styles.enhancedDetailContent}>
+            {/* Header Card */}
+            <View style={[
+              styles.headerCard,
+              { 
+                backgroundColor: theme.softPalette.primary?.light || '#e3f2fd',
+                borderColor: theme.softPalette.primary?.main || '#1976d2',
+              }
+            ]}>
+              <View style={styles.headerInfo}>
+                <Text style={[styles.headerTitle, { color: theme.softPalette.primary?.main || '#1976d2' }]}>
+                  مرتجع #{selectedReturn.id}
+                </Text>
+                <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
+                  فاتورة #{selectedReturn.invoice_id} • {selectedReturn.customer_name}
+                </Text>
+              </View>
               <SoftBadge
                 label={statusMap[selectedReturn.status].label}
                 variant={statusMap[selectedReturn.status].variant}
               />
             </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: theme.textMuted }]}>التاريخ:</Text>
-              <Text style={[styles.detailValue, { color: theme.textPrimary }]}>
-                {mergeDateTime(selectedReturn.created_at)}
-              </Text>
+
+            {/* Details Grid */}
+            <View style={styles.detailsGrid}>
+              <View style={[styles.detailCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.detailCardLabel, { color: theme.textMuted }]}>المبلغ الإجمالي</Text>
+                <AmountDisplay amount={Number(selectedReturn.total_amount)} />
+              </View>
+              
+              <View style={[styles.detailCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.detailCardLabel, { color: theme.textMuted }]}>تاريخ الطلب</Text>
+                <Text style={[styles.detailCardValue, { color: theme.textPrimary }]}>
+                  {mergeDateTime(selectedReturn.created_at)}
+                </Text>
+              </View>
             </View>
 
+            {/* Items Section */}
             {selectedReturn.items && selectedReturn.items.length > 0 && (
-              <View style={styles.itemsSection}>
-                <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>المنتجات المرتجعة:</Text>
-                {selectedReturn.items.map((item) => (
-                  <View key={item.id} style={[styles.itemRow, { borderColor: theme.border }]}>
-                    <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
-                    <Text style={[styles.itemQty, { color: theme.textMuted }]}>× {item.qty_returned}</Text>
+              <View style={styles.enhancedItemsSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>المنتجات المرتجعة</Text>
+                  <Text style={[styles.itemsCount, { color: theme.textMuted }]}>
+                    {selectedReturn.items.length} منتج
+                  </Text>
+                </View>
+                
+                {selectedReturn.items.map((item, index) => (
+                  <View key={item.id} style={[
+                    styles.enhancedItemRow, 
+                    { 
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                      borderTopWidth: index === 0 ? 0 : 1,
+                    }
+                  ]}>
+                    <View style={styles.itemInfo}>
+                      <Text style={[styles.enhancedItemName, { color: theme.textPrimary }]}>
+                        {item.product_name}
+                      </Text>
+                      <Text style={[styles.enhancedItemQty, { color: theme.textMuted }]}>
+                        الكمية المرتجعة
+                      </Text>
+                    </View>
+                    <View style={[styles.qtyBadge, { backgroundColor: theme.softPalette.info?.light || '#e1f5fe' }]}>
+                      <Text style={[styles.qtyBadgeText, { color: theme.softPalette.info?.main || '#0277bd' }]}>
+                        {Math.floor(Number(item.qty_returned))}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </View>
             )}
 
+            {/* Action Buttons */}
             {selectedReturn.status === 'pending' && (
-              <View style={styles.actionButtons}>
+              <View style={styles.enhancedActionButtons}>
                 <Button
-                  title="اعتماد المرتجع"
+                  title="تأكيد المرتجع"
                   variant="success"
                   onPress={() => handleApprove(selectedReturn)}
                   loading={approveReturnMutation.isPending}
@@ -251,7 +302,7 @@ export const ReturnsScreen: React.FC = () => {
             )}
           </View>
         )}
-      </Modal>
+      </SimpleModal>
     </>
   );
 };
@@ -309,11 +360,6 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -331,6 +377,107 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   actionButtons: {
+    gap: 12,
+    marginTop: 8,
+  },
+  // Enhanced Modal Styles
+  enhancedDetailContent: {
+    gap: 20,
+  },
+  headerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 20,
+  },
+  headerInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  detailCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  detailCardLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  detailCardValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  enhancedItemsSection: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  itemsCount: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  enhancedItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  itemInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  enhancedItemName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  enhancedItemQty: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  qtyBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 12,
+  },
+  qtyBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  enhancedActionButtons: {
+    flexDirection: 'row',
     gap: 12,
     marginTop: 8,
   },
