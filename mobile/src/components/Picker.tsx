@@ -153,17 +153,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    alignSelf: 'flex-end',
-    marginBottom: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 0,
+    marginTop: 15,
   },
   label: {
     fontSize: 13,
     fontWeight: '700',
-    textAlign: 'right',
+    textAlign: 'left',
     letterSpacing: 0.3,
   },
   pickerButton: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   pickerText: {
     fontSize: 15,
     flex: 1,
-    textAlign: 'right',
+    textAlign: 'left',
     marginRight: 8,
   },
   optionItem: {

@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   container: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     borderRadius: 16,
     paddingHorizontal: 16,
