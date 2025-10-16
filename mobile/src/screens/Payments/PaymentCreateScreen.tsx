@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 8,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     padding: 20,
     borderRadius: 16,
     borderWidth: 2,

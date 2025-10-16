@@ -310,7 +310,7 @@ export const ReturnsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     flex: 1,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   headerTitle: {
     fontSize: 20,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   enhancedItemName: {
     fontSize: 15,

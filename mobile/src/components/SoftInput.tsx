@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   container: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
     paddingHorizontal: 16,

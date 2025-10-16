@@ -13,13 +13,13 @@ type FloatingActionButtonProps = PressableProps & {
 export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ icon = 'add', bottom = 120, right = 20, style, ...rest }) => {
   const { theme } = useTheme();
   return (
-    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', alignItems: 'flex-start' }]}> 
+    <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', alignItems: 'flex-end' }]}> 
       <Pressable
         style={({ pressed }) => [
           styles.btn,
           {
             bottom,
-            left: right, // RTL: place on left visually (start side)
+            right: right, // RTL: place on right side
             backgroundColor: theme.softPalette.primary.main,
             shadowColor: theme.softPalette.primary.shadow,
             opacity: pressed ? 0.9 : 1,

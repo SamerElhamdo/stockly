@@ -27,7 +27,12 @@
       },
       "permissions": [
         "android.permission.CAMERA"
-      ]
+      ],
+      "supportsRtl": true,
+      "statusBar": {
+        "backgroundColor": "#0F172A",
+        "translucent": false
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

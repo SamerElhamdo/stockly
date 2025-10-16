@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, Pressable, StyleSheet, Text, View, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSidebar } from '@/context/SidebarContext';
@@ -7,30 +7,59 @@ import { useTheme } from '@/theme';
 import { navigationRef } from './navigationRef';
 import { Ionicons } from '@expo/vector-icons';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const PANEL_WIDTH = Math.min(320, Math.round(SCREEN_WIDTH * 0.82));
-
 export const SidebarPanel: React.FC = () => {
   const { isOpen, close } = useSidebar();
   const { theme } = useTheme();
   const { user, logout } = useAuth();
   const { profile } = useCompany();
-  const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;  // Extra margin to ensure complete hiding 
+  
+  // Get screen dimensions and calculate panel width dynamically
+  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+  const PANEL_WIDTH = Math.min(320, Math.round(dimensions.width * 0.82));
+  
+  // Start hidden off-screen to the right
+  const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
+
+  // Listen to dimension changes
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setDimensions(window);
+    });
+    return () => subscription?.remove();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
+      // Slide in from right to visible position (0)
       Animated.parallel([
-        Animated.timing(translateX, { toValue: 0, duration: 220, useNativeDriver: true }),
-        Animated.timing(backdrop, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(translateX, { 
+          toValue: 0, 
+          duration: 250, 
+          useNativeDriver: true 
+        }),
+        Animated.timing(backdrop, { 
+          toValue: 1, 
+          duration: 250, 
+          useNativeDriver: true 
+        }),
       ]).start();
     } else {
+      // Slide out to the right (hide completely)
       Animated.parallel([
-        Animated.timing(translateX, { toValue: PANEL_WIDTH, duration: 200, useNativeDriver: true }),
-        Animated.timing(backdrop, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(translateX, { 
+          toValue: PANEL_WIDTH, 
+          duration: 220, 
+          useNativeDriver: true 
+        }),
+        Animated.timing(backdrop, { 
+          toValue: 0, 
+          duration: 220, 
+          useNativeDriver: true 
+        }),
       ]).start();
     }
-  }, [isOpen, translateX, backdrop]);
+  }, [isOpen, translateX, backdrop, PANEL_WIDTH]);
 
   return (
     <>
@@ -42,7 +71,15 @@ export const SidebarPanel: React.FC = () => {
 
       <Animated.View
         pointerEvents={isOpen ? 'auto' : 'none'}
-        style={[styles.panel, { width: PANEL_WIDTH, backgroundColor: theme.background, borderColor: theme.border, transform: [{ translateX }] }]}
+        style={[
+          styles.panel, 
+          { 
+            width: PANEL_WIDTH, 
+            backgroundColor: theme.background, 
+            borderColor: theme.border, 
+            transform: [{ translateX }],
+          }
+        ]}
       >
         <SafeAreaView style={styles.safe}> 
           <View style={styles.header}>
@@ -122,22 +159,31 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    right:  Platform.OS === 'android' ? 95 : 0,
+    right: Platform.OS === 'android' ? 95 : 80,
     borderLeftWidth: StyleSheet.hairlineWidth,
     padding: 16,
-    
-    
   },
-  safe: { flex: 1 },
-  header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 16 },
+  safe: { 
+    flex: 1,
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    marginBottom: 16,
+  },
   logo: { width: 44, height: 44, borderRadius: 12 },
   avatar: { width: 44, height: 44, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth },
   company: { fontSize: 16, fontWeight: '700', textAlign: 'right' },
   username: { fontSize: 13, textAlign: 'right' },
-  links: { gap: 10, flex: 1, paddingTop: 12 },
+  links: { 
+    gap: 10, 
+    flex: 1, 
+    paddingTop: 12,
+  },
   link: { fontSize: 15, textAlign: 'right' },
   item: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,

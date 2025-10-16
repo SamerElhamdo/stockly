@@ -24,12 +24,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, subtitle, a
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   texts: {
-    alignItems: 'flex-end',
+    flex: 1,
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 20,

@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   pageTitle: {
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   cardTop: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     marginBottom: 8,
   },
   statTitle: {
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   valueContainer: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: 3,
   },
   iconBox: {

@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   itemTotal: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     marginTop: 8,
   },
   totalCard: {

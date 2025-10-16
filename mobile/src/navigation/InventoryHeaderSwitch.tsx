@@ -35,7 +35,7 @@ export const InventoryHeaderSwitch: React.FC<Props> = ({ active, onChange }) => 
 
 const styles = StyleSheet.create({
   wrap: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,

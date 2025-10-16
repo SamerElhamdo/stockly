@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     paddingVertical: 16,
     paddingHorizontal: 20,
     gap: 12,

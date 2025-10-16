@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   pageTitle: {
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
-    textAlign: 'left',
+    textAlign: 'right',
   },
   buttonGroup: {
     gap: 12,

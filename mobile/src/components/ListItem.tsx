@@ -57,7 +57,7 @@ export const ListItem: React.FC<ListItemProps> = ({ title, subtitle, meta, onPre
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
@@ -72,8 +72,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginRight: 0,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 16,
@@ -87,7 +86,7 @@ const styles = StyleSheet.create({
   },
   metaContainer: {
     flexDirection: 'column',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: 4,
   },
   meta: {

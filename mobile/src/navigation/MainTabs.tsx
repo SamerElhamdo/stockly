@@ -446,10 +446,10 @@ export const MainTabs = () => {
         />
       </Animated.View>
       {!keyboardVisible && (
-        <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 90, left: 20, right: 20, alignItems: 'flex-start', zIndex: 2 }}>
+        <View pointerEvents="box-none" style={{ position: 'absolute', bottom: 90, left: 20, right: 20, alignItems: 'flex-end', zIndex: 2 }}>
           {/* Action Buttons - Render before main button so they appear below it */}
           {expanded && (
-            <View style={{ marginBottom: 20, gap: 8, alignItems: 'flex-start' }}>
+            <View style={{ marginBottom: 20, gap: 8, alignItems: 'flex-end' }}>
               <Animated.View
                 style={{
                   transform: [

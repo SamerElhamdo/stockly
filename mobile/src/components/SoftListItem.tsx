@@ -57,7 +57,7 @@ export const SoftListItem: React.FC<SoftListItemProps> = ({ title, subtitle, met
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
@@ -72,8 +72,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginRight: 12,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 16,
@@ -86,7 +85,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   metaContainer: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },

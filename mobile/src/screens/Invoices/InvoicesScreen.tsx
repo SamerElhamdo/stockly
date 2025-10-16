@@ -601,7 +601,7 @@ export const InvoicesScreen: React.FC = () => {
                   <View key={item.id} style={[styles.itemRow, { borderColor: theme.border, marginBottom: 8 }]}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
-                      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
                         <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {item.qty || 0}</Text>
                         <AmountDisplay amount={Number(item.price_at_add || 0)} />
                       </View>
@@ -1089,7 +1089,7 @@ export const InvoicesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,
@@ -1145,7 +1145,7 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   productName: {
     fontSize: 15,
@@ -1178,7 +1178,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     fontWeight: '600',
-    textAlign: 'left',
+    textAlign: 'right',
     flex: 1,
   },
   divider: {
@@ -1194,7 +1194,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: 12,
   },
   actionButton: {
@@ -1247,7 +1247,7 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     flex: 1,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   headerCustomerName: {
     fontSize: 18,

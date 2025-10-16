@@ -55,8 +55,8 @@ export const AmountDisplay: React.FC<AmountDisplayProps> = ({ amount }) => {
 };
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'flex-end', gap: 2 },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  wrap: { alignItems: 'flex-start', gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   badge: {
     paddingHorizontal: 6,
     paddingVertical: 2,

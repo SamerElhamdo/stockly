@@ -593,7 +593,7 @@ export const ProductsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,
@@ -639,12 +639,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   row: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: 8,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   buttonRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: 12,
     marginTop: 8,
   },
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     fontWeight: '600',
-    textAlign: 'left',
+    textAlign: 'right',
     flex: 1,
   },
   divider: {
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: 12,
   },
   actionButton: {

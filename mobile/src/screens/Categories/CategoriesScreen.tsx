@@ -248,7 +248,7 @@ export const CategoriesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,

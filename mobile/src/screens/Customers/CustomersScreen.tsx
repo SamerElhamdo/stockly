@@ -446,7 +446,7 @@ export const CustomersScreen: React.FC = () => {
 const styles = StyleSheet.create({
   headerBlock: {
     gap: 6,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   pageTitle: {
     fontSize: 26,
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     gap: 12,
   },
   actionCard: {
