@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Image, Pressable, StyleSheet, Text, View, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSidebar } from '@/context/SidebarContext';
 import { useAuth, useCompany } from '@/context';
@@ -15,7 +15,7 @@ export const SidebarPanel: React.FC = () => {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
   const { profile } = useCompany();
-  const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;
+  const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;  // Extra margin to ensure complete hiding 
   const backdrop = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -122,9 +122,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    right: 0,
+    right:  Platform.OS === 'android' ? 95 : 0,
     borderLeftWidth: StyleSheet.hairlineWidth,
     padding: 16,
+    
+    
   },
   safe: { flex: 1 },
   header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: 16 },

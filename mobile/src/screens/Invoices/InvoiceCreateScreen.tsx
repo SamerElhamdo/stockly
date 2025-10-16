@@ -138,7 +138,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: theme.textPrimary }]}>{it.product_name}</Text>
                   <View style={styles.itemDetails}>
-                    <SoftBadge label={`الكمية: ${it.qty}`} variant="info" />
+                    <SoftBadge label={`الكمية: ${it.qty || 0}`} variant="info" />
                     <AmountDisplay amount={Number(it.price_at_add || 0) * Number(it.qty || 0)} />
                   </View>
                 </View>

@@ -390,13 +390,13 @@ export const InvoicesScreen: React.FC = () => {
 
   return (
     <>
-      <ScreenContainer
-        refreshControl={<RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={theme.textPrimary} />}
-      >
-        <View style={styles.headerBlock}>
-          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>الفواتير</Text>
+    <ScreenContainer
+      refreshControl={<RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={theme.textPrimary} />}
+    >
+      <View style={styles.headerBlock}>
+        <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>الفواتير</Text>
           <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>إدارة فواتير المبيعات</Text>
-        </View>
+      </View>
 
         <View style={styles.filterRow}>
           <View style={{ flex: 1 }}>
@@ -412,17 +412,17 @@ export const InvoicesScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={styles.listWrapper}>
+      <View style={styles.listWrapper}>
           <SectionHeader title="قائمة الفواتير" subtitle={isLoading ? 'جاري التحميل...' : `${filteredInvoices.length} فاتورة`} />
           
           {isLoading ? (
             <SkeletonList count={5} itemHeight={90} />
           ) : (
             <>
-              {(filteredInvoices || []).map((invoice) => {
+        {(filteredInvoices || []).map((invoice) => {
             const status = statusMap[invoice.status];
             const isDraft = invoice.status === 'draft';
-            return (
+          return (
               <TouchableOpacity 
                 key={invoice.id}
                 onPress={() => {
@@ -430,12 +430,12 @@ export const InvoicesScreen: React.FC = () => {
                   setDetailOpen(true);
                 }}
               >
-                <ListItem
+              <ListItem
                   title={`فاتورة #${invoice.id}`}
-                  subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
-                  meta={<AmountDisplay amount={invoice.total_amount} /> as any}
-                  right={<SoftBadge label={status.label} variant={status.variant} />}
-                />
+                subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
+                meta={<AmountDisplay amount={invoice.total_amount} /> as any}
+                right={<SoftBadge label={status.label} variant={status.variant} />}
+              />
               </TouchableOpacity>
             );
           })}
@@ -457,9 +457,9 @@ export const InvoicesScreen: React.FC = () => {
         />
         <View style={styles.buttonRow}>
           <Button title="إلغاء" variant="secondary" onPress={() => setCreateOpen(false)} />
-          <Button
+                  <Button
             title="إنشاء"
-            onPress={() => {
+                    onPress={() => {
               if (!selectedCustomerId) {
                 showError('يرجى اختيار عميل');
                 return;
@@ -467,8 +467,8 @@ export const InvoicesScreen: React.FC = () => {
               createInvoiceMutation.mutate(Number(selectedCustomerId));
             }}
             loading={createInvoiceMutation.isPending}
-          />
-        </View>
+                  />
+                </View>
       </Modal>
 
       {/* Add Item to Invoice Modal */}
@@ -482,7 +482,7 @@ export const InvoicesScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Input placeholder="ابحث عن منتج" value={productSearch} onChangeText={setProductSearch} />
-          </View>
+            </View>
         </View>
 
         <View style={styles.productList}>
@@ -516,7 +516,7 @@ export const InvoicesScreen: React.FC = () => {
             ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد {getProductsLabel()}</Text>}
           />
-        </View>
+      </View>
 
         <Input
           label="الكمية"
@@ -528,9 +528,9 @@ export const InvoicesScreen: React.FC = () => {
 
         <View style={styles.buttonRow}>
           <Button title="إلغاء" variant="secondary" onPress={() => setAddItemOpen(false)} />
-          <Button
+      <Button
             title="إضافة وإغلاق"
-            onPress={() => {
+        onPress={() => {
               if (!selectedProductId || !currentInvoiceId) {
                 showError('يرجى اختيار منتج');
                 return;
@@ -561,7 +561,7 @@ export const InvoicesScreen: React.FC = () => {
             }}
             loading={addItemMutation.isPending}
           />
-        </View>
+          </View>
       </Modal>
 
       {/* Invoice Detail Modal */}
@@ -602,14 +602,14 @@ export const InvoicesScreen: React.FC = () => {
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
                       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                        <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {item.qty}</Text>
+                        <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {item.qty || 0}</Text>
                         <AmountDisplay amount={Number(item.price_at_add || 0)} />
                       </View>
                     </View>
                     {selectedInvoice.status === 'draft' && (
                       <TouchableOpacity
                         style={[styles.deleteItemButton, { backgroundColor: theme.softPalette.destructive?.light || '#fee' }]}
-                        onPress={async () => {
+              onPress={async () => {
                           const confirmed = await showConfirmation({
                             title: 'حذف العنصر',
                             message: `هل تريد حذف ${item.product_name}؟`,
@@ -671,14 +671,14 @@ export const InvoicesScreen: React.FC = () => {
                       variant="warning"
                       onPress={() => {
                         setReturnInvoice(selectedInvoice);
-                        setReturnInputs({});
+                setReturnInputs({});
                         setReturnOpen(true);
                         setDetailOpen(false);
-                      }}
+              }}
                       style={styles.actionButton}
-                    />
+            />
                   )}
-                </View>
+          </View>
                 <Button
                   title="حذف الفاتورة"
                   variant="destructive"
@@ -687,7 +687,7 @@ export const InvoicesScreen: React.FC = () => {
                     setDetailOpen(false);
                   }}
                 />
-              </View>
+        </View>
             </View>
           </ScrollView>
         )}
@@ -711,7 +711,7 @@ export const InvoicesScreen: React.FC = () => {
           ]}>
             <View style={styles.headerIconContainer}>
               <Ionicons name="receipt-outline" size={24} color={theme.softPalette.primary?.main || '#1976d2'} />
-            </View>
+          </View>
             <View style={styles.headerInfo}>
               <Text style={[styles.headerCustomerName, { color: theme.softPalette.primary?.main || '#1976d2' }]}>
                 {returnInvoice?.customer_name}
@@ -719,7 +719,7 @@ export const InvoicesScreen: React.FC = () => {
               <Text style={[styles.headerInvoiceId, { color: theme.textMuted }]}>
                 فاتورة رقم #{returnInvoice?.id}
               </Text>
-            </View>
+        </View>
             <View style={[styles.headerStatusBadge, { backgroundColor: theme.softPalette.warning?.main || '#f9a825' }]}>
               <Text style={[styles.headerStatusText, { color: '#fff' }]}>مرتجع</Text>
             </View>
