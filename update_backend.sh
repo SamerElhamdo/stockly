@@ -9,6 +9,7 @@ pip install --upgrade pip
 echo "Installing dependencies"
 pip install -r requirements.txt
 
+python manage.py makemigrations
 echo "Migrating database"
 python manage.py migrate
 

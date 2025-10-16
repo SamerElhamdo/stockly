@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, TouchableOpacity, View, FlatList, ScrollView } from 'react-native';
+import { RefreshControl, StyleSheet, Text, TouchableOpacity, View, FlatList, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -130,7 +130,7 @@ export const InvoicesScreen: React.FC = () => {
     enabled: addItemOpen,
   });
 
-  const { data: invoiceDetailForReturn } = useQuery<any>({
+  const { data: invoiceDetailForReturn, isLoading: isLoadingReturnData } = useQuery<any>({
     queryKey: ['invoice-detail', returnInvoice?.id],
     enabled: Boolean(returnOpen && returnInvoice?.id),
     queryFn: async () => {
@@ -138,6 +138,33 @@ export const InvoicesScreen: React.FC = () => {
       return res.data;
     },
   });
+
+  // Get existing returns for this invoice to calculate already returned quantities
+  const { data: existingReturns } = useQuery<any>({
+    queryKey: ['returns-by-invoice', returnInvoice?.id],
+    enabled: Boolean(returnOpen && returnInvoice?.id),
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.returns, {
+        params: { original_invoice: returnInvoice!.id }
+      });
+      return normalizeListResponse<any>(res.data);
+    },
+  });
+
+  // Calculate already returned quantities by item
+  const returnedByItemId = useMemo(() => {
+    const map = new Map<number, number>();
+    const results = existingReturns?.results || [];
+    results.forEach((ret: any) => {
+      if (ret.status === 'rejected') return;
+      (ret.items || []).forEach((rit: any) => {
+        const key = Number(rit.original_item);
+        const qty = Number(rit.qty_returned || 0);
+        map.set(key, (map.get(key) || 0) + qty);
+      });
+    });
+    return map;
+  }, [existingReturns]);
 
   const filteredInvoices = useMemo(() => {
     if (!search.trim()) return invoices || [];
@@ -249,13 +276,35 @@ export const InvoicesScreen: React.FC = () => {
   const submitReturnMutation = useMutation({
     mutationFn: async () => {
       if (!returnInvoice) return;
+      
+      // Validate quantities before submission
       const items = Object.entries(returnInputs)
-        .map(([k, v]) => ({ original_item_id: Number(k), qty_returned: Number(v) }))
+        .map(([k, v]) => {
+          const itemId = Number(k);
+          const qtyToReturn = Number(v);
+          const sold = Number(invoiceDetailForReturn?.items?.find((it: any) => it.id === itemId)?.qty || 0);
+          const alreadyReturned = Number(returnedByItemId.get(itemId) || 0);
+          const remaining = Math.max(0, sold - alreadyReturned);
+          
+          return { 
+            original_item_id: itemId, 
+            qty_returned: qtyToReturn,
+            max_available: remaining
+          };
+        })
         .filter((x) => x.qty_returned > 0);
+        
       if (items.length === 0) throw new Error('no_items');
+      
+      // Check if any quantity exceeds available
+      const invalidItem = items.find((item) => item.qty_returned > item.max_available);
+      if (invalidItem) {
+        throw new Error('invalid_quantity');
+      }
+      
       const res = await apiClient.post(endpoints.returns, {
         original_invoice: returnInvoice.id,
-        items,
+        items: items.map(({ max_available, ...rest }) => rest),
       });
       return res.data;
     },
@@ -267,7 +316,13 @@ export const InvoicesScreen: React.FC = () => {
       refetch();
     },
     onError: (err: any) => {
-      showError(err?.response?.data?.detail || 'فشل إنشاء المرتجع');
+      if (err.message === 'no_items') {
+        showError('يرجى تحديد كمية مرتجعة واحدة على الأقل');
+      } else if (err.message === 'invalid_quantity') {
+        showError('لا يمكن أن تتجاوز الكمية المرتجعة الكمية المتاحة');
+      } else {
+        showError(err?.response?.data?.detail || 'فشل إنشاء المرتجع');
+      }
     },
   });
 
@@ -639,37 +694,386 @@ export const InvoicesScreen: React.FC = () => {
       </SimpleModal>
 
       {/* Return Modal */}
-      <Modal visible={returnOpen} onClose={() => setReturnOpen(false)} title={`مرتجع - فاتورة #${returnInvoice?.id}`} size="medium">
-        <View style={styles.returnContent}>
-          <Text style={[styles.returnLabel, { color: theme.textMuted }]}>العميل: {returnInvoice?.customer_name}</Text>
-          {(invoiceDetailForReturn?.items || []).map((item: any) => (
-            <View key={item.id} style={[styles.returnItem, { borderColor: theme.border }]}>
-              <View style={styles.returnItemInfo}>
-                <Text style={[styles.returnItemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
-                <Text style={[styles.returnItemQty, { color: theme.textMuted }]}>المباع: {item.qty}</Text>
-              </View>
-              <Input
-                placeholder="0"
-                value={returnInputs[item.id] ?? ''}
-                onChangeText={(v) => setReturnInputs((prev) => ({ ...prev, [item.id]: v }))}
-                keyboardType="number-pad"
-                style={{ width: 80 }}
-              />
+      <SimpleModal
+        visible={returnOpen}
+        onClose={() => setReturnOpen(false)}
+        title={`مرتجع - فاتورة #${returnInvoice?.id}`}
+        size="large"
+      >
+        <ScrollView style={styles.returnContent} showsVerticalScrollIndicator={false}>
+          {/* Header Card with Gradient */}
+          <View style={[
+            styles.returnHeaderCard,
+            { 
+              backgroundColor: theme.softPalette.primary?.light || '#e3f2fd',
+              borderColor: theme.softPalette.primary?.main || '#1976d2',
+            }
+          ]}>
+            <View style={styles.headerIconContainer}>
+              <Ionicons name="receipt-outline" size={24} color={theme.softPalette.primary?.main || '#1976d2'} />
             </View>
-          ))}
-          {!(invoiceDetailForReturn?.items || []).length && (
-            <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد عناصر</Text>
-          )}
+            <View style={styles.headerInfo}>
+              <Text style={[styles.headerCustomerName, { color: theme.softPalette.primary?.main || '#1976d2' }]}>
+                {returnInvoice?.customer_name}
+              </Text>
+              <Text style={[styles.headerInvoiceId, { color: theme.textMuted }]}>
+                فاتورة رقم #{returnInvoice?.id}
+              </Text>
+            </View>
+            <View style={[styles.headerStatusBadge, { backgroundColor: theme.softPalette.warning?.main || '#f9a825' }]}>
+              <Text style={[styles.headerStatusText, { color: '#fff' }]}>مرتجع</Text>
+            </View>
+          </View>
+          
+          {/* Enhanced Return Summary */}
+          {(() => {
+            const totalItems = (invoiceDetailForReturn?.items || []).length;
+            const returnableItems = (invoiceDetailForReturn?.items || []).filter((item: any) => {
+              const sold = Number(item.qty || 0);
+              const alreadyReturned = Number(returnedByItemId.get(item.id) || 0);
+              const remaining = Math.max(0, sold - alreadyReturned);
+              return remaining > 0;
+            }).length;
+            const selectedItems = Object.values(returnInputs).filter(v => v && Number(v) > 0).length;
+            const totalSelectedQty = Object.values(returnInputs).reduce((sum, v) => sum + (Number(v) || 0), 0);
+            
+            return (
+              <View style={[
+                styles.enhancedReturnSummary, 
+                { 
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }
+              ]}>
+                <View style={styles.summaryHeader}>
+                  <View style={[styles.summaryIconContainer, { backgroundColor: theme.softPalette.info?.light || '#e1f5fe' }]}>
+                    <Ionicons name="analytics-outline" size={24} color={theme.softPalette.info?.main || '#0277bd'} />
+                  </View>
+                  <Text style={[styles.enhancedSummaryTitle, { color: theme.textPrimary }]}>ملخص المرتجع</Text>
+                </View>
+                
+                <View style={styles.summaryGrid}>
+                  <View style={[styles.summaryCard, { backgroundColor: theme.softPalette.info?.light || '#e1f5fe' }]}>
+                    <Ionicons name="cube-outline" size={20} color={theme.softPalette.info?.main || '#0277bd'} />
+                    <Text style={[styles.summaryCardValue, { color: theme.softPalette.info?.main || '#0277bd' }]}>{totalItems}</Text>
+                    <Text style={[styles.summaryCardLabel, { color: theme.softPalette.info?.main || '#0277bd' }]}>إجمالي العناصر</Text>
+                  </View>
+                  
+                  <View style={[styles.summaryCard, { backgroundColor: theme.softPalette.success?.light || '#e8f5e8' }]}>
+                    <Ionicons name="checkmark-circle-outline" size={20} color={theme.softPalette.success?.main || '#388e3c'} />
+                    <Text style={[styles.summaryCardValue, { color: theme.softPalette.success?.main || '#388e3c' }]}>{returnableItems}</Text>
+                    <Text style={[styles.summaryCardLabel, { color: theme.softPalette.success?.main || '#388e3c' }]}>قابلة للإرجاع</Text>
+                  </View>
+                  
+                  <View style={[styles.summaryCard, { backgroundColor: theme.softPalette.warning?.light || '#fff8e1' }]}>
+                    <Ionicons name="arrow-back-outline" size={20} color={theme.softPalette.warning?.main || '#f9a825'} />
+                    <Text style={[styles.summaryCardValue, { color: theme.softPalette.warning?.main || '#f9a825' }]}>{selectedItems}</Text>
+                    <Text style={[styles.summaryCardLabel, { color: theme.softPalette.warning?.main || '#f9a825' }]}>محددة للإرجاع</Text>
+                  </View>
+                  
+                  <View style={[styles.summaryCard, { backgroundColor: theme.softPalette.primary?.light || '#e3f2fd' }]}>
+                    <Ionicons name="calculator-outline" size={20} color={theme.softPalette.primary?.main || '#1976d2'} />
+                    <Text style={[styles.summaryCardValue, { color: theme.softPalette.primary?.main || '#1976d2' }]}>{totalSelectedQty}</Text>
+                    <Text style={[styles.summaryCardLabel, { color: theme.softPalette.primary?.main || '#1976d2' }]}>إجمالي الكمية</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Enhanced Items Section */}
+          <View style={styles.itemsSection}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIconContainer, { backgroundColor: theme.softPalette.primary?.light || '#e3f2fd' }]}>
+                <Ionicons name="list-outline" size={20} color={theme.softPalette.primary?.main || '#1976d2'} />
+              </View>
+              <Text style={[styles.enhancedSectionLabel, { color: theme.textPrimary }]}>عناصر الفاتورة</Text>
+            </View>
+            
+            {isLoadingReturnData ? (
+              <SkeletonList count={3} itemHeight={140} />
+            ) : (
+              <>
+                {(invoiceDetailForReturn?.items || []).map((item: any, index: number) => {
+                  const sold = Number(item.qty || 0);
+                  const alreadyReturned = Number(returnedByItemId.get(item.id) || 0);
+                  const remaining = Math.max(0, sold - alreadyReturned);
+                  const canReturn = remaining > 0;
+                  const selectedQty = Number(returnInputs[item.id] || 0);
+                  
+                  return (
+                    <View key={item.id} style={[
+                      styles.enhancedReturnItem, 
+                      { 
+                        borderColor: canReturn 
+                          ? (selectedQty > 0 ? theme.softPalette.success?.main || '#388e3c' : theme.softPalette.primary?.light || '#e3f2fd')
+                          : theme.softPalette.destructive?.light || '#ffebee',
+                        backgroundColor: canReturn 
+                          ? (selectedQty > 0 ? theme.softPalette.success?.light || '#e8f5e8' : theme.surface)
+                          : theme.softPalette.destructive?.light || '#ffebee',
+                        opacity: canReturn ? 1 : 0.6,
+                        transform: [{ scale: selectedQty > 0 ? 1.02 : 1 }],
+                      }
+                    ]}>
+                      {/* Item Header */}
+                      <View style={styles.itemHeader}>
+                        <View style={[
+                          styles.itemStatusIndicator,
+                          { backgroundColor: canReturn ? theme.softPalette.success?.main || '#388e3c' : theme.softPalette.destructive?.main || '#d32f2f' }
+                        ]}>
+                          <Ionicons 
+                            name={canReturn ? "checkmark-circle" : "close-circle"} 
+                            size={16} 
+                            color="#fff" 
+                          />
+                        </View>
+                        <Text style={[
+                          styles.enhancedItemName, 
+                          { 
+                            color: canReturn ? theme.textPrimary : theme.softPalette.destructive?.main || '#d32f2f',
+                            textDecorationLine: canReturn ? 'none' : 'line-through'
+                          }
+                        ]}>
+                          {item.product_name}
+                        </Text>
+                        {selectedQty > 0 && (
+                          <View style={[styles.selectedBadge, { backgroundColor: theme.softPalette.success?.main || '#388e3c' }]}>
+                            <Text style={[styles.selectedBadgeText, { color: '#fff' }]}>
+                              {selectedQty} محدد
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      {/* Item Stats */}
+                      <View style={styles.enhancedItemStats}>
+                        <View style={[styles.statCard, { backgroundColor: theme.softPalette.info?.light || '#e1f5fe' }]}>
+                          <Ionicons name="cube-outline" size={16} color={theme.softPalette.info?.main || '#0277bd'} />
+                          <Text style={[styles.statCardValue, { color: theme.softPalette.info?.main || '#0277bd' }]}>{sold}</Text>
+                          <Text style={[styles.statCardLabel, { color: theme.softPalette.info?.main || '#0277bd' }]}>مباع</Text>
+                        </View>
+                        
+                        {alreadyReturned > 0 && (
+                          <View style={[styles.statCard, { backgroundColor: theme.softPalette.warning?.light || '#fff8e1' }]}>
+                            <Ionicons name="arrow-back-outline" size={16} color={theme.softPalette.warning?.main || '#f9a825'} />
+                            <Text style={[styles.statCardValue, { color: theme.softPalette.warning?.main || '#f9a825' }]}>{alreadyReturned}</Text>
+                            <Text style={[styles.statCardLabel, { color: theme.softPalette.warning?.main || '#f9a825' }]}>مرتجع</Text>
+                          </View>
+                        )}
+                        
+                        <View style={[
+                          styles.statCard, 
+                          { 
+                            backgroundColor: canReturn 
+                              ? (theme.softPalette.success?.light || '#e8f5e8') 
+                              : (theme.softPalette.destructive?.light || '#ffebee')
+                          }
+                        ]}>
+                          <Ionicons 
+                            name={canReturn ? "checkmark-circle-outline" : "close-circle-outline"} 
+                            size={16} 
+                            color={canReturn ? theme.softPalette.success?.main || '#388e3c' : theme.softPalette.destructive?.main || '#d32f2f'} 
+                          />
+                          <Text style={[
+                            styles.statCardValue, 
+                            { 
+                              color: canReturn 
+                                ? (theme.softPalette.success?.main || '#388e3c') 
+                                : (theme.softPalette.destructive?.main || '#d32f2f')
+                            }
+                          ]}>{remaining}</Text>
+                          <Text style={[
+                            styles.statCardLabel, 
+                            { 
+                              color: canReturn 
+                                ? (theme.softPalette.success?.main || '#388e3c') 
+                                : (theme.softPalette.destructive?.main || '#d32f2f')
+                            }
+                          ]}>متاح</Text>
+                        </View>
+                      </View>
+                      
+                      {/* Enhanced Input Section */}
+                      <View style={styles.enhancedInputSection} pointerEvents="box-none">
+                        {canReturn && (
+                          <View style={styles.inputLabelContainer}>
+                            <Ionicons name="checkmark-circle-outline" size={16} color={theme.softPalette.success?.main || '#388e3c'} />
+                            <Text style={[styles.inputLabel, { color: theme.softPalette.success?.main || '#388e3c' }]}>
+                              متاح للإرجاع: {remaining}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        <TextInput
+                          placeholder="0"
+                          value={returnInputs[item.id] ?? ''}
+                          onChangeText={(v) => {
+                            // السماح بكتابة أي رقم، حتى لو كان أكبر من المتاح
+                            setReturnInputs((prev) => ({ ...prev, [item.id]: v }));
+                          }}
+                          keyboardType="numeric"
+                          returnKeyType="done"
+                          style={[
+                            styles.enhancedInputWrapper,
+                            { 
+                              backgroundColor: canReturn 
+                                ? (selectedQty > 0 ? theme.softPalette.success?.light || '#e8f5e8' : theme.surface)
+                                : theme.softPalette.destructive?.light || '#ffebee',
+                              borderColor: canReturn 
+                                ? (selectedQty > 0 ? theme.softPalette.success?.main || '#388e3c' : theme.border)
+                                : theme.softPalette.destructive?.main || '#d32f2f',
+                              borderWidth: selectedQty > 0 ? 2 : 1,
+                              width: canReturn ? 120 : 100,
+                              height: 50,
+                              textAlign: 'center',
+                              fontSize: 20,
+                              fontWeight: '700',
+                              color: (() => {
+                                const numValue = Number(returnInputs[item.id] || 0);
+                                if (!canReturn) {
+                                  return theme.softPalette.destructive?.main || '#d32f2f';
+                                }
+                                if (numValue > remaining) {
+                                  return theme.softPalette.destructive?.main || '#d32f2f';
+                                }
+                                if (numValue > 0) {
+                                  return theme.softPalette.success?.main || '#388e3c';
+                                }
+                                return theme.textPrimary;
+                              })(),
+                              textDecorationLine: (() => {
+                                const numValue = Number(returnInputs[item.id] || 0);
+                                return (canReturn && numValue > remaining) ? 'line-through' : 'none';
+                              })(),
+                            }
+                          ]}
+                          editable={canReturn}
+                          maxLength={remaining.toString().length + 2}
+                          autoFocus={false}
+                          blurOnSubmit={true}
+                        />
+                        
+                        {/* تحذير عند تجاوز الحد المسموح */}
+                        {canReturn && (() => {
+                          const numValue = Number(returnInputs[item.id] || 0);
+                          return numValue > remaining && numValue > 0;
+                        })() && (
+                          <View style={[styles.warningContainer, { backgroundColor: theme.softPalette.destructive?.light || '#ffebee' }]}>
+                            <Ionicons name="warning-outline" size={14} color={theme.softPalette.destructive?.main || '#d32f2f'} />
+                            <Text style={[styles.warningText, { color: theme.softPalette.destructive?.main || '#d32f2f' }]}>
+                              يتجاوز المتاح ({remaining})
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {!canReturn && (
+                          <View style={[styles.noReturnContainer, { backgroundColor: theme.softPalette.destructive?.light || '#ffebee' }]}>
+                            <Ionicons name="warning-outline" size={16} color={theme.softPalette.destructive?.main || '#d32f2f'} />
+                            <Text style={[styles.noReturnText, { color: theme.softPalette.destructive?.main || '#d32f2f' }]}>
+                              غير قابل للإرجاع
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+                {!(invoiceDetailForReturn?.items || []).length && !isLoadingReturnData && (
+                  <View style={[styles.emptyState, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                    <Ionicons name="receipt-outline" size={48} color={theme.textMuted} />
+                    <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد عناصر في هذه الفاتورة</Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </ScrollView>
+        
+        {/* Enhanced Action Buttons */}
+        <View style={styles.enhancedButtonContainer}>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[
+                styles.enhancedCancelButton,
+                { 
+                  backgroundColor: theme.softPalette.destructive?.light || '#ffebee',
+                  borderColor: theme.softPalette.destructive?.main || '#d32f2f',
+                }
+              ]}
+              onPress={() => setReturnOpen(false)}
+            >
+              <Ionicons name="close-circle-outline" size={20} color={theme.softPalette.destructive?.main || '#d32f2f'} />
+              <Text style={[styles.enhancedButtonText, { color: theme.softPalette.destructive?.main || '#d32f2f' }]}>
+                إلغاء
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.enhancedSaveButton,
+                { 
+                  backgroundColor: Object.values(returnInputs).every(v => !v || Number(v) === 0)
+                    ? theme.softPalette.destructive?.light || '#ffebee'
+                    : theme.softPalette.success?.main || '#388e3c',
+                  borderColor: Object.values(returnInputs).every(v => !v || Number(v) === 0)
+                    ? theme.softPalette.destructive?.main || '#d32f2f'
+                    : theme.softPalette.success?.main || '#388e3c',
+                }
+              ]}
+              onPress={() => submitReturnMutation.mutate()}
+              disabled={Object.values(returnInputs).every(v => !v || Number(v) === 0) || submitReturnMutation.isPending}
+            >
+              {submitReturnMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+              )}
+              <Text style={[styles.enhancedButtonText, { color: '#fff' }]}>
+                {submitReturnMutation.isPending ? 'جاري الحفظ...' : 'حفظ المرتجع'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Quick Actions */}
+          <View style={styles.quickActionsRow}>
+            <TouchableOpacity
+              style={[styles.quickActionButton, { backgroundColor: theme.softPalette.info?.light || '#e1f5fe' }]}
+              onPress={() => {
+                const newInputs: any = {};
+                (invoiceDetailForReturn?.items || []).forEach((item: any) => {
+                  const sold = Number(item.qty || 0);
+                  const alreadyReturned = Number(returnedByItemId.get(item.id) || 0);
+                  const remaining = Math.max(0, sold - alreadyReturned);
+                  if (remaining > 0) {
+                    newInputs[item.id] = remaining.toString();
+                  }
+                });
+                setReturnInputs(newInputs);
+              }}
+            >
+              <Ionicons name="arrow-up-outline" size={16} color={theme.softPalette.info?.main || '#0277bd'} />
+              <Text style={[styles.quickActionText, { color: theme.softPalette.info?.main || '#0277bd' }]}>
+                إرجاع الكل
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.quickActionButton, { backgroundColor: theme.softPalette.warning?.light || '#fff8e1' }]}
+              onPress={() => setReturnInputs({})}
+            >
+              <Ionicons name="refresh-outline" size={16} color={theme.softPalette.warning?.main || '#f9a825'} />
+              <Text style={[styles.quickActionText, { color: theme.softPalette.warning?.main || '#f9a825' }]}>
+                مسح الكل
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.buttonRow}>
-          <Button title="إلغاء" variant="secondary" onPress={() => setReturnOpen(false)} />
-          <Button
-            title="حفظ المرتجع"
-            onPress={() => submitReturnMutation.mutate()}
-            loading={submitReturnMutation.isPending}
-          />
-        </View>
-      </Modal>
+      </SimpleModal>
 
       {/* Barcode Scanner */}
       <BarcodeScanner
@@ -816,30 +1220,310 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   returnContent: {
-    gap: 12,
+    gap: 20,
   },
-  returnLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  returnItem: {
+  // Enhanced Header Styles
+  returnHeaderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  returnItemInfo: {
+  headerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  headerInfo: {
     flex: 1,
     alignItems: 'flex-end',
   },
-  returnItemName: {
-    fontSize: 14,
-    fontWeight: '600',
+  headerCustomerName: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  returnItemQty: {
+  headerInvoiceId: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  headerStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginLeft: 16,
+  },
+  headerStatusText: {
     fontSize: 12,
-    marginTop: 2,
+    fontWeight: '700',
+  },
+  // Enhanced Summary Styles
+  enhancedReturnSummary: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 20,
+  },
+  summaryIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  enhancedSummaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 16,
+  },
+  summaryCard: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  summaryCardValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginVertical: 4,
+  },
+  summaryCardLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  // Enhanced Items Section
+  itemsSection: {
+    marginTop: 8,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  enhancedSectionLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  // Enhanced Item Styles
+  enhancedReturnItem: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  itemStatusIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  enhancedItemName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  selectedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  selectedBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  enhancedItemStats: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  statCardValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginVertical: 2,
+  },
+  statCardLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  // Enhanced Input Section
+  enhancedInputSection: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  inputLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginRight: 6,
+  },
+  enhancedInputWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  noReturnContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  noReturnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 6,
+  },
+  // Enhanced Button Styles
+  enhancedButtonContainer: {
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  enhancedCancelButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginRight: 8,
+  },
+  enhancedSaveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginLeft: 8,
+  },
+  enhancedButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 6,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  warningText: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  maxHint: {
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
   },
   deleteItemButton: {
     width: 40,
