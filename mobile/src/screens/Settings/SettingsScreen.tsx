@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ScreenContainer, SectionHeader, SoftBadge, Button, SoftCard, Input, Picker, type PickerOption } from '@/components';
+import { ScreenContainer, SectionHeader, SoftBadge, Button, SoftCard, Input, Picker, type PickerOption, EnhancedInput } from '@/components';
 import { useAuth, useCompany, useToast, useConfirmation } from '@/context';
 import { useTheme } from '@/theme';
 import { apiClient, endpoints } from '@/services/api-client';
@@ -354,22 +354,14 @@ export const SettingsScreen: React.FC = () => {
               <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>سيتم عرض هذه السياسة في الفواتير المطبوعة</Text>
             </View>
           </View>
-          <TextInput
-            style={[
-              styles.textArea,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
-                color: theme.textPrimary,
-              },
-            ]}
-            placeholder="أدخل سياسة الإرجاع الخاصة بالشركة"
-            placeholderTextColor={theme.textMuted}
+          <EnhancedInput
             value={returnPolicy}
             onChangeText={setReturnPolicy}
+            placeholder="أدخل سياسة الإرجاع الخاصة بالشركة"
             multiline
             numberOfLines={6}
             textAlignVertical="top"
+            style={styles.textArea}
           />
         </SoftCard>
 
@@ -382,22 +374,14 @@ export const SettingsScreen: React.FC = () => {
               <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>تظهر سياسة الدفع أيضاً في الفواتير</Text>
             </View>
           </View>
-          <TextInput
-            style={[
-              styles.textArea,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
-                color: theme.textPrimary,
-              },
-            ]}
-            placeholder="أدخل سياسة الدفع الخاصة بالشركة"
-            placeholderTextColor={theme.textMuted}
+          <EnhancedInput
             value={paymentPolicy}
             onChangeText={setPaymentPolicy}
+            placeholder="أدخل سياسة الدفع الخاصة بالشركة"
             multiline
             numberOfLines={6}
             textAlignVertical="top"
+            style={styles.textArea}
           />
         </SoftCard>
 

@@ -18,3 +18,4 @@ export * from './Skeleton';
 export * from './LoadingSpinner';
 export * from './Toast';
 export * from './ConfirmationDialog';
+export * from './EnhancedInput';

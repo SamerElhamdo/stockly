@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { useTheme } from '@/theme';
 import { useAuth } from '@/context';
+import { EnhancedInput } from '@/components';
 
 export const SimpleAuthScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -32,25 +33,24 @@ export const SimpleAuthScreen: React.FC = () => {
           </View>
 
           <View style={styles.form}>
-            <Text style={[styles.label, { color: theme.textMuted }]}>اسم المستخدم</Text>
-            <TextInput
+            <EnhancedInput
+              label="اسم المستخدم"
               value={username}
               onChangeText={setUsername}
               placeholder="أدخل اسم المستخدم"
-              placeholderTextColor={theme.textMuted}
               autoCapitalize="none"
               autoCorrect={false}
-              style={[styles.input, { color: theme.textPrimary, backgroundColor: theme.surface, borderColor: theme.border }]}
+              returnKeyType="next"
             />
 
-            <Text style={[styles.label, { color: theme.textMuted }]}>كلمة المرور</Text>
-            <TextInput
+            <EnhancedInput
+              label="كلمة المرور"
               value={password}
               onChangeText={setPassword}
               placeholder="أدخل كلمة المرور"
-              placeholderTextColor={theme.textMuted}
               secureTextEntry
-              style={[styles.input, { color: theme.textPrimary, backgroundColor: theme.surface, borderColor: theme.border }]}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
 
             <Pressable style={[styles.button, { backgroundColor: theme.softPalette.primary.main }]} onPress={handleLogin} disabled={isAuthenticating}>
@@ -91,20 +91,7 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
     maxWidth: 420,
-  },
-  label: {
-    fontSize: 13,
-    marginBottom: 6,
-    textAlign: 'right',
-  },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 12,
-    textAlign: 'right',
+    gap: 16,
   },
   button: {
     paddingVertical: 14,

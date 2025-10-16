@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, TouchableOpacity, ScrollView } from 'react-native';
+import { Alert, Keyboard, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, TouchableOpacity, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -233,7 +233,12 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                           // السماح بكتابة أي رقم، حتى لو كان أكبر من المتاح
                           setQtyByProduct((prev) => ({ ...prev, [p.id]: v }));
                         }}
-                        keyboardType="number-pad"
+                        keyboardType="numeric"
+                        returnKeyType="done"
+                        onSubmitEditing={() => {
+                          // إخفاء الكيبورد عند الضغط على "تم"
+                          Keyboard.dismiss();
+                        }}
                         style={[
                           styles.qtyInput, 
                           { 
