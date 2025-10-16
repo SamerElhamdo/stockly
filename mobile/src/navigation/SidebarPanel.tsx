@@ -111,7 +111,7 @@ const LinkItem: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap; 
             },
       ]}
     >
-      <Ionicons name={icon} size={18} color={theme.textPrimary} style={{ marginRight: 8 }} />
+      <Ionicons name={icon} size={18} color={theme.textMuted} style={{ marginLeft: 8 }} />
       <Text style={[styles.itemLabel, { color: theme.textPrimary }]}>{label}</Text>
     </Pressable>
   );

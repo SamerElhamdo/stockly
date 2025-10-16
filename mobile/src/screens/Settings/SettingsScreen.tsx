@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -526,25 +526,64 @@ export const SettingsScreen: React.FC = () => {
 
         {/* الإجراءات */}
         <SoftCard style={styles.sectionCard}>
-          <SectionHeader title="الإجراءات" />
+          <View style={styles.sectionHeader}>
+            <Ionicons name="settings-outline" size={20} color={theme.softPalette.primary.main} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>الإجراءات</Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.textMuted }]}>حفظ التغييرات أو استرجاع القيم الأصلية</Text>
+            </View>
+          </View>
           <View style={styles.buttonGroup}>
-            <Button
-              title={updateMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { backgroundColor: theme.softPalette.primary.main },
+                updateMutation.isPending ? { opacity: 0.7 } : {}
+              ]}
               onPress={handleSave}
-              loading={updateMutation.isPending}
               disabled={updateMutation.isPending}
-              style={updateMutation.isPending ? { opacity: 0.7 } : {}}
-            />
-            <Button
-              title="استرجاع القيم الحالية"
-              variant="secondary"
+              activeOpacity={0.8}
+            >
+              {updateMutation.isPending ? (
+                <>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={[styles.buttonText, { color: 'white' }]}>جاري الحفظ...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="save-outline" size={18} color="white" />
+                  <Text style={[styles.buttonText, { color: 'white' }]}>حفظ التغييرات</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { 
+                  backgroundColor: theme.surfaceElevated,
+                  borderWidth: 1,
+                  borderColor: theme.border
+                }
+              ]}
               onPress={handleReset}
-            />
-            <Button
-              title="تسجيل الخروج"
-              variant="destructive"
+              activeOpacity={0.8}
+            >
+              <Ionicons name="refresh-outline" size={18} color={theme.textMuted} />
+              <Text style={[styles.buttonText, { color: theme.textPrimary }]}>استرجاع القيم الحالية</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { backgroundColor: theme.softPalette.destructive?.main || '#d32f2f' }
+              ]}
               onPress={handleLogout}
-            />
+              activeOpacity={0.8}
+            >
+              <Ionicons name="log-out-outline" size={18} color="white" />
+              <Text style={[styles.buttonText, { color: 'white' }]}>تسجيل الخروج</Text>
+            </TouchableOpacity>
           </View>
         </SoftCard>
 
@@ -581,10 +620,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'right',
   },
   sectionSubtitle: {
     fontSize: 13,
     marginTop: 2,
+    marginBottom: 10,
+    textAlign: 'right',
   },
   logoContainer: {
     flexDirection: 'row',
@@ -650,6 +692,27 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     gap: 12,
+    marginTop: 10,
+  },
+  actionButton: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+    minHeight: 52,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   checkboxGrid: {
     gap: 10,
