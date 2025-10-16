@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import { useTheme } from '@/theme';
+import { useCompany } from '@/context';
 import { HeaderMenuButton } from '@/components/HeaderMenuButton';
 import { navigationRef } from './navigationRef';
 import {
@@ -161,37 +162,41 @@ const SalesStackNavigator = () => {
   );
 };
 
-const InventoryStackNavigator = () => (
-  <InventoryStack.Navigator screenOptions={screenOptions}>
-    <InventoryStack.Screen
-      name="Products"
-      component={ProductsScreen}
-      options={{ 
-        headerRight: () => <HeaderMenuButton />, 
-        title: 'المنتجات',
-        headerBackVisible: false,
-      }}
-    />
-    <InventoryStack.Screen 
-      name="Categories" 
-      component={CategoriesScreen} 
-      options={{ 
-        headerRight: () => <HeaderMenuButton />, 
-        title: 'الفئات',
-        headerBackVisible: false,
-      }} 
-    />
-    <InventoryStack.Screen 
-      name="Archive" 
-      component={ArchiveScreen} 
-      options={{ 
-        headerRight: () => <HeaderMenuButton />, 
-        title: 'الأرشيف',
-        headerBackVisible: false,
-      }} 
-    />
-  </InventoryStack.Navigator>
-);
+const InventoryStackNavigator = () => {
+  const { getProductsLabel } = useCompany();
+  
+  return (
+    <InventoryStack.Navigator screenOptions={screenOptions}>
+      <InventoryStack.Screen
+        name="Products"
+        component={ProductsScreen}
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: getProductsLabel(),
+          headerBackVisible: false,
+        }}
+      />
+      <InventoryStack.Screen 
+        name="Categories" 
+        component={CategoriesScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'الفئات',
+          headerBackVisible: false,
+        }} 
+      />
+      <InventoryStack.Screen 
+        name="Archive" 
+        component={ArchiveScreen} 
+        options={{ 
+          headerRight: () => <HeaderMenuButton />, 
+          title: 'الأرشيف',
+          headerBackVisible: false,
+        }} 
+      />
+    </InventoryStack.Navigator>
+  );
+};
 
 const MoreStackNavigator = () => {
   const { theme } = useTheme();
@@ -272,6 +277,7 @@ const DrawerContentless = () => (
 
 export const MainTabs = () => {
   const { theme } = useTheme();
+  const { getProductsLabel } = useCompany();
   const [keyboardVisible, setKeyboardVisible] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false);
   const scaleAnims = React.useRef([
@@ -388,7 +394,7 @@ export const MainTabs = () => {
         name="Inventory"
         component={InventoryStackNavigator}
         options={{ 
-          title: 'المنتجات', 
+          title: getProductsLabel(), 
           tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} />,
         }}
         listeners={({ navigation }) => ({

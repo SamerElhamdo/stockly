@@ -27,7 +27,7 @@ type ArchiveTab = 'products' | 'customers';
 
 export const ArchiveScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { formatAmount } = useCompany();
+  const { formatAmount, getProductsLabel } = useCompany();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ArchiveTab>('products');
   const [productSearch, setProductSearch] = useState('');
@@ -119,18 +119,18 @@ export const ArchiveScreen: React.FC = () => {
     <ScreenContainer refreshControl={refreshControl}>
       <View style={styles.headerBlock}>
         <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>الأرشيف</Text>
-        <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>استرجع المنتجات والعملاء المؤرشفين</Text>
+        <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>استرجع {getProductsLabel()} والعملاء المؤرشفين</Text>
       </View>
 
       <View style={styles.summaryRow}>
-        <SoftBadge label={`منتجات: ${productsQuery.data?.length || 0}`} variant="info" />
+        <SoftBadge label={`${getProductsLabel()}: ${productsQuery.data?.length || 0}`} variant="info" />
         <SoftBadge label={`عملاء: ${customersQuery.data?.length || 0}`} variant="primary" />
         <SoftBadge label={`قيمة تقديرية: ${formatAmount(totalArchivedValue)}`} variant="warning" />
       </View>
 
       <View style={styles.tabRow}>
         <Button
-          title="منتجات"
+          title={getProductsLabel()}
           variant={activeTab === 'products' ? 'primary' : 'secondary'}
           onPress={() => setActiveTab('products')}
           style={styles.tabButton}
@@ -145,8 +145,8 @@ export const ArchiveScreen: React.FC = () => {
 
       {activeTab === 'products' ? (
         <View style={styles.tabContent}>
-          <Input placeholder="ابحث في المنتجات المؤرشفة" value={productSearch} onChangeText={setProductSearch} />
-          <SectionHeader title="منتجات مؤرشفة" />
+          <Input placeholder={`ابحث في ${getProductsLabel()} المؤرشفة`} value={productSearch} onChangeText={setProductSearch} />
+          <SectionHeader title={`${getProductsLabel()} مؤرشفة`} />
           {filteredProducts.map((product) => (
             <ListItem
               key={product.id}
@@ -164,7 +164,7 @@ export const ArchiveScreen: React.FC = () => {
             />
           ))}
           {!filteredProducts.length && (
-            <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات مؤرشفة</Text>
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد {getProductsLabel()} مؤرشفة</Text>
           )}
         </View>
       ) : (

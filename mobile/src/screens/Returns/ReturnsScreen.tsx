@@ -39,7 +39,7 @@ const statusMap: Record<ReturnItem['status'], { label: string; variant: 'info' |
 
 export const ReturnsScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { formatAmount } = useCompany();
+  const { formatAmount, getProductsLabel } = useCompany();
   const { showSuccess, showError } = useToast();
   const { showConfirmation } = useConfirmation();
   const queryClient = useQueryClient();
@@ -250,9 +250,9 @@ export const ReturnsScreen: React.FC = () => {
             {selectedReturn.items && selectedReturn.items.length > 0 && (
               <View style={styles.enhancedItemsSection}>
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>المنتجات المرتجعة</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>{getProductsLabel()} المرتجعة</Text>
                   <Text style={[styles.itemsCount, { color: theme.textMuted }]}>
-                    {selectedReturn.items.length} منتج
+                    {selectedReturn.items.length} {getProductsLabel(selectedReturn.items.length)}
                   </Text>
                 </View>
                 

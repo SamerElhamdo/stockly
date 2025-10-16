@@ -59,9 +59,9 @@ const parseNumber = (value: number | string | undefined | null): number => {
 
 export const ProductsScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { formatAmount } = useCompany();
+  const { formatAmount, getProductsLabel } = useCompany();
   const { showSuccess, showError } = useToast();
-  const { confirm } = useConfirmation();
+  const { showConfirmation } = useConfirmation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const route = useRoute<any>();
@@ -189,13 +189,13 @@ export const ProductsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      showSuccess('تم إضافة المنتج بنجاح');
+      showSuccess(`تم إضافة ${getProductsLabel()} بنجاح`);
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      showError(err?.response?.data?.detail || 'فشل إضافة المنتج');
+      showError(err?.response?.data?.detail || `فشل إضافة ${getProductsLabel()}`);
     },
   });
 
@@ -205,13 +205,13 @@ export const ProductsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      showSuccess('تم تحديث المنتج بنجاح');
+      showSuccess(`تم تحديث ${getProductsLabel()} بنجاح`);
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      showError(err?.response?.data?.detail || 'فشل تحديث المنتج');
+      showError(err?.response?.data?.detail || `فشل تحديث ${getProductsLabel()}`);
     },
   });
 
@@ -221,18 +221,18 @@ export const ProductsScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      showSuccess('تم أرشفة المنتج');
+      showSuccess(`تم أرشفة ${getProductsLabel()} بنجاح`);
       refetch();
     },
     onError: (err: any) => {
-      showError(err?.response?.data?.detail || 'فشل أرشفة المنتج');
+      showError(err?.response?.data?.detail || `فشل أرشفة ${getProductsLabel()}`);
     },
   });
 
   const handleSave = () => {
     const name = formData.name.trim();
     if (!name || !formData.category || !formData.price || !formData.stock_qty) {
-      showError('يرجى ملء جميع الحقول المطلوبة');
+      showError(`يرجى ملء جميع الحقول المطلوبة ${getProductsLabel()}`);
       return;
     }
 
@@ -266,7 +266,7 @@ export const ProductsScreen: React.FC = () => {
         setSelectedProduct(found);
         setDetailOpen(true);
       } else {
-        showError(`لا يوجد منتج بالرمز: ${data}`);
+        showError(`لا يوجد ${getProductsLabel()} بالرمز: ${data}`);
       }
     } else {
       // Add product with scanned SKU
@@ -276,15 +276,18 @@ export const ProductsScreen: React.FC = () => {
     }
   };
 
-  const handleArchive = (product: ProductItem) => {
-    confirm({
+  const handleArchive = async (product: ProductItem) => {
+    const confirmed = await showConfirmation({
       title: 'تأكيد الأرشفة',
-      message: `هل تريد أرشفة المنتج "${product.name}"؟`,
+      message: `هل تريد أرشفة ${getProductsLabel()} "${product.name}"؟`,
       confirmText: 'أرشفة',
       cancelText: 'إلغاء',
-      confirmVariant: 'destructive',
-      onConfirm: () => archiveProductMutation.mutate(product.id),
+      type: 'danger',
     });
+    
+    if (confirmed) {
+      archiveProductMutation.mutate(product.id);
+    }
   };
 
   const getStockStatus = (stock: number) => {
@@ -299,12 +302,12 @@ export const ProductsScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={theme.textPrimary} />}
       >
         <View style={styles.headerBlock}>
-          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>إدارة المنتجات</Text>
-          <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>تتبع المنتجات ومستويات المخزون</Text>
+          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>إدارة {getProductsLabel()}</Text>
+          <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>تتبع {getProductsLabel()} ومستويات المخزون</Text>
         </View>
 
         <View style={styles.summaryRow}>
-          <SoftBadge label={`الإجمالي: ${products?.length || 0} منتج`} variant="info" />
+          <SoftBadge label={`الإجمالي: ${products?.length || 0} ${getProductsLabel(products?.length || 0)}`} variant="info" />
           <SoftBadge label={`قيمة المخزون: ${formatAmount(totalInventoryValue)}`} variant="success" />
         </View>
 
@@ -320,12 +323,12 @@ export const ProductsScreen: React.FC = () => {
             <Ionicons name="barcode-outline" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Input placeholder="ابحث باسم المنتج أو الرمز" value={search} onChangeText={setSearch} autoCorrect={false} />
+            <Input placeholder={`ابحث باسم ${getProductsLabel()} أو الرمز`} value={search} onChangeText={setSearch} autoCorrect={false} />
           </View>
         </View>
 
         <View style={styles.listWrapper}>
-          <SectionHeader title="المنتجات" subtitle={isLoading ? 'جاري التحميل...' : `${filteredProducts.length} منتج`} />
+          <SectionHeader title={getProductsLabel()} subtitle={isLoading ? 'جاري التحميل...' : `${filteredProducts.length} ${getProductsLabel(filteredProducts.length)}`} />
           
           {isLoading ? (
             <SkeletonList count={6} itemHeight={80} />
@@ -350,7 +353,7 @@ export const ProductsScreen: React.FC = () => {
                   </TouchableOpacity>
                 );
               })}
-              {!filteredProducts?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات</Text>}
+              {!filteredProducts?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد {getProductsLabel()}</Text>}
             </>
           )}
         </View>
@@ -369,12 +372,12 @@ export const ProductsScreen: React.FC = () => {
       <SimpleModal
         visible={formOpen}
         onClose={() => setFormOpen(false)}
-        title={editingProduct ? 'تعديل منتج' : 'إضافة منتج'}
+        title={editingProduct ? `تعديل ${getProductsLabel()}` : `إضافة ${getProductsLabel()}`}
         size="large"
       >
         <Input
-          label="اسم المنتج *"
-          placeholder="اسم المنتج"
+          label={`اسم ${getProductsLabel()} *`}
+          placeholder={`اسم ${getProductsLabel()}`}
           value={formData.name}
           onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
         />
@@ -406,7 +409,7 @@ export const ProductsScreen: React.FC = () => {
 
         <Picker
           label="الفئة *"
-          placeholder="اختر فئة المنتج"
+          placeholder={`اختر فئة  ${getProductsLabel()}`}
           value={formData.category?.toString() || ''}
           onChange={(value) => setFormData((prev) => ({ ...prev, category: value ? parseInt(value as string) : undefined }))}
           options={
@@ -505,7 +508,7 @@ export const ProductsScreen: React.FC = () => {
       <SimpleModal
         visible={detailOpen}
         onClose={() => setDetailOpen(false)}
-        title="تفاصيل المنتج"
+        title={`تفاصيل ${getProductsLabel()}`}
         size="medium"
       >
         {selectedProduct && (
@@ -513,7 +516,7 @@ export const ProductsScreen: React.FC = () => {
             <View style={[styles.infoCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.name}</Text>
-                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الاسم</Text>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>{`الاسم ${getProductsLabel()}`}</Text>
               </View>
               
               {selectedProduct.sku && (

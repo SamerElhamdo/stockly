@@ -65,7 +65,7 @@ interface Product {
 
 export const InvoicesScreen: React.FC = () => {
   const { theme } = useTheme();
-  const { formatAmount } = useCompany();
+  const { formatAmount, getProductsLabel } = useCompany();
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
   const { showConfirmation } = useConfirmation();
@@ -514,7 +514,7 @@ export const InvoicesScreen: React.FC = () => {
               );
             }}
             ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-            ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد منتجات</Text>}
+            ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد {getProductsLabel()}</Text>}
           />
         </View>
 
@@ -596,7 +596,7 @@ export const InvoicesScreen: React.FC = () => {
             </View>
             {selectedInvoice.items && selectedInvoice.items.length > 0 && (
               <View style={{ marginTop: 16 }}>
-                <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>المنتجات:</Text>
+                <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>{getProductsLabel()}:</Text>
                 {selectedInvoice.items.map((item) => (
                   <View key={item.id} style={[styles.itemRow, { borderColor: theme.border, marginBottom: 8 }]}>
                     <View style={{ flex: 1 }}>
