@@ -395,22 +395,72 @@ export const InvoicesScreen: React.FC = () => {
     >
       <View style={styles.headerBlock}>
         <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>الفواتير</Text>
-          <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>إدارة فواتير المبيعات</Text>
+        <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>إدارة فواتير المبيعات</Text>
       </View>
 
-        <View style={styles.filterRow}>
-          <View style={{ flex: 1 }}>
-            <Input placeholder="ابحث برقم الفاتورة أو العميل" value={search} onChangeText={setSearch} autoCorrect={false} />
-          </View>
-          <View style={{ width: 140 }}>
-            <Picker
-              placeholder="الحالة"
-              options={statusFilterOptions}
-              value={statusFilter}
-              onChange={(value) => setStatusFilter(value as any)}
+      {/* Search and Filter Section */}
+      <View style={[styles.searchFilterContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        {/* Search Input */}
+        <View style={styles.searchWrapper}>
+          <View style={[styles.searchInputContainer, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            <Ionicons name="search-outline" size={20} color={theme.textMuted} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.textPrimary }]}
+              placeholder="ابحث برقم الفاتورة أو اسم العميل..."
+              placeholderTextColor={theme.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              autoCorrect={false}
+              returnKeyType="search"
             />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} style={styles.clearButton}>
+                <Ionicons name="close-circle" size={18} color={theme.textMuted} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+
+        {/* Status Filter Chips */}
+        <View style={styles.filterChipsContainer}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterChipsContent}
+          >
+            {statusFilterOptions.map((option) => {
+              const isSelected = statusFilter === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => setStatusFilter(option.value as any)}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: isSelected ? theme.softPalette.primary.main : theme.surfaceElevated,
+                      borderColor: isSelected ? theme.softPalette.primary.main : theme.border,
+                    }
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.filterChipText,
+                    {
+                      color: isSelected ? '#fff' : theme.textPrimary,
+                      fontWeight: isSelected ? '600' : '500',
+                    }
+                  ]}>
+                    {option.label}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={16} color="#fff" style={{ marginRight: 4 }} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
 
       <View style={styles.listWrapper}>
           <SectionHeader title="قائمة الفواتير" subtitle={isLoading ? 'جاري التحميل...' : `${filteredInvoices.length} فاتورة`} />
@@ -1099,6 +1149,60 @@ const styles = StyleSheet.create({
   pageSubtitle: {
     fontSize: 15,
     textAlign: 'right',
+  },
+  searchFilterContainer: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    gap: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchWrapper: {
+    gap: 8,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  searchIcon: {
+    marginLeft: 4,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    textAlign: 'right',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  filterChipsContainer: {
+    gap: 8,
+  },
+  filterChipsContent: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6,
+  },
+  filterChipText: {
+    fontSize: 14,
   },
   filterRow: {
     flexDirection: 'row',
