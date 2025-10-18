@@ -153,7 +153,7 @@ const SalesStackNavigator = () => {
       name="InvoiceCreate" 
       component={InvoiceCreateScreen} 
       options={{ 
-        title: 'فاتورة جديدة',
+        title: 'فاتورة',
         headerBackVisible: true,
         headerBackTitle: 'الفواتير',
       }} 

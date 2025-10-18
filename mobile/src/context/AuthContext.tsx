@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { decode as base64Decode } from 'base-64';
 
 import { apiClient, apiEvents, endpoints } from '@/services/api-client';
@@ -10,6 +9,7 @@ import {
   readUser,
   setAuthTokens,
 } from '@/storage/auth-storage';
+import { useToast } from './ToastContext';
 
 export type User = StoredUser;
 
@@ -48,6 +48,7 @@ const decodeTokenPayload = (token: string): User | null => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { showError } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -92,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const { access, refresh, user: payloadUser } = response.data || {};
       if (!access || !refresh) {
-        Alert.alert('خطأ في تسجيل الدخول', 'تعذر الحصول على بيانات الاعتماد من الخادم');
+        showError('[AUTH] تعذر الحصول على بيانات الاعتماد من الخادم');
         return false;
       }
 
@@ -121,16 +122,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error: any) {
       console.error('Login error', error);
+      const errorCode = error?.response?.status || 'UNKNOWN';
       const message =
         error?.response?.data?.detail ||
         error?.response?.data?.error ||
         'تحقق من بيانات الدخول وحاول مرة أخرى';
-      Alert.alert('فشل تسجيل الدخول', message);
+      showError(`[${errorCode}] ${message}`);
       return false;
     } finally {
       setIsAuthenticating(false);
     }
-  }, []);
+  }, [showError]);
 
   const contextValue = useMemo<AuthContextValue>(
     () => ({

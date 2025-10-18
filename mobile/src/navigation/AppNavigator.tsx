@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme, Theme as NavigationTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { SimpleAuthScreen, PrintInvoiceScreen, PrintReturnScreen } from '@/screens';
+import { LoginScreen, RegisterScreen, ResetPasswordScreen, PrintInvoiceScreen, PrintReturnScreen } from '@/screens';
 import { MainTabs } from './MainTabs';
 import { useAuth } from '@/context';
 import { useTheme } from '@/theme';
@@ -44,12 +44,18 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer theme={navTheme} ref={navigationRef}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <RootStack.Screen name="Main" component={MainTabs} />
+          <>
+            <RootStack.Screen name="Main" component={MainTabs} />
+            <RootStack.Screen name="PrintInvoice" component={PrintInvoiceScreen} />
+            <RootStack.Screen name="PrintReturn" component={PrintReturnScreen} />
+          </>
         ) : (
-          <RootStack.Screen name="Auth" component={SimpleAuthScreen} />
+          <>
+            <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="Register" component={RegisterScreen} />
+            <RootStack.Screen name="ForgotPassword" component={ResetPasswordScreen} />
+          </>
         )}
-        <RootStack.Screen name="PrintInvoice" component={PrintInvoiceScreen} />
-        <RootStack.Screen name="PrintReturn" component={PrintReturnScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

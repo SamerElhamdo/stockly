@@ -1,280 +1,138 @@
-import React, { useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import logo from '../../../assets/logo.png';
 
-import { ScreenContainer, SoftCard, SoftBadge, Button, Input } from '@/components';
-import { useAuth } from '@/context';
+import { ScreenContainer, SoftCard, Button, Input } from '@/components';
+import { useAuth, useToast } from '@/context';
 import { useTheme } from '@/theme';
-import { apiClient, endpoints } from '@/services/api-client';
+import { RootStackParamList } from '@/navigation/types';
 
-export const LoginScreen: React.FC = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
   const { login, isAuthenticating } = useAuth();
+  const { showError, showSuccess } = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot'>('login');
-
-  // Register
-  const [companyName, setCompanyName] = useState('');
-  const [companyCode, setCompanyCode] = useState('');
-  const [companyEmail, setCompanyEmail] = useState('');
-  const [companyPhone, setCompanyPhone] = useState('');
-  const [companyAddress, setCompanyAddress] = useState('');
-  const [adminUsername, setAdminUsername] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
-  const [registerOtp, setRegisterOtp] = useState('');
-  const [registerOtpSession, setRegisterOtpSession] = useState<string | null>(null);
-  const [registerOtpVerified, setRegisterOtpVerified] = useState(false);
-  const [isSendingRegisterOtp, setIsSendingRegisterOtp] = useState(false);
-  const [isVerifyingRegisterOtp, setIsVerifyingRegisterOtp] = useState(false);
-  const registerPasswordMismatch = useMemo(
-    () => adminPassword.length > 0 && adminPasswordConfirm.length > 0 && adminPassword !== adminPasswordConfirm,
-    [adminPassword, adminPasswordConfirm],
-  );
-
-  // Forgot
-  const [resetUsername, setResetUsername] = useState('');
-  const [resetPhone, setResetPhone] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetOtp, setResetOtp] = useState('');
-  const [resetOtpSession, setResetOtpSession] = useState<string | null>(null);
-  const [resetOtpVerified, setResetOtpVerified] = useState(false);
-  const [isSendingResetOtp, setIsSendingResetOtp] = useState(false);
-  const [isVerifyingResetOtp, setIsVerifyingResetOtp] = useState(false);
-  const resetPasswordMismatch = useMemo(
-    () => newPassword.length > 0 && confirmPassword.length > 0 && newPassword !== confirmPassword,
-    [newPassword, confirmPassword],
-  );
 
   const handleSubmit = async () => {
     if (!username || !password) {
+      showError('يرجى إدخال اسم المستخدم وكلمة المرور');
       return;
     }
-    await login(username.trim(), password);
+    const success = await login(username.trim(), password);
+    if (success) {
+      showSuccess('تم تسجيل الدخول بنجاح');
+    }
   };
 
   return (
-    <ScreenContainer noScroll>
+    <ScreenContainer>
       <StatusBar style={theme.name === 'light' ? 'dark' : 'light'} />
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Logo Section */}
         <View style={styles.logoWrapper}>
-          <SoftCard variant="primary" style={styles.logoCard}>
-            <Image source={logo} resizeMode="contain" style={styles.logo} />
-          </SoftCard>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>مرحباً بك في ستوكلي</Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>منصة متكاملة لإدارة المخزون والفواتير</Text>
-        </View>
-        <SoftCard style={styles.formCard}>
-          <View style={styles.tabsHeader}>
-            <View style={[styles.tabs, { backgroundColor: theme.surface }]}>
-              {(['login', 'register', 'forgot'] as const).map((tab) => (
-                <SoftButton
-                  key={tab}
-                  title={tab === 'login' ? 'تسجيل الدخول' : tab === 'register' ? 'تسجيل شركة' : 'استعادة كلمة المرور'}
-                  variant={activeTab === tab ? 'primary' : 'secondary'}
-                  onPress={() => setActiveTab(tab)}
-                />
-              ))}
-            </View>
+          <View style={[styles.logoCard, { backgroundColor: theme.softPalette.primary.light }]}>
+            <Image source={logo} resizeMode="cover" style={styles.logo} />
           </View>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>مرحباً بك مجدداً</Text>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>سجل دخولك للوصول إلى حسابك</Text>
+        </View>
 
-          {activeTab === 'login' && (
-            <>
-              <View style={styles.formHeader}>
-                <Text style={[styles.formTitle, { color: theme.textPrimary }]}>تسجيل الدخول</Text>
-                <Text style={[styles.formSubtitle, { color: theme.textMuted }]}>أدخل بيانات الحساب للوصول للنظام</Text>
-              </View>
-              <View style={styles.fieldGroup}>
-                <Input label="اسم المستخدم" value={username} onChangeText={setUsername} placeholder="أدخل اسم المستخدم" autoCapitalize="none" textContentType="username" autoCorrect={false} />
-                <Input label="كلمة المرور" value={password} onChangeText={setPassword} placeholder="أدخل كلمة المرور" secureTextEntry secureToggle textContentType="password" />
-              </View>
-              <Button title="تسجيل الدخول" onPress={handleSubmit} loading={isAuthenticating} />
-            </>
-          )}
-
-          {activeTab === 'register' && (
-            <>
-              <View style={styles.formHeader}>
-                <Text style={[styles.formTitle, { color: theme.textPrimary }]}>تسجيل شركة</Text>
-                <Text style={[styles.formSubtitle, { color: theme.textMuted }]}>أدخل بيانات الشركة وفعّل رقم الواتساب</Text>
-              </View>
-              <View style={styles.fieldGroup}>
-                <Input label="اسم الشركة" value={companyName} onChangeText={setCompanyName} placeholder="مثال: شركة النجاح" />
-                <Input label="رمز الشركة" value={companyCode} onChangeText={setCompanyCode} placeholder="رمز مميز للشركة" />
-                <Input label="البريد الإلكتروني" value={companyEmail} onChangeText={setCompanyEmail} placeholder="example@company.com" autoCapitalize="none" keyboardType="email-address" />
-                <Input label="رقم واتساب الشركة" value={companyPhone} onChangeText={(t)=>{setCompanyPhone(t); setRegisterOtpSession(null); setRegisterOtp(''); setRegisterOtpVerified(false);}} placeholder="9665XXXXXXXX" keyboardType="phone-pad" />
-                <Input label="عنوان الشركة (اختياري)" value={companyAddress} onChangeText={setCompanyAddress} placeholder="العنوان التفصيلي" />
-                <Input label="اسم المستخدم للمدير" value={adminUsername} onChangeText={setAdminUsername} placeholder="اختر اسم مستخدم" autoCapitalize="none" />
-                <Input label="كلمة مرور المدير" value={adminPassword} onChangeText={setAdminPassword} placeholder="كلمة مرور قوية" secureTextEntry secureToggle />
-                <Input label="تأكيد كلمة المرور" value={adminPasswordConfirm} onChangeText={setAdminPasswordConfirm} placeholder="أعد إدخال كلمة المرور" secureTextEntry secureToggle error={registerPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Button
-                  title={isSendingRegisterOtp ? 'جاري الإرسال...' : 'إرسال الرمز عبر واتساب'}
-                  variant="secondary"
-                  onPress={async () => {
-                    if (!companyPhone.trim()) return;
-                    setIsSendingRegisterOtp(true);
-                    try {
-                      const res = await apiClient.post(endpoints.sendOtp, { phone: companyPhone, verification_type: 'company_registration' });
-                      const sessionId = (res.data as any)?.session_id ?? null;
-                      setRegisterOtpSession(sessionId);
-                      setRegisterOtp('');
-                      setRegisterOtpVerified(false);
-                    } finally {
-                      setIsSendingRegisterOtp(false);
-                    }
-                  }}
-                />
-                {registerOtpSession ? (
-                  <>
-                    <Input label="رمز التحقق" value={registerOtp} onChangeText={setRegisterOtp} placeholder="6 أرقام" keyboardType="number-pad" />
-                    <Button
-                      title={isVerifyingRegisterOtp ? 'جاري التحقق...' : 'تأكيد الرمز'}
-                      variant="secondary"
-                      onPress={async () => {
-                        if (!registerOtpSession || registerOtp.length !== 6) return;
-                        setIsVerifyingRegisterOtp(true);
-                        try {
-                          await apiClient.post(endpoints.verifyOtp, { session_id: registerOtpSession, otp_code: registerOtp });
-                          setRegisterOtpVerified(true);
-                        } finally {
-                          setIsVerifyingRegisterOtp(false);
-                        }
-                      }}
-                    />
-                    {registerOtpVerified ? <SoftBadge label="الرقم موثق" variant="info" /> : null}
-                  </>
-                ) : null}
-              </View>
-              <Button
-                title="إتمام التسجيل"
-                onPress={async () => {
-                  if (registerPasswordMismatch || !registerOtpSession || !registerOtpVerified) return;
-                  const payload = {
-                    company: {
-                      name: companyName.trim(),
-                      code: companyCode.trim(),
-                      email: companyEmail.trim(),
-                      phone: companyPhone.trim(),
-                      address: companyAddress.trim(),
-                    },
-                    admin: { username: adminUsername.trim(), password: adminPassword },
-                    otp_session_id: registerOtpSession,
-                  };
-                  await apiClient.post(endpoints.registerCompany, payload);
-                  // auto-fill login
-                  setUsername(adminUsername.trim());
-                  setPassword(adminPassword);
-                  setActiveTab('login');
-                }}
+        {/* Form Card */}
+        <SoftCard style={styles.formCard}>
+          <View style={styles.form}>
+            <Input 
+              label="اسم المستخدم" 
+              value={username} 
+              onChangeText={setUsername} 
+              placeholder="أدخل اسم المستخدم" 
+              autoCapitalize="none" 
+              textContentType="username" 
+              autoCorrect={false} 
+            />
+            
+            <View style={styles.passwordWrapper}>
+              <Input 
+                label="كلمة المرور" 
+                value={password} 
+                onChangeText={setPassword} 
+                placeholder="أدخل كلمة المرور" 
+                secureTextEntry 
+                secureToggle 
+                textContentType="password" 
               />
-            </>
-          )}
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgotButton}
+              >
+                <Text style={[styles.forgotText, { color: theme.softPalette.primary.main }]}>
+                  نسيت كلمة المرور؟
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          {activeTab === 'forgot' && (
-            <>
-              <View style={styles.formHeader}>
-                <Text style={[styles.formTitle, { color: theme.textPrimary }]}>استعادة كلمة المرور</Text>
-                <Text style={[styles.formSubtitle, { color: theme.textMuted }]}>أدخل البيانات ثم فعّل الرمز عبر واتساب</Text>
-              </View>
-              <View style={styles.fieldGroup}>
-                <Input label="اسم المستخدم" value={resetUsername} onChangeText={setResetUsername} placeholder="اسم المستخدم" autoCapitalize="none" />
-                <Input label="رقم واتساب الحساب" value={resetPhone} onChangeText={(t)=>{setResetPhone(t); setResetOtpSession(null); setResetOtp(''); setResetOtpVerified(false);}} placeholder="9665XXXXXXXX" keyboardType="phone-pad" />
-                <Button
-                  title={isSendingResetOtp ? 'جاري الإرسال...' : 'إرسال الرمز عبر واتساب'}
-                  variant="secondary"
-                  onPress={async () => {
-                    if (!resetUsername.trim() || !resetPhone.trim()) return;
-                    setIsSendingResetOtp(true);
-                    try {
-                      const res = await apiClient.post(endpoints.sendOtp, { username: resetUsername.trim(), phone: resetPhone, verification_type: 'forgot_password' });
-                      const sessionId = (res.data as any)?.session_id ?? null;
-                      setResetOtpSession(sessionId);
-                      setResetOtp('');
-                      setResetOtpVerified(false);
-                    } finally {
-                      setIsSendingResetOtp(false);
-                    }
-                  }}
-                />
-                {resetOtpSession ? (
-                  <>
-                    <Input label="رمز التحقق" value={resetOtp} onChangeText={setResetOtp} placeholder="6 أرقام" keyboardType="number-pad" />
-                    <Button
-                      title={isVerifyingResetOtp ? 'جاري التحقق...' : 'تأكيد الرمز'}
-                      variant="secondary"
-                      onPress={async () => {
-                        if (!resetOtpSession || resetOtp.length !== 6) return;
-                        setIsVerifyingResetOtp(true);
-                        try {
-                          await apiClient.post(endpoints.verifyOtp, { session_id: resetOtpSession, otp_code: resetOtp });
-                          setResetOtpVerified(true);
-                        } finally {
-                          setIsVerifyingResetOtp(false);
-                        }
-                      }}
-                    />
-                  </>
-                ) : null}
-                <Input label="كلمة المرور الجديدة" value={newPassword} onChangeText={setNewPassword} placeholder="كلمة مرور قوية" secureTextEntry secureToggle />
-                <Input label="تأكيد كلمة المرور" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="أعد إدخال كلمة المرور" secureTextEntry secureToggle error={resetPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} />
-              </View>
-              <Button
-                title="تحديث كلمة المرور"
-                onPress={async () => {
-                  if (resetPasswordMismatch || !resetOtpSession || !resetOtpVerified) return;
-                  await apiClient.post(endpoints.resetPassword, {
-                    username: resetUsername.trim(),
-                    phone: resetPhone.trim(),
-                    new_password: newPassword,
-                    otp_session_id: resetOtpSession,
-                  });
-                  setActiveTab('login');
-                  setUsername(resetUsername.trim());
-                  setPassword('');
-                  setResetUsername('');
-                  setResetPhone('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                }}
-              />
-            </>
-          )}
+            <Button 
+              title="تسجيل الدخول" 
+              onPress={handleSubmit} 
+              loading={isAuthenticating} 
+            />
+          </View>
         </SoftCard>
-      </View>
+
+        {/* Register Link */}
+        <View style={styles.registerSection}>
+          <Text style={[styles.registerQuestion, { color: theme.textMuted }]}>
+            ليس لديك حساب؟
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={[styles.registerLink, { color: theme.softPalette.primary.main }]}>
+              سجل شركتك الآن
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
+    gap: 32,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
   logoWrapper: {
     alignItems: 'center',
     gap: 12,
   },
   logoCard: {
-    width: 96,
-    height: 96,
+    width: 120,
+    height: 120,
     borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.15)',
   },
   logo: {
-    width: 64,
-    height: 64,
+    width: 120,
+    height: 120,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
+    marginTop: 8,
   },
   subtitle: {
     fontSize: 15,
@@ -284,28 +142,32 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
+  },
+  form: {
     gap: 16,
   },
-  formHeader: {
-    gap: 6,
-  },
-  tabsHeader: {
-    gap: 12,
-  },
-  tabs: {
+  passwordWrapper: {
     gap: 8,
   },
-  formTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+  forgotButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
   },
-  formSubtitle: {
+  forgotText: {
     fontSize: 14,
+    fontWeight: '600',
   },
-  fieldGroup: {
-    gap: 12,
+  registerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  errorText: {
-    fontSize: 13,
+  registerQuestion: {
+    fontSize: 15,
+  },
+  registerLink: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
+

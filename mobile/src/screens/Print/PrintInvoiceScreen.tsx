@@ -33,7 +33,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'PrintInvoice'>;
 export const PrintInvoiceScreen: React.FC<Props> = ({ route }) => {
   const { id } = route.params;
   const { theme } = useTheme();
-  const { formatAmount, profile } = useCompany();
+  const { formatAmount, formatAmountParts, profile } = useCompany();
   const { showSuccess, showError } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -459,13 +459,26 @@ export const PrintInvoiceScreen: React.FC<Props> = ({ route }) => {
                 <Ionicons name="cash-outline" size={18} color={theme.softPalette.success?.main || '#4caf50'} />
                 <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>المبلغ الإجمالي</Text>
               </View>
-              <View style={[styles.amountCard, { backgroundColor: theme.softPalette.success?.light || '#e8f5e8' }]}>
-                <Text style={[styles.amountValue, { color: theme.softPalette.success?.main || '#4caf50' }]}>
-                  {formatAmount(data.total_amount)}
-                </Text>
-                <Text style={[styles.amountCurrency, { color: theme.softPalette.success?.main || '#4caf50' }]}>
-                  USD
-                </Text>
+              <View style={styles.amountBadgesContainer}>
+                {(() => {
+                  const parts = formatAmountParts(data.total_amount);
+                  return (
+                    <>
+                      <View style={[styles.amountBadge, { backgroundColor: theme.softPalette.success?.light || '#e8f5e8' }]}>
+                        <Text style={[styles.amountBadgeText, { color: theme.softPalette.success?.main || '#4caf50' }]}>
+                          {parts.primary}
+                        </Text>
+                      </View>
+                      {parts.secondary && (
+                        <View style={[styles.amountBadge, { backgroundColor: theme.softPalette.info?.light || '#e3f2fd' }]}>
+                          <Text style={[styles.amountBadgeText, { color: theme.softPalette.info?.main || '#1976d2' }]}>
+                            {parts.secondary}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
               </View>
             </View>
           </SoftCard>
@@ -506,26 +519,54 @@ export const PrintInvoiceScreen: React.FC<Props> = ({ route }) => {
                       <View style={styles.detailRow}>
                         <Ionicons name="cash-outline" size={14} color={theme.textMuted} />
                         <Text style={[styles.detailLabel, { color: theme.textMuted }]}>السعر</Text>
-                        <View style={[styles.priceCard, { backgroundColor: theme.softPalette.warning?.light || '#fff3cd' }]}>
-                          <Text style={[styles.priceValue, { color: theme.softPalette.warning?.main || '#ff9800' }]}>
-                            {formatAmount(Number(item.price_at_add || 0))}
-                          </Text>
-                          <Text style={[styles.priceCurrency, { color: theme.softPalette.warning?.main || '#ff9800' }]}>
-                            USD
-                          </Text>
+                        <View style={styles.priceBadgesContainer}>
+                          {(() => {
+                            const parts = formatAmountParts(Number(item.price_at_add || 0));
+                            return (
+                              <>
+                                <View style={[styles.priceBadge, { backgroundColor: theme.softPalette.warning?.light || '#fff3cd' }]}>
+                                  <Text style={[styles.priceBadgeText, { color: theme.softPalette.warning?.main || '#ff9800' }]}>
+                                    {parts.primary}
+                                  </Text>
+                                </View>
+                                {parts.secondary && (
+                                  <View style={[styles.priceBadge, { backgroundColor: theme.softPalette.info?.light || '#e3f2fd' }]}>
+                                    <Text style={[styles.priceBadgeText, { color: theme.softPalette.info?.main || '#1976d2' }]}>
+                                      {parts.secondary}
+                                    </Text>
+                                  </View>
+                                )}
+                              </>
+                            );
+                          })()}
                         </View>
                       </View>
                     </View>
                   </View>
                   
                   <View style={styles.itemTotal}>
-                    <View style={[styles.totalCard, { backgroundColor: theme.softPalette.success?.light || '#e8f5e8' }]}>
-                      <Text style={[styles.totalValue, { color: theme.softPalette.success?.main || '#4caf50' }]}>
-                        {formatAmount(Math.floor(item.qty || 0) * Number(item.price_at_add || 0))}
-                      </Text>
-                      <Text style={[styles.totalCurrency, { color: theme.softPalette.success?.main || '#4caf50' }]}>
-                        USD
-                      </Text>
+                    <Text style={[styles.totalLabel, { color: theme.textMuted }]}>الإجمالي</Text>
+                    <View style={styles.totalBadgesContainer}>
+                      {(() => {
+                        const total = Math.floor(item.qty || 0) * Number(item.price_at_add || 0);
+                        const parts = formatAmountParts(total);
+                        return (
+                          <>
+                            <View style={[styles.totalBadge, { backgroundColor: theme.softPalette.success?.light || '#e8f5e8' }]}>
+                              <Text style={[styles.totalBadgeText, { color: theme.softPalette.success?.main || '#4caf50' }]}>
+                                {parts.primary}
+                              </Text>
+                            </View>
+                            {parts.secondary && (
+                              <View style={[styles.totalBadge, { backgroundColor: theme.softPalette.info?.light || '#e3f2fd' }]}>
+                                <Text style={[styles.totalBadgeText, { color: theme.softPalette.info?.main || '#1976d2' }]}>
+                                  {parts.secondary}
+                                </Text>
+                              </View>
+                            )}
+                          </>
+                        );
+                      })()}
                     </View>
                   </View>
                 </View>
@@ -567,7 +608,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 5,
-    zIndex: 1000,
   },
   primaryButton: {
     flex: 1,
@@ -687,25 +727,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  amountCard: {
+  amountBadgesContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    gap: 8,
+    flexWrap: 'wrap',
+    marginLeft: 26,
+    marginTop: 4,
+  },
+  amountBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(76, 175, 80, 0.2)',
-    marginLeft: 26,
   },
-  amountValue: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  amountCurrency: {
-    fontSize: 12,
+  amountBadgeText: {
+    fontSize: 14,
     fontWeight: '600',
-    opacity: 0.8,
   },
   // Items Card
   itemsCard: {
@@ -781,48 +819,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  priceCard: {
+  priceBadgesContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    gap: 6,
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  priceBadge: {
+    paddingVertical: 5,
+    paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(255, 152, 0, 0.2)',
-    minWidth: 80,
   },
-  priceValue: {
+  priceBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  priceCurrency: {
-    fontSize: 9,
-    fontWeight: '500',
-    opacity: 0.8,
   },
   itemTotal: {
     alignItems: 'flex-start',
     marginTop: 8,
+    gap: 8,
   },
-  totalCard: {
+  totalLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  totalBadgesContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  totalBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(76, 175, 80, 0.2)',
-    minWidth: 90,
   },
-  totalValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  totalCurrency: {
-    fontSize: 10,
+  totalBadgeText: {
+    fontSize: 13,
     fontWeight: '600',
-    opacity: 0.8,
   },
 });

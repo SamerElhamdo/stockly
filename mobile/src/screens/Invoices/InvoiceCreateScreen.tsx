@@ -21,6 +21,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // Step 1: create draft invoice immediately if not editing
   const [invoiceId, setInvoiceId] = useState<number | null>(existingInvoiceId || null);
+  // Check if we're editing based on whether existingInvoiceId was provided
   const isEditMode = Boolean(existingInvoiceId);
   
   useEffect(() => {
@@ -149,7 +150,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
           <View style={styles.headerInfo}>
             <Text style={[styles.enhancedTitle, { color: theme.softPalette.primary?.main || '#1976d2' }]}>
-              {isEditMode ? `تعديل فاتورة #${invoiceId}` : 'فاتورة جديدة'}
+              {isEditMode && invoiceId ? `تعديل فاتورة #${invoiceId}` : 'فاتورة جديدة'}
             </Text>
             <Text style={[styles.enhancedSubtitle, { color: theme.textMuted }]}>{displayCustomerName}</Text>
           </View>

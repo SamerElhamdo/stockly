@@ -50,17 +50,17 @@ const App = () => {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <AuthProvider>
-              <CompanyProvider>
-                <ToastProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <CompanyProvider>
                   <ConfirmationProvider>
                     <SidebarProvider>
                       <AppContent />
                     </SidebarProvider>
                   </ConfirmationProvider>
-                </ToastProvider>
-              </CompanyProvider>
-            </AuthProvider>
+                </CompanyProvider>
+              </AuthProvider>
+            </ToastProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
