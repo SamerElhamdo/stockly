@@ -201,17 +201,61 @@ class InvoiceViewSet(CompanyScopedQuerysetMixin, viewsets.ModelViewSet):
             if not product_id:
                 return Response({'detail': 'product is required'}, status=400)
             product = company_queryset(Product, request.user).get(id=product_id)
-            existing_qty = sum(float(item.qty) for item in invoice.items.filter(product=product))
-            total_required = existing_qty + qty
-            if product.stock_qty < total_required:
-                can_add = max(0, product.stock_qty - existing_qty)
-                return Response({'code': 'insufficient_stock', 'available': product.stock_qty, 'already_in_invoice': existing_qty, 'can_add': can_add}, status=400)
-            InvoiceItem.objects.create(invoice=invoice, product=product, qty=qty, price_at_add=product.price)
+            
+            # Check if product already exists in invoice
+            existing_item = invoice.items.filter(product=product).first()
+            
+            if existing_item:
+                # Update existing item quantity
+                new_qty = float(existing_item.qty) + qty
+                if product.stock_qty < new_qty:
+                    can_add = max(0, product.stock_qty - float(existing_item.qty))
+                    return Response({
+                        'code': 'insufficient_stock', 
+                        'available': product.stock_qty, 
+                        'already_in_invoice': float(existing_item.qty), 
+                        'can_add': can_add
+                    }, status=400)
+                existing_item.qty = new_qty
+                existing_item.save(update_fields=['qty'])
+            else:
+                # Create new item
+                if product.stock_qty < qty:
+                    return Response({
+                        'code': 'insufficient_stock', 
+                        'available': product.stock_qty, 
+                        'already_in_invoice': 0, 
+                        'can_add': product.stock_qty
+                    }, status=400)
+                InvoiceItem.objects.create(invoice=invoice, product=product, qty=qty, price_at_add=product.price)
+            
+            # Recalculate total
             invoice.total_amount = sum(i.line_total for i in invoice.items.all())
             invoice.save(update_fields=['total_amount'])
             return Response(InvoiceSerializer(invoice).data)
         except Product.DoesNotExist:
             return Response({'detail': 'product_not_found'}, status=404)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsCompanyOwner])
+    def remove_item(self, request, pk=None):
+        try:
+            invoice = self.get_object()
+            if invoice.status != Invoice.DRAFT:
+                return Response({'detail': 'Invoice not in draft state'}, status=400)
+            item_id = request.data.get('item_id')
+            if not item_id:
+                return Response({'detail': 'item_id is required'}, status=400)
+            try:
+                item = InvoiceItem.objects.get(id=item_id, invoice=invoice)
+                item.delete()
+                # Recalculate total
+                invoice.total_amount = sum(i.line_total for i in invoice.items.all())
+                invoice.save(update_fields=['total_amount'])
+                return Response(InvoiceSerializer(invoice).data)
+            except InvoiceItem.DoesNotExist:
+                return Response({'detail': 'Item not found in invoice'}, status=404)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=400)
 
     @action(detail=True, methods=['post'], permission_classes=[IsCompanyOwner])
     @transaction.atomic

@@ -15,6 +15,7 @@ import {
   PrinterIcon,
   BanknotesIcon,
   TrashIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
@@ -146,9 +147,9 @@ export const Invoices: React.FC = () => {
 
   // Mutations
   const createInvoiceMutation = useMutation({
-    mutationFn: async (vars: { customerId: number }) => {
+    mutationFn: async (vars: { customerId: number; customerName: string }) => {
       const res = await apiClient.post(endpoints.invoices, { customer: vars.customerId });
-      return res.data as ApiInvoice;
+      return { ...res.data, customerName: vars.customerName } as ApiInvoice & { customerName: string };
     },
     onSuccess: (inv) => {
       toast({ title: 'فاتورة جديدة', description: `تم إنشاء فاتورة مسودة #${inv.id}` });
@@ -159,9 +160,8 @@ export const Invoices: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['balances'] });
-      // Open add item dialog directly
-      setAddItemInvoiceId(inv.id);
-      setAddItemOpen(true);
+      // Navigate to the new create/edit page
+      navigate(`/invoices/create?customerId=${inv.customer}&customerName=${encodeURIComponent((inv as any).customerName)}&invoiceId=${inv.id}`);
     },
     onError: (err: any) => {
       toast({ title: 'خطأ', description: err?.response?.data?.detail || 'تعذر إنشاء الفاتورة', variant: 'destructive' });
@@ -181,6 +181,12 @@ export const Invoices: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refresh data when navigating back to invoices page
+  useEffect(() => {
+    // Invalidate queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+  }, [queryClient]);
 
   const addItemMutation = useMutation({
     mutationFn: async (vars: { invoiceId: number; productId: number; qty: number }) => {
@@ -554,9 +560,11 @@ export const Invoices: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => { setAddItemInvoiceId(invoice.id); setAddItemOpen(true); }}
+                                onClick={() => navigate(`/invoices/edit/${invoice.id}`)}
+                                className="gap-1"
                               >
-                                إضافة {getProductsLabel(1)}
+                                <PencilSquareIcon className="h-4 w-4" />
+                                تعديل
                               </Button>
                           <Button
                             variant="outline"
@@ -661,7 +669,11 @@ export const Invoices: React.FC = () => {
               className='mx-2'
               onClick={() => {
                 if (!selectedCustomer) return;
-                createInvoiceMutation.mutate({ customerId: Number(selectedCustomer) });
+                const customer = customerOptions.find(c => c.id === Number(selectedCustomer));
+                createInvoiceMutation.mutate({ 
+                  customerId: Number(selectedCustomer),
+                  customerName: customer?.name || ''
+                });
               }}
               disabled={!selectedCustomer || createInvoiceMutation.isPending}
             >

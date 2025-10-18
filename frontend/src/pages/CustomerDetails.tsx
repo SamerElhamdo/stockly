@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient, endpoints, normalizeListResponse } from '../lib/api';
@@ -7,7 +7,7 @@ import { Button } from '../components/ui/custom-button';
 import { Skeleton } from '../components/ui/skeleton';
 import { Amount } from '../components/Amount';
 import { useCompany } from '../contexts/CompanyContext';
-import { PrinterIcon, DocumentTextIcon, BanknotesIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { PrinterIcon, DocumentTextIcon, BanknotesIcon, ArrowUturnLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 interface ApiCustomer {
   id: number;
@@ -66,6 +66,7 @@ const parseNumber = (value: number | string | undefined | null): number => {
 
 export const CustomerDetails: React.FC = () => {
   const params = useParams();
+  const navigate = useNavigate();
   const idParam = params.id ? Number(params.id) : NaN;
   const customerId = Number.isFinite(idParam) ? idParam : undefined;
   const { formatAmount } = useCompany();
@@ -212,7 +213,20 @@ export const CustomerDetails: React.FC = () => {
             <div className="p-2 bg-primary-light rounded-full"><DocumentTextIcon className="h-5 w-5 text-primary" /></div>
             <h2 className="text-lg font-semibold text-foreground">فواتير العميل</h2>
           </div>
-          <div className="text-sm text-muted-foreground">عدد الفواتير: {invoicesData?.count ?? invoices.length}</div>
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-muted-foreground">عدد الفواتير: {invoicesData?.count ?? invoices.length}</div>
+            {customerData && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => navigate(`/invoices/create?customerId=${customerData.id}&customerName=${encodeURIComponent(customerData.name)}`)}
+              >
+                <PlusIcon className="h-4 w-4" />
+                إنشاء فاتورة
+              </Button>
+            )}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

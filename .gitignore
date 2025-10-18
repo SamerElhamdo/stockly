@@ -275,3 +275,81 @@ ENV/
 env.bak/
 venv.bak/
 .expo/
+
+# ===========================================
+# Node.js
+# ===========================================
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+bun.lock
+
+# ===========================================
+# Mobile (React Native / Expo)
+# ===========================================
+/mobile/node_modules/
+/mobile/package-lock.json
+/mobile/yarn.lock
+/mobile/pnpm-lock.yaml
+/mobile/bun.lockb
+/mobile/bun.lock
+
+# Android build files
+/mobile/android/app/build/
+/mobile/android/build/
+/mobile/android/.gradle/
+/mobile/android/local.properties
+/mobile/android/app/release/
+/mobile/android/app/debug/
+/mobile/android/.cxx/
+/mobile/android/.idea/
+/mobile/android/*.iml
+/mobile/android/*.hprof
+/mobile/android/captures/
+/mobile/android/keystore.properties
+/mobile/android/key.properties
+
+# iOS build files
+/mobile/ios/build/
+/mobile/ios/Pods/
+/mobile/ios/*.xcworkspace/
+/mobile/ios/*.xcuserdata/
+/mobile/ios/Podfile.lock
+/mobile/ios/.xcode.env.local
+/mobile/ios/DerivedData/
+
+# Expo
+/mobile/.expo/
+/mobile/.expo-shared/
+/mobile/expo-env.d.ts
+/mobile/temp-expo-assets/
+
+# Build outputs
+/mobile/build_outputs/
+/mobile/*.apk
+/mobile/*.aab
+/mobile/*.ipa
+
+# Temp files
+/mobile/local.properties
+
+# React Native
+/mobile/.buckconfig.local
+/mobile/.bundle/
+
+# Typo fix
+moblie/android/
+moblie/ios/
+
+# ===========================================
+# Frontend
+# ===========================================
+/frontend/node_modules/
+/frontend/package-lock.json
+/frontend/yarn.lock
+/frontend/pnpm-lock.yaml
+/frontend/bun.lockb
+/frontend/dist/
+/frontend/build/

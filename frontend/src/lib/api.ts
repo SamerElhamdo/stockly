@@ -106,8 +106,10 @@ export const endpoints = {
   
   // Invoices
   invoices: '/api/v1/invoices/',
+  invoiceDetail: (id: number) => `/api/v1/invoices/${id}/`,
   invoiceDetails: (id: number) => `/api/v1/invoices/${id}/`,
   invoiceAddItem: (id: number) => `/api/v1/invoices/${id}/add_item/`,
+  invoiceRemoveItem: (id: number) => `/api/v1/invoices/${id}/remove_item/`,
   invoiceConfirm: (id: number) => `/api/v1/invoices/${id}/confirm/`,
   invoicePdf: (id: number) => `/api/v1/invoices/${id}/pdf/`,
   invoicePreview: (id: number) => `/api/v1/invoices/${id}/`, // same details endpoint; front renders preview

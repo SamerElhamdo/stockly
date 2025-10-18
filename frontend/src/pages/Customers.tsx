@@ -256,8 +256,8 @@ export const Customers: React.FC = () => {
   const isSavingCustomer = createCustomerMutation.isPending || updateCustomerMutation.isPending;
 
   const createInvoice = (customer: ApiCustomer) => {
-    // انتقل إلى صفحة الفواتير مع تمرير العميل لبدء إنشاء فاتورة ومسار إضافة العناصر
-    navigate('/invoices', { state: { action: 'create_invoice', customerId: customer.id, customerName: customer.name } });
+    // انتقل إلى صفحة إنشاء الفاتورة الجديدة
+    navigate(`/invoices/create?customerId=${customer.id}&customerName=${encodeURIComponent(customer.name)}`);
   };
 
   return (

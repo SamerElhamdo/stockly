@@ -20,6 +20,7 @@ import { Products } from "./pages/Products";
 import { Customers } from "./pages/Customers";
 import { Categories } from "./pages/Categories";
 import { Invoices } from "./pages/Invoices";
+import { InvoiceCreateEdit } from "./pages/InvoiceCreateEdit";
 import { Returns } from "./pages/Returns";
 import { PrintInvoice } from "./pages/PrintInvoice";
 import { PrintReturn } from "./pages/PrintReturn";
@@ -105,7 +106,23 @@ const App = () => (
                 } 
               />
               <Route 
-                path="/print/invoice/:id" 
+                path="/invoices/create" 
+                element={
+                  <ProtectedRoute>
+                    <InvoiceCreateEdit />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/invoices/edit/:id" 
+                element={
+                  <ProtectedRoute>
+                    <InvoiceCreateEdit />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route
+                path="/print/invoice/:id"
                 element={
                   <ProtectedRoute>
                     <PrintInvoice />
