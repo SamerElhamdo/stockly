@@ -8,6 +8,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('account_type', 'company', 'is_active', 'is_staff', 'created_at')
     search_fields = ('username', 'email', 'first_name', 'last_name', 'company__name')
     ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'last_login', 'date_joined')
     
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
