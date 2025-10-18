@@ -296,29 +296,29 @@ bun.lock
 /mobile/bun.lockb
 /mobile/bun.lock
 
-# Android build files
-/mobile/android/app/build/
-/mobile/android/build/
-/mobile/android/.gradle/
-/mobile/android/local.properties
-/mobile/android/app/release/
-/mobile/android/app/debug/
-/mobile/android/.cxx/
-/mobile/android/.idea/
-/mobile/android/*.iml
-/mobile/android/*.hprof
-/mobile/android/captures/
-/mobile/android/keystore.properties
-/mobile/android/key.properties
+# Android build files (keep config files, ignore build outputs)
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/release/
+mobile/android/app/debug/
+mobile/android/.cxx/
+mobile/android/.idea/
+mobile/android/*.iml
+mobile/android/*.hprof
+mobile/android/captures/
+mobile/android/keystore.properties
+mobile/android/key.properties
 
-# iOS build files
-/mobile/ios/build/
-/mobile/ios/Pods/
-/mobile/ios/*.xcworkspace/
-/mobile/ios/*.xcuserdata/
-/mobile/ios/Podfile.lock
-/mobile/ios/.xcode.env.local
-/mobile/ios/DerivedData/
+# iOS build files (keep config files, ignore build outputs)
+mobile/ios/build/
+mobile/ios/Pods/
+mobile/ios/*.xcworkspace/
+mobile/ios/*.xcuserdata/
+mobile/ios/Podfile.lock
+mobile/ios/.xcode.env.local
+mobile/ios/DerivedData/
 
 # Expo
 /mobile/.expo/
@@ -339,9 +339,6 @@ bun.lock
 /mobile/.buckconfig.local
 /mobile/.bundle/
 
-# Typo fix
-moblie/android/
-moblie/ios/
 
 # ===========================================
 # Frontend
