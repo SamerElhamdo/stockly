@@ -13,6 +13,7 @@ import {
   UserIcon,
   KeyIcon,
   EnvelopeIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -950,8 +951,28 @@ export const Auth: React.FC = () => {
           </Tabs>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">© 2024 Stockly. جميع الحقوق محفوظة.</p>
+        <div className="mt-6 space-y-4">
+          {/* Android App Download Button */}
+          {import.meta.env.VITE_ANDROID_APP_URL && (
+            <div className="flex justify-center">
+              <a
+                href={import.meta.env.VITE_ANDROID_APP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition-all hover:from-green-600 hover:to-green-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.81 10.81 0 0 0 1 18h22a10.81 10.81 0 0 0-5.4-8.52M7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5m10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5"/>
+                </svg>
+                <span className="font-semibold">تحميل تطبيق أندرويد</span>
+                <ArrowDownTrayIcon className="h-5 w-5" />
+              </a>
+            </div>
+          )}
+          
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">© 2024 Stockly. جميع الحقوق محفوظة.</p>
+          </div>
         </div>
       </div>
     </div>
