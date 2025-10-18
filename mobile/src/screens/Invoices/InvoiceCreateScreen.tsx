@@ -14,14 +14,21 @@ type Props = NativeStackScreenProps<SalesStackParamList, 'InvoiceCreate'>;
 
 export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
   const { theme } = useTheme();
-  const { customerId, customerName } = route.params;
+  const { customerId, customerName, invoiceId: existingInvoiceId } = route.params;
   const { formatAmount } = useCompany();
   const { showSuccess, showError } = useToast();
   const qc = useQueryClient();
 
-  // Step 1: create draft invoice immediately
-  const [invoiceId, setInvoiceId] = useState<number | null>(null);
+  // Step 1: create draft invoice immediately if not editing
+  const [invoiceId, setInvoiceId] = useState<number | null>(existingInvoiceId || null);
+  const isEditMode = Boolean(existingInvoiceId);
+  
   useEffect(() => {
+    if (existingInvoiceId) {
+      setInvoiceId(existingInvoiceId);
+      return;
+    }
+    
     let mounted = true;
     (async () => {
       try {
@@ -30,7 +37,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
       } catch {}
     })();
     return () => { mounted = false; };
-  }, [customerId]);
+  }, [customerId, existingInvoiceId]);
 
   // Product search and pick
   const [search, setSearch] = useState('');
@@ -80,6 +87,21 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
     },
   });
 
+  const removeItem = useMutation({
+    mutationFn: async (itemId: number) => {
+      if (!invoiceId) throw new Error('no_invoice');
+      const res = await apiClient.post(endpoints.invoiceRemoveItem(invoiceId), { item_id: itemId });
+      return res.data;
+    },
+    onSuccess: () => {
+      showSuccess('تم حذف العنصر من الفاتورة');
+      qc.invalidateQueries({ queryKey: ['invoice-detail', invoiceId] });
+    },
+    onError: (err: any) => {
+      showError(err?.response?.data?.detail || 'فشل في حذف العنصر');
+    },
+  });
+
   const confirm = useMutation({
     mutationFn: async () => {
       if (!invoiceId) throw new Error('no_invoice');
@@ -108,6 +130,14 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
   });
 
   const totalAmount = useMemo(() => Number(invoiceDetail?.total_amount || 0), [invoiceDetail]);
+  
+  // Get customer name from invoice detail if in edit mode
+  const displayCustomerName = useMemo(() => {
+    if (isEditMode && invoiceDetail) {
+      return invoiceDetail.customer_name || customerName;
+    }
+    return customerName;
+  }, [isEditMode, invoiceDetail, customerName]);
 
   return (
     <ScreenContainer refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={theme.textPrimary} />}>
@@ -118,8 +148,10 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
             <Ionicons name="receipt-outline" size={24} color={theme.softPalette.primary?.main || '#1976d2'} />
           </View>
           <View style={styles.headerInfo}>
-            <Text style={[styles.enhancedTitle, { color: theme.softPalette.primary?.main || '#1976d2' }]}>فاتورة جديدة</Text>
-            <Text style={[styles.enhancedSubtitle, { color: theme.textMuted }]}>{customerName}</Text>
+            <Text style={[styles.enhancedTitle, { color: theme.softPalette.primary?.main || '#1976d2' }]}>
+              {isEditMode ? `تعديل فاتورة #${invoiceId}` : 'فاتورة جديدة'}
+            </Text>
+            <Text style={[styles.enhancedSubtitle, { color: theme.textMuted }]}>{displayCustomerName}</Text>
           </View>
           <SoftBadge label="مسودة" variant="info" />
         </View>
@@ -142,6 +174,13 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                     <AmountDisplay amount={Number(it.price_at_add || 0) * Number(it.qty || 0)} />
                   </View>
                 </View>
+                <TouchableOpacity
+                  style={[styles.deleteButton, { backgroundColor: theme.softPalette.destructive?.light || '#fee' }]}
+                  onPress={() => removeItem.mutate(it.id)}
+                  disabled={removeItem.isPending}
+                >
+                  <Ionicons name="trash-outline" size={18} color={theme.softPalette.destructive?.main || '#f00'} />
+                </TouchableOpacity>
               </View>
             ))}
             {!(invoiceDetail?.items || []).length && (
@@ -441,6 +480,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   
   // Search

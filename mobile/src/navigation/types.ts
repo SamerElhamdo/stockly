@@ -14,7 +14,7 @@ export type SalesStackParamList = {
   Returns: undefined;
   Payments: undefined;
   PaymentCreate: { customerId: number; customerName: string; mode: 'add' | 'withdraw' };
-  InvoiceCreate: { customerId: number; customerName: string };
+  InvoiceCreate: { customerId: number; customerName: string; invoiceId?: number };
 };
 
 export type InventoryStackParamList = {

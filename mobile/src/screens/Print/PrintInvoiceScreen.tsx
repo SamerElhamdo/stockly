@@ -349,10 +349,13 @@ export const PrintInvoiceScreen: React.FC<Props> = ({ route }) => {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       {/* Fixed Action Buttons */}
-      <View style={[styles.fixedActions, { backgroundColor: theme.surface }]}>
+      <View style={[styles.fixedActions, { 
+        backgroundColor: theme.surface,
+        position: 'absolute',
+      }]}>
         <TouchableOpacity
           style={[
             styles.primaryButton,
@@ -536,6 +539,10 @@ export const PrintInvoiceScreen: React.FC<Props> = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
   loader: {
     flex: 1,
     alignItems: 'center',
@@ -557,9 +564,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 5,
+    zIndex: 1000,
   },
   primaryButton: {
     flex: 1,
@@ -605,6 +613,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
     marginTop: 110, // Space for fixed actions + status bar
+    zIndex: 1,
   },
   contentWrapper: {
     gap: 16,

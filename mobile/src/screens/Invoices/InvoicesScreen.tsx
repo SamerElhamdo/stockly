@@ -15,10 +15,8 @@ import {
   ListItem,
   AmountDisplay,
   FloatingActionButton,
-  Modal,
   Picker,
   type PickerOption,
-  BarcodeScanner,
   Skeleton,
   SkeletonList,
   LoadingSpinner,
@@ -78,15 +76,7 @@ export const InvoicesScreen: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
-  // Add item to invoice
-  const [addItemOpen, setAddItemOpen] = useState(false);
-  const [currentInvoiceId, setCurrentInvoiceId] = useState<number | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [itemQty, setItemQty] = useState('1');
-  const [productSearch, setProductSearch] = useState('');
 
-  // Scanner
-  const [scannerVisible, setScannerVisible] = useState(false);
   
   // Returns
   const [returnOpen, setReturnOpen] = useState(false);
@@ -118,17 +108,6 @@ export const InvoicesScreen: React.FC = () => {
     enabled: createOpen,
   });
 
-  const { data: products } = useQuery<Product[]>({
-    queryKey: ['products', productSearch],
-    queryFn: async () => {
-      const params: any = { page: 1, archived: false };
-      if (productSearch) params.search = productSearch;
-      const res = await apiClient.get(endpoints.products, { params });
-      const normalized = normalizeListResponse<Product>(res.data);
-      return normalized.results;
-    },
-    enabled: addItemOpen,
-  });
 
   const { data: invoiceDetailForReturn, isLoading: isLoadingReturnData } = useQuery<any>({
     queryKey: ['invoice-detail', returnInvoice?.id],
@@ -187,10 +166,15 @@ export const InvoicesScreen: React.FC = () => {
       showSuccess(`✓ تم إنشاء فاتورة #${invoice.id}`);
       // Reset form
       setCreateOpen(false);
+      const custId = Number(selectedCustomerId);
+      const custName = customers?.find(c => c.id === custId)?.name || 'عميل';
       setSelectedCustomerId('');
-      // Open add item dialog
-      setCurrentInvoiceId(invoice.id);
-      setAddItemOpen(true);
+      // Navigate to invoice create/edit screen
+      navigation.navigate('InvoiceCreate', { 
+        customerId: custId,
+        customerName: custName,
+        invoiceId: invoice.id 
+      });
       // Refresh list
       refetch();
     },
@@ -199,29 +183,6 @@ export const InvoicesScreen: React.FC = () => {
     },
   });
 
-  const addItemMutation = useMutation({
-    mutationFn: async ({ invoiceId, productId, qty, keepOpen }: { invoiceId: number; productId: number; qty: number; keepOpen?: boolean }) => {
-      const res = await apiClient.post(endpoints.invoiceAddItem(invoiceId), {
-        product: productId,
-        qty,
-      });
-      return { data: res.data, keepOpen };
-    },
-    onSuccess: ({ keepOpen }) => {
-      showSuccess('✓ تم إضافة العنصر');
-      setSelectedProductId('');
-      setItemQty('1');
-      setProductSearch('');
-      refetch();
-      if (!keepOpen) {
-        setAddItemOpen(false);
-        setCurrentInvoiceId(null);
-      }
-    },
-    onError: (err: any) => {
-      showError(err?.response?.data?.detail || 'فشل إضافة المنتج');
-    },
-  });
 
   const confirmInvoiceMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -326,29 +287,6 @@ export const InvoicesScreen: React.FC = () => {
     },
   });
 
-  const handleBarcodeScan = async (data: string, type: string) => {
-    // Find product by SKU
-    const found = (products || []).find((p) => p.sku === data);
-    if (found) {
-      setSelectedProductId(String(found.id));
-      const confirmed = await showConfirmation({
-        title: 'تم العثور على المنتج',
-        message: `المنتج: ${found.name}`,
-        confirmText: 'إضافة',
-        cancelText: 'إلغاء',
-      });
-      if (confirmed && currentInvoiceId) {
-        addItemMutation.mutate({
-          invoiceId: currentInvoiceId,
-          productId: found.id,
-          qty: Number(itemQty) || 1,
-          keepOpen: false,
-        });
-      }
-    } else {
-      showError(`لا يوجد منتج بالرمز: ${data}`);
-    }
-  };
 
   const handleConfirm = async (invoice: InvoiceItem) => {
     const confirmed = await showConfirmation({
@@ -497,7 +435,7 @@ export const InvoicesScreen: React.FC = () => {
       </ScreenContainer>
 
       {/* Create Invoice Modal */}
-      <Modal visible={createOpen} onClose={() => setCreateOpen(false)} title="إنشاء فاتورة جديدة" size="small">
+      <SimpleModal visible={createOpen} onClose={() => setCreateOpen(false)} title="إنشاء فاتورة جديدة" size="small">
         <Picker
           label="اختر العميل"
           placeholder="اختر العميل"
@@ -507,9 +445,9 @@ export const InvoicesScreen: React.FC = () => {
         />
         <View style={styles.buttonRow}>
           <Button title="إلغاء" variant="secondary" onPress={() => setCreateOpen(false)} />
-                  <Button
+          <Button
             title="إنشاء"
-                    onPress={() => {
+            onPress={() => {
               if (!selectedCustomerId) {
                 showError('يرجى اختيار عميل');
                 return;
@@ -517,102 +455,10 @@ export const InvoicesScreen: React.FC = () => {
               createInvoiceMutation.mutate(Number(selectedCustomerId));
             }}
             loading={createInvoiceMutation.isPending}
-                  />
-                </View>
-      </Modal>
-
-      {/* Add Item to Invoice Modal */}
-      <Modal visible={addItemOpen} onClose={() => setAddItemOpen(false)} title={`إضافة منتج - فاتورة #${currentInvoiceId}`} size="medium">
-        <View style={styles.searchRow}>
-          <TouchableOpacity
-            style={[styles.scanButton, { backgroundColor: theme.softPalette.primary.main }]}
-            onPress={() => setScannerVisible(true)}
-          >
-            <Ionicons name="barcode-outline" size={20} color="#fff" />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Input placeholder="ابحث عن منتج" value={productSearch} onChangeText={setProductSearch} />
-            </View>
+          />
         </View>
+      </SimpleModal>
 
-        <View style={styles.productList}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>اختر منتج:</Text>
-          <FlatList
-            data={products || []}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => {
-              const isSelected = selectedProductId === String(item.id);
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.productItem,
-                    {
-                      backgroundColor: isSelected ? theme.softPalette.primary.light : theme.surface,
-                      borderColor: isSelected ? theme.softPalette.primary.main : theme.border,
-                    },
-                  ]}
-                  onPress={() => setSelectedProductId(String(item.id))}
-                >
-                  <View style={styles.productInfo}>
-                    <Text style={[styles.productName, { color: theme.textPrimary }]}>{item.name}</Text>
-                    <Text style={[styles.productMeta, { color: theme.textMuted }]}>
-                      {item.sku ? `رمز: ${item.sku} • ` : ''}متوفر: {item.stock_qty}
-                    </Text>
-                  </View>
-                  <AmountDisplay amount={Number(item.price || 0)} />
-                </TouchableOpacity>
-              );
-            }}
-            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-            ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد {getProductsLabel()}</Text>}
-          />
-      </View>
-
-        <Input
-          label="الكمية"
-          placeholder="1"
-          value={itemQty}
-          onChangeText={setItemQty}
-          keyboardType="number-pad"
-        />
-
-        <View style={styles.buttonRow}>
-          <Button title="إلغاء" variant="secondary" onPress={() => setAddItemOpen(false)} />
-      <Button
-            title="إضافة وإغلاق"
-        onPress={() => {
-              if (!selectedProductId || !currentInvoiceId) {
-                showError('يرجى اختيار منتج');
-                return;
-              }
-              addItemMutation.mutate({
-                invoiceId: currentInvoiceId,
-                productId: Number(selectedProductId),
-                qty: Number(itemQty) || 1,
-                keepOpen: false,
-              });
-            }}
-            loading={addItemMutation.isPending}
-          />
-          <Button
-            title="إضافة وإضافة آخر"
-            variant="secondary"
-            onPress={() => {
-              if (!selectedProductId || !currentInvoiceId) {
-                showError('يرجى اختيار منتج');
-                return;
-              }
-              addItemMutation.mutate({
-                invoiceId: currentInvoiceId,
-                productId: Number(selectedProductId),
-                qty: Number(itemQty) || 1,
-                keepOpen: true,
-              });
-            }}
-            loading={addItemMutation.isPending}
-          />
-          </View>
-      </Modal>
 
       {/* Invoice Detail Modal */}
       <SimpleModal
@@ -694,12 +540,15 @@ export const InvoicesScreen: React.FC = () => {
                       style={styles.actionButton}
                     />
                     <Button
-                      title="إضافة عنصر"
+                      title="تعديل الفاتورة"
                       variant="secondary"
                       onPress={() => {
-                        setCurrentInvoiceId(selectedInvoice.id);
-                        setAddItemOpen(true);
                         setDetailOpen(false);
+                        navigation.navigate('InvoiceCreate', { 
+                          customerId: selectedInvoice.customer || 0,
+                          customerName: selectedInvoice.customer_name,
+                          invoiceId: selectedInvoice.id 
+                        });
                       }}
                       style={styles.actionButton}
                     />
@@ -1125,13 +974,6 @@ export const InvoicesScreen: React.FC = () => {
         </View>
       </SimpleModal>
 
-      {/* Barcode Scanner */}
-      <BarcodeScanner
-        visible={scannerVisible}
-        onClose={() => setScannerVisible(false)}
-        onScan={handleBarcodeScan}
-        title="مسح منتج للإضافة"
-      />
     </>
   );
 };
@@ -1231,33 +1073,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  productList: {
-    gap: 8,
-    maxHeight: 200,
-  },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  productItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  productInfo: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  productName: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  productMeta: {
-    fontSize: 12,
-    marginTop: 2,
   },
   detailContent: {
     gap: 16,

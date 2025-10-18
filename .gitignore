@@ -310,6 +310,8 @@ mobile/android/*.hprof
 mobile/android/captures/
 mobile/android/keystore.properties
 mobile/android/key.properties
+mobile/android/app/debug.keystore
+mobile/android/app/*.keystore
 
 # iOS build files (keep config files, ignore build outputs)
 mobile/ios/build/
