@@ -12,7 +12,9 @@ export const AmountDisplay: React.FC<AmountDisplayProps> = ({ amount }) => {
   const { theme } = useTheme();
   const { formatAmountParts, profile, currencySymbols } = useCompany();
 
-  const { primary, secondary } = formatAmountParts(amount);
+  // Round to 2 decimal places to ensure consistent display
+  const roundedAmount = Math.round(amount * 100) / 100;
+  const { primary, secondary } = formatAmountParts(roundedAmount);
 
   const split = (str: string | undefined) => {
     if (!str) return { symbol: '', number: '' };

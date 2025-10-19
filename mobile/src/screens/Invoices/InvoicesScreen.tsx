@@ -138,7 +138,7 @@ export const InvoicesScreen: React.FC = () => {
       if (ret.status === 'rejected') return;
       (ret.items || []).forEach((rit: any) => {
         const key = Number(rit.original_item);
-        const qty = Number(rit.qty_returned || 0);
+        const qty = Math.floor(Number(rit.qty_returned || 0));
         map.set(key, (map.get(key) || 0) + qty);
       });
     });
@@ -242,9 +242,9 @@ export const InvoicesScreen: React.FC = () => {
       const items = Object.entries(returnInputs)
         .map(([k, v]) => {
           const itemId = Number(k);
-          const qtyToReturn = Number(v);
-          const sold = Number(invoiceDetailForReturn?.items?.find((it: any) => it.id === itemId)?.qty || 0);
-          const alreadyReturned = Number(returnedByItemId.get(itemId) || 0);
+          const qtyToReturn = Math.floor(Number(v));
+          const sold = Math.floor(Number(invoiceDetailForReturn?.items?.find((it: any) => it.id === itemId)?.qty || 0));
+          const alreadyReturned = Math.floor(Number(returnedByItemId.get(itemId) || 0));
           const remaining = Math.max(0, sold - alreadyReturned);
           
           return { 
@@ -417,13 +417,26 @@ export const InvoicesScreen: React.FC = () => {
                   setSelectedInvoice(invoice);
                   setDetailOpen(true);
                 }}
+                style={[styles.invoiceCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
               >
-              <ListItem
-                  title={`فاتورة #${invoice.id}`}
-                subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
-                meta={<AmountDisplay amount={invoice.total_amount} /> as any}
-                right={<SoftBadge label={status.label} variant={status.variant} />}
-              />
+                <View style={styles.invoiceHeader}>
+                  <Text style={[styles.invoiceTitle, { color: theme.textPrimary }]}>فاتورة #{invoice.id}</Text>
+                  <AmountDisplay amount={invoice.total_amount} />
+                </View>
+                
+                <View style={styles.invoiceDetails}>
+                  <Text style={[styles.customerName, { color: theme.textPrimary }]}>{invoice.customer_name}</Text>
+                  <Text style={[styles.invoiceDate, { color: theme.textMuted }]}>{mergeDateTime(invoice.created_at)}</Text>
+                </View>
+                
+                <View style={[styles.invoiceDivider, { backgroundColor: theme.border }]} />
+                
+                <View style={styles.invoiceFooter}>
+                  <View style={styles.invoiceInfo}>
+                    <Text style={[styles.statusLabel, { color: theme.textMuted }]}>الحالة:</Text>
+                    <SoftBadge label={status.label} variant={status.variant} />
+                  </View>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -498,7 +511,7 @@ export const InvoicesScreen: React.FC = () => {
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                        <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {item.qty || 0}</Text>
+                        <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {Math.floor(Number(item.qty || 0))}</Text>
                         <AmountDisplay amount={Number(item.price_at_add || 0)} />
                       </View>
                     </View>
@@ -628,13 +641,13 @@ export const InvoicesScreen: React.FC = () => {
           {(() => {
             const totalItems = (invoiceDetailForReturn?.items || []).length;
             const returnableItems = (invoiceDetailForReturn?.items || []).filter((item: any) => {
-              const sold = Number(item.qty || 0);
-              const alreadyReturned = Number(returnedByItemId.get(item.id) || 0);
+              const sold = Math.floor(Number(item.qty || 0));
+              const alreadyReturned = Math.floor(Number(returnedByItemId.get(item.id) || 0));
               const remaining = Math.max(0, sold - alreadyReturned);
               return remaining > 0;
             }).length;
-            const selectedItems = Object.values(returnInputs).filter(v => v && Number(v) > 0).length;
-            const totalSelectedQty = Object.values(returnInputs).reduce((sum, v) => sum + (Number(v) || 0), 0);
+            const selectedItems = Object.values(returnInputs).filter(v => v && Math.floor(Number(v)) > 0).length;
+            const totalSelectedQty = Object.values(returnInputs).reduce((sum, v) => sum + Math.floor(Number(v) || 0), 0);
             
             return (
               <View style={[
@@ -699,8 +712,8 @@ export const InvoicesScreen: React.FC = () => {
             ) : (
               <>
                 {(invoiceDetailForReturn?.items || []).map((item: any, index: number) => {
-                  const sold = Number(item.qty || 0);
-                  const alreadyReturned = Number(returnedByItemId.get(item.id) || 0);
+                  const sold = Math.floor(Number(item.qty || 0));
+                  const alreadyReturned = Math.floor(Number(returnedByItemId.get(item.id) || 0));
                   const remaining = Math.max(0, sold - alreadyReturned);
                   const canReturn = remaining > 0;
                   const selectedQty = Number(returnInputs[item.id] || 0);
@@ -812,8 +825,9 @@ export const InvoicesScreen: React.FC = () => {
                           placeholder="0"
                           value={returnInputs[item.id] ?? ''}
                           onChangeText={(v) => {
-                            // السماح بكتابة أي رقم، حتى لو كان أكبر من المتاح
-                            setReturnInputs((prev) => ({ ...prev, [item.id]: v }));
+                            // السماح فقط بالأرقام الصحيحة (بدون فواصل عشرية)
+                            const cleanValue = v.replace(/[^0-9]/g, '');
+                            setReturnInputs((prev) => ({ ...prev, [item.id]: cleanValue }));
                           }}
                           keyboardType="numeric"
                           returnKeyType="done"
@@ -833,7 +847,7 @@ export const InvoicesScreen: React.FC = () => {
                               fontSize: 20,
                               fontWeight: '700',
                               color: (() => {
-                                const numValue = Number(returnInputs[item.id] || 0);
+                                const numValue = Math.floor(Number(returnInputs[item.id] || 0));
                                 if (!canReturn) {
                                   return theme.softPalette.destructive?.main || '#d32f2f';
                                 }
@@ -846,7 +860,7 @@ export const InvoicesScreen: React.FC = () => {
                                 return theme.textPrimary;
                               })(),
                               textDecorationLine: (() => {
-                                const numValue = Number(returnInputs[item.id] || 0);
+                                const numValue = Math.floor(Number(returnInputs[item.id] || 0));
                                 return (canReturn && numValue > remaining) ? 'line-through' : 'none';
                               })(),
                             }
@@ -859,7 +873,7 @@ export const InvoicesScreen: React.FC = () => {
                         
                         {/* تحذير عند تجاوز الحد المسموح */}
                         {canReturn && (() => {
-                          const numValue = Number(returnInputs[item.id] || 0);
+                          const numValue = Math.floor(Number(returnInputs[item.id] || 0));
                           return numValue > remaining && numValue > 0;
                         })() && (
                           <View style={[styles.warningContainer, { backgroundColor: theme.softPalette.destructive?.light || '#ffebee' }]}>
@@ -945,8 +959,8 @@ export const InvoicesScreen: React.FC = () => {
               onPress={() => {
                 const newInputs: any = {};
                 (invoiceDetailForReturn?.items || []).forEach((item: any) => {
-                  const sold = Number(item.qty || 0);
-                  const alreadyReturned = Number(returnedByItemId.get(item.id) || 0);
+                  const sold = Math.floor(Number(item.qty || 0));
+                  const alreadyReturned = Math.floor(Number(returnedByItemId.get(item.id) || 0));
                   const remaining = Math.max(0, sold - alreadyReturned);
                   if (remaining > 0) {
                     newInputs[item.id] = remaining.toString();
@@ -1084,44 +1098,59 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 12,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   detailLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'left',
+    writingDirection: 'rtl',
+    flex: 1,
+    opacity: 0.8,
+  },
+  detailValue: {
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'right',
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'right',
     flex: 1,
+    writingDirection: 'rtl',
   },
   divider: {
     height: 1,
+    opacity: 0.3,
+    marginVertical: 4,
   },
   actionsSection: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 2,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
     borderTopColor: '#eee',
+    opacity: 0.8,
   },
   actionsGrid: {
-    gap: 12,
+    gap: 10,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   actionButton: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 38,
   },
   itemRow: {
     flexDirection: 'row',
@@ -1453,5 +1482,69 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Invoice Card Styles
+  invoiceCard: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  invoiceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  invoiceTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    writingDirection: 'rtl',
+  },
+  invoiceDetails: {
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 2,
+  },
+  customerName: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+  },
+  invoiceDate: {
+    fontSize: 11,
+    fontWeight: '400',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+  },
+  invoiceDivider: {
+    height: 1,
+    opacity: 0.3,
+    marginVertical: 6,
+    width: '60%',
+    alignSelf: 'center',
+  },
+  invoiceFooter: {
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  invoiceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    writingDirection: 'rtl',
   },
 });

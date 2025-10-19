@@ -171,7 +171,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: theme.textPrimary }]}>{it.product_name}</Text>
                   <View style={styles.itemDetails}>
-                    <SoftBadge label={`الكمية: ${it.qty || 0}`} variant="info" />
+                      <SoftBadge label={`الكمية: ${Math.floor(Number(it.qty || 0))}`} variant="info" />
                     <AmountDisplay amount={Number(it.price_at_add || 0) * Number(it.qty || 0)} />
                   </View>
                 </View>
@@ -249,7 +249,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                     <View style={styles.quantityControls}>
                       <TouchableOpacity
                         onPress={() => {
-                          const currentQty = Number(qtyByProduct[p.id] || 1);
+                          const currentQty = Math.floor(Number(qtyByProduct[p.id] || 1));
                           if (currentQty > 1) {
                             setQtyByProduct((prev) => ({ ...prev, [p.id]: String(currentQty - 1) }));
                           }
@@ -259,10 +259,10 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                           { 
                             backgroundColor: theme.softPalette.destructive?.light || '#ffebee', 
                             borderColor: theme.softPalette.destructive?.main || '#d32f2f',
-                            opacity: Number(qtyByProduct[p.id] || 1) <= 1 ? 0.5 : 1,
+                            opacity: Math.floor(Number(qtyByProduct[p.id] || 1)) <= 1 ? 0.5 : 1,
                           }
                         ]}
-                        disabled={Number(qtyByProduct[p.id] || 1) <= 1}
+                        disabled={Math.floor(Number(qtyByProduct[p.id] || 1)) <= 1}
                       >
                         <Ionicons name="remove" size={16} color={theme.softPalette.destructive?.main || '#d32f2f'} />
                       </TouchableOpacity>
@@ -270,8 +270,13 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                       <TextInput
                         value={qtyByProduct[p.id] ?? '1'}
                         onChangeText={(v) => {
-                          // السماح بكتابة أي رقم، حتى لو كان أكبر من المتاح
-                          setQtyByProduct((prev) => ({ ...prev, [p.id]: v }));
+                          // السماح فقط بالأرقام الصحيحة (بدون فواصل عشرية)
+                          const cleanValue = v.replace(/[^0-9]/g, '');
+                          if (cleanValue === '' || cleanValue === '0') {
+                            setQtyByProduct((prev) => ({ ...prev, [p.id]: '1' }));
+                          } else {
+                            setQtyByProduct((prev) => ({ ...prev, [p.id]: cleanValue }));
+                          }
                         }}
                         keyboardType="numeric"
                         returnKeyType="done"
@@ -284,7 +289,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                           { 
                             backgroundColor: theme.surface, 
                             borderColor: (() => {
-                              const numValue = Number(qtyByProduct[p.id] || 0);
+                              const numValue = Math.floor(Number(qtyByProduct[p.id] || 0));
                               const maxQty = p.stock_qty || 0;
                               if (numValue > maxQty && numValue > 0) {
                                 return theme.softPalette.destructive?.main || '#d32f2f';
@@ -292,7 +297,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                               return theme.border;
                             })(),
                             color: (() => {
-                              const numValue = Number(qtyByProduct[p.id] || 0);
+                              const numValue = Math.floor(Number(qtyByProduct[p.id] || 0));
                               const maxQty = p.stock_qty || 0;
                               if (numValue > maxQty && numValue > 0) {
                                 return theme.softPalette.destructive?.main || '#d32f2f';
@@ -307,7 +312,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                       
                       <TouchableOpacity
                         onPress={() => {
-                          const currentQty = Number(qtyByProduct[p.id] || 1);
+                          const currentQty = Math.floor(Number(qtyByProduct[p.id] || 1));
                           setQtyByProduct((prev) => ({ ...prev, [p.id]: String(currentQty + 1) }));
                         }}
                         style={[
@@ -326,7 +331,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                     <TouchableOpacity
                       onPress={() => {
                         const raw = qtyByProduct[p.id] || '1';
-                        const q = Math.max(1, Number(raw));
+                        const q = Math.max(1, Math.floor(Number(raw)));
                         const maxQty = p.stock_qty || 0;
                         
                         if (q > maxQty) {
@@ -357,7 +362,7 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                   
                   {/* Warning Message - في سطر منفصل */}
                   {(() => {
-                    const numValue = Number(qtyByProduct[p.id] || 0);
+                    const numValue = Math.floor(Number(qtyByProduct[p.id] || 0));
                     const maxQty = p.stock_qty || 0;
                     if (numValue > maxQty && numValue > 0) {
                       return (
