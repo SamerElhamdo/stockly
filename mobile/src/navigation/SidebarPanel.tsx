@@ -244,41 +244,41 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   links: { 
-    gap: 8, 
+    gap: 6,                    // قلل المسافة بين الأزرار
     flex: 1, 
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 12,         // قلل من 16 إلى 12
   },
   link: { fontSize: 15, textAlign: 'right' },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 6,        // قلل ارتفاع الزر
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
+    width: 28,                 // قلل حجم الأيقونة
+    height: 28,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemLabel: { 
-    fontSize: 14, 
+    fontSize: 13,              // قلل حجم النص
     textAlign: 'right',
     fontWeight: '500',
   },
   logout: { 
     borderRadius: 10, 
-    paddingVertical: 12, 
+    paddingVertical: 10,       // قلل من 12 إلى 10
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 8,
+    marginTop: 6,              // قلل من 8 إلى 6
   },
   logoutText: { 
     color: '#fff', 
