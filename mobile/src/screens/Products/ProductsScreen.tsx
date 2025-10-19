@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal, ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -64,6 +64,9 @@ export const ProductsScreen: React.FC = () => {
   const { showConfirmation } = useConfirmation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchCurrentPage, setSearchCurrentPage] = useState(1);
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
 
@@ -101,12 +104,77 @@ export const ProductsScreen: React.FC = () => {
   }, [route?.params?.openAdd, navigation]);
 
   const { data: products, isLoading, refetch, isRefetching } = useQuery<ProductItem[]>({
-    queryKey: ['products'],
+    queryKey: ['products', currentPage],
     queryFn: async () => {
-      const res = await apiClient.get(endpoints.products, { params: { page: 1, archived: false } });
+      const res = await apiClient.get(endpoints.products, { params: { page: currentPage, archived: false } });
       const normalized = normalizeListResponse<ProductItem>(res.data);
       return normalized.results;
     },
+  });
+
+  // Get pagination info for regular products
+  const { data: productsPaginationInfo } = useQuery({
+    queryKey: ['products', 'pagination', currentPage],
+    queryFn: async () => {
+      const res = await apiClient.get(endpoints.products, { params: { page: currentPage, archived: false } });
+      const normalized = normalizeListResponse<ProductItem>(res.data);
+      return {
+        count: normalized.count,
+        next: res.data.next,
+        previous: res.data.previous,
+        totalPages: Math.ceil(normalized.count / 20) // Assuming 20 items per page
+      };
+    },
+  });
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setSearchCurrentPage(1); // Reset search page when search changes
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Search query with API endpoint and pagination
+  const { data: searchResults, isLoading: isSearching } = useQuery<ProductItem[]>({
+    queryKey: ['products', 'search', debouncedSearch, searchCurrentPage],
+    queryFn: async () => {
+      if (!debouncedSearch.trim()) return [];
+      const res = await apiClient.get(endpoints.products, { 
+        params: { 
+          page: searchCurrentPage, 
+          archived: false,
+          search: debouncedSearch.trim()
+        } 
+      });
+      const normalized = normalizeListResponse<ProductItem>(res.data);
+      return normalized.results;
+    },
+    enabled: debouncedSearch.trim().length > 0,
+  });
+
+  // Get pagination info for search results
+  const { data: searchPaginationInfo } = useQuery({
+    queryKey: ['products', 'search', 'pagination', debouncedSearch, searchCurrentPage],
+    queryFn: async () => {
+      if (!debouncedSearch.trim()) return null;
+      const res = await apiClient.get(endpoints.products, { 
+        params: { 
+          page: searchCurrentPage, 
+          archived: false,
+          search: debouncedSearch.trim()
+        } 
+      });
+      const normalized = normalizeListResponse<ProductItem>(res.data);
+      return {
+        count: normalized.count,
+        next: res.data.next,
+        previous: res.data.previous,
+        totalPages: Math.ceil(normalized.count / 20)
+      };
+    },
+    enabled: debouncedSearch.trim().length > 0,
   });
 
   const { data: categories } = useQuery<Category[]>({
@@ -119,15 +187,34 @@ export const ProductsScreen: React.FC = () => {
   });
 
   const filteredProducts = useMemo(() => {
-    if (!search.trim()) return products || [];
-    const keyword = search.trim().toLowerCase();
-    return (products || []).filter(
-      (product) =>
-        product.name.toLowerCase().includes(keyword) ||
-        (product.sku || '').toLowerCase().includes(keyword) ||
-        (product.category_name || '').toLowerCase().includes(keyword)
-    );
-  }, [products, search]);
+    if (!debouncedSearch.trim()) return products || [];
+    return searchResults || [];
+  }, [products, debouncedSearch, searchResults]);
+
+  // Get current pagination info
+  const currentPaginationInfo = useMemo(() => {
+    return debouncedSearch.trim() ? searchPaginationInfo : productsPaginationInfo;
+  }, [debouncedSearch, searchPaginationInfo, productsPaginationInfo]);
+
+  // Navigation functions
+  const goToNextPage = () => {
+    if (debouncedSearch.trim()) {
+      setSearchCurrentPage(prev => prev + 1);
+    } else {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (debouncedSearch.trim()) {
+      setSearchCurrentPage(prev => Math.max(1, prev - 1));
+    } else {
+      setCurrentPage(prev => Math.max(1, prev - 1));
+    }
+  };
+
+  const canGoNext = currentPaginationInfo?.next !== null;
+  const canGoPrevious = currentPaginationInfo?.previous !== null;
 
   const totalInventoryValue = useMemo(() => {
     return (products || []).reduce((sum, product) => sum + parseNumber(product.price) * Number(product.stock_qty || 0), 0);
@@ -259,15 +346,9 @@ export const ProductsScreen: React.FC = () => {
 
   const handleBarcodeScan = (data: string, type: string) => {
     if (scanMode === 'search') {
-      // Search for product by SKU
+      // Search for product by SKU using API
       setSearch(data);
-      const found = (products || []).find((p) => p.sku === data);
-      if (found) {
-        setSelectedProduct(found);
-        setDetailOpen(true);
-      } else {
-        showError(`لا يوجد ${getProductsLabel()} بالرمز: ${data}`);
-      }
+      // The search will be handled by the useQuery hook automatically
     } else {
       // Add product with scanned SKU
       resetForm();
@@ -299,7 +380,17 @@ export const ProductsScreen: React.FC = () => {
   return (
     <>
       <ScreenContainer
-        refreshControl={<RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={theme.textPrimary} />}
+        refreshControl={<RefreshControl refreshing={isLoading || isRefetching} onRefresh={() => {
+          refetch();
+          if (debouncedSearch.trim()) {
+            // Refetch search results when refreshing during search
+            queryClient.invalidateQueries({ queryKey: ['products', 'search', debouncedSearch, searchCurrentPage] });
+            queryClient.invalidateQueries({ queryKey: ['products', 'search', 'pagination', debouncedSearch, searchCurrentPage] });
+          } else {
+            // Refetch pagination info for regular products
+            queryClient.invalidateQueries({ queryKey: ['products', 'pagination', currentPage] });
+          }
+        }} tintColor={theme.textPrimary} />}
       >
         <View style={styles.headerBlock}>
           <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>إدارة {getProductsLabel()}</Text>
@@ -307,8 +398,10 @@ export const ProductsScreen: React.FC = () => {
         </View>
 
         <View style={styles.summaryRow}>
-          <SoftBadge label={`الإجمالي: ${products?.length || 0} ${getProductsLabel(products?.length || 0)}`} variant="info" />
-          <SoftBadge label={`قيمة المخزون: ${formatAmount(totalInventoryValue)}`} variant="success" />
+          <SoftBadge 
+            label={`إجمالي ${getProductsLabel()}: ${currentPaginationInfo?.count || 0}`} 
+            variant="info" 
+          />
         </View>
 
         {/* Search Bar with Barcode Button */}
@@ -323,14 +416,29 @@ export const ProductsScreen: React.FC = () => {
             <Ionicons name="barcode-outline" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Input placeholder={`ابحث باسم ${getProductsLabel()} أو الرمز`} value={search} onChangeText={setSearch} autoCorrect={false} />
+            <Input 
+              placeholder={`ابحث باسم ${getProductsLabel()} أو الرمز`} 
+              value={search} 
+              onChangeText={setSearch} 
+              autoCorrect={false}
+              trailing={isSearching && search.trim() ? <LoadingSpinner size={16} /> : undefined}
+            />
           </View>
         </View>
 
         <View style={styles.listWrapper}>
-          <SectionHeader title={getProductsLabel()} subtitle={isLoading ? 'جاري التحميل...' : `${filteredProducts.length} ${getProductsLabel(filteredProducts.length)}`} />
+            <SectionHeader 
+            title={getProductsLabel()} 
+            subtitle={
+              isLoading || isSearching ? 'جاري التحميل...' : 
+              debouncedSearch.trim() ? `نتائج البحث: ${filteredProducts.length} ${getProductsLabel(filteredProducts.length)}` :
+              currentPaginationInfo && currentPaginationInfo.totalPages > 1 ?
+              `صفحة ${currentPage} - ${filteredProducts.length} ${getProductsLabel(filteredProducts.length)}` :
+              `${filteredProducts.length} ${getProductsLabel(filteredProducts.length)}`
+            } 
+          />
           
-          {isLoading ? (
+          {isLoading || isSearching ? (
             <SkeletonList count={6} itemHeight={80} />
           ) : (
             <>
@@ -343,18 +451,133 @@ export const ProductsScreen: React.FC = () => {
                       setSelectedProduct(product);
                       setDetailOpen(true);
                     }}
+                    style={[
+                      styles.productCard, 
+                      { 
+                        backgroundColor: theme.surface, 
+                        borderColor: theme.border,
+                        shadowColor: theme.textPrimary,
+                      }
+                    ]}
                   >
-                    <ListItem
-                      title={product.name}
-                      subtitle={`${product.sku ? `رمز: ${product.sku} • ` : ''}متوفر: ${product.stock_qty}`}
-                      meta={<AmountDisplay amount={parseNumber(product.price)} /> as any}
-                      right={<SoftBadge label={stockStatus.label} variant={stockStatus.variant} />}
-                    />
+                    {/* Product Header */}
+                    <View style={styles.productHeader}>
+                      <Text style={[styles.productName, { color: theme.textPrimary }]}>{product.name}</Text>
+                      <View style={styles.productPrice}>
+                        <AmountDisplay amount={parseNumber(product.price)} />
+                      </View>
+                    </View>
+
+                    {/* Product Details */}
+                    <View style={styles.productDetails}>
+                      <Text style={[styles.productCategory, { color: theme.textMuted }]}>
+                        {product.category_name || 'بدون فئة'}
+                      </Text>
+                      {product.sku && (
+                        <Text style={[styles.productSku, { color: theme.textMuted }]}>{product.sku}</Text>
+                      )}
+                    </View>
+
+                    {/* Divider */}
+                    <View style={[styles.productDivider, { backgroundColor: theme.border }]} />
+
+                    {/* Product Footer */}
+                    <View style={styles.productFooter}>
+                      <View style={styles.stockInfo}>
+                        <Text style={[styles.stockLabel, { color: theme.textMuted }]}>متوفر:</Text>
+                        <Text style={[styles.stockValue, { color: theme.textPrimary }]}>{product.stock_qty}</Text>
+                      </View>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
-              {!filteredProducts?.length && <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد {getProductsLabel()}</Text>}
+              {!filteredProducts?.length && !isLoading && !isSearching && (
+                <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                  {debouncedSearch.trim() ? 
+                    `لا توجد نتائج للبحث عن: "${debouncedSearch}"` : 
+                    currentPaginationInfo && currentPaginationInfo.totalPages > 1 ?
+                    `لا توجد ${getProductsLabel()} في هذه الصفحة` :
+                    `لا توجد ${getProductsLabel()}`
+                  }
+                </Text>
+              )}
             </>
+          )}
+
+          {/* Pagination Controls - Bottom */}
+          {currentPaginationInfo && (currentPaginationInfo.totalPages > 1) && (
+            <View style={[styles.paginationContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={styles.paginationInfo}>
+                <View style={styles.pageInfo}>
+                  <View style={styles.pageInfoRow}>
+                    <Ionicons name="document-text-outline" size={18} color={theme.textPrimary} />
+                    <Text style={[styles.paginationText, { color: theme.textPrimary }]}>
+                      صفحة {debouncedSearch.trim() ? searchCurrentPage : currentPage} من {currentPaginationInfo.totalPages}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.itemsInfo}>
+                  <View style={styles.itemsInfoRow}>
+                    <Ionicons name="list-outline" size={16} color={theme.textMuted} />
+                    <Text style={[styles.paginationSubText, { color: theme.textMuted }]}>
+                      عرض {filteredProducts.length} من {currentPaginationInfo.count} {getProductsLabel(currentPaginationInfo.count)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              
+              <View style={styles.paginationButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.paginationButton,
+                    { 
+                      backgroundColor: !canGoPrevious ? theme.surface : theme.softPalette.primary.main,
+                      borderColor: !canGoPrevious ? theme.border : theme.softPalette.primary.main,
+                      opacity: (!canGoPrevious || isLoading || isSearching) ? 0.5 : 1
+                    }
+                  ]}
+                  onPress={goToPreviousPage}
+                  disabled={!canGoPrevious || isLoading || isSearching}
+                >
+                  <Ionicons 
+                    name="chevron-forward" 
+                    size={20} 
+                    color={!canGoPrevious ? theme.textMuted : '#fff'} 
+                  />
+                  <Text style={[
+                    styles.buttonText, 
+                    { color: !canGoPrevious ? theme.textMuted : '#fff' }
+                  ]}>
+                    السابق
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.paginationButton,
+                    { 
+                      backgroundColor: !canGoNext ? theme.surface : theme.softPalette.primary.main,
+                      borderColor: !canGoNext ? theme.border : theme.softPalette.primary.main,
+                      opacity: (!canGoNext || isLoading || isSearching) ? 0.5 : 1
+                    }
+                  ]}
+                  onPress={goToNextPage}
+                  disabled={!canGoNext || isLoading || isSearching}
+                >
+                  <Text style={[
+                    styles.buttonText, 
+                    { color: !canGoNext ? theme.textMuted : '#fff' }
+                  ]}>
+                    التالي
+                  </Text>
+                  <Ionicons 
+                    name="chevron-back" 
+                    size={20} 
+                    color={!canGoNext ? theme.textMuted : '#fff'} 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
 
@@ -514,44 +737,44 @@ export const ProductsScreen: React.FC = () => {
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={[styles.infoCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>{`${getProductsLabel()} الاسم`}</Text>
                 <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.name}</Text>
-                <Text style={[styles.detailLabel, { color: theme.textMuted }]}>{`الاسم ${getProductsLabel()}`}</Text>
               </View>
               
               {selectedProduct.sku && (
                 <>
                   <View style={[styles.divider, { backgroundColor: theme.border }]} />
                   <View style={styles.detailRow}>
-                    <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.sku}</Text>
                     <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الرمز</Text>
+                    <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.sku}</Text>
                   </View>
                 </>
               )}
               
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.category_name || '-'}</Text>
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الفئة</Text>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.category_name || '-'}</Text>
               </View>
               
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <AmountDisplay amount={parseNumber(selectedProduct.price)} />
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>السعر</Text>
+                <AmountDisplay amount={parseNumber(selectedProduct.price)} />
               </View>
               
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.stock_qty}</Text>
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المخزون</Text>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.stock_qty}</Text>
               </View>
               
               {selectedProduct.unit_display && (
                 <>
                   <View style={[styles.divider, { backgroundColor: theme.border }]} />
                   <View style={styles.detailRow}>
-                    <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.unit_display}</Text>
                     <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الوحدة</Text>
+                    <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedProduct.unit_display}</Text>
                   </View>
                 </>
               )}
@@ -651,13 +874,16 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 13,
     fontWeight: '600',
-    textAlign: 'right',
+    textAlign: 'left',
+    writingDirection: 'rtl',
+    flex: 1,
   },
   detailValue: {
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'right',
     flex: 1,
+    writingDirection: 'rtl',
   },
   divider: {
     height: 1,
@@ -682,5 +908,158 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  paginationContainer: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  paginationInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
+  pageInfo: {
+    alignItems: 'center',
+  },
+  itemsInfo: {
+    alignItems: 'center',
+  },
+  pageInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  itemsInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  paginationText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  paginationSubText: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  paginationButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    justifyContent: 'center',
+  },
+  paginationButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Product Card Styles
+  productCard: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    transform: [{ scale: 1 }],
+  },
+  productHeader: {
+    marginBottom: 6,
+    alignItems: 'center',
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 6,
+    writingDirection: 'rtl',
+    lineHeight: 20,
+  },
+  productPrice: {
+    alignItems: 'center',
+  },
+  productDetails: {
+    marginBottom: 8,
+    gap: 2,
+    alignItems: 'center',
+  },
+  productCategory: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    opacity: 0.8,
+  },
+  productSku: {
+    fontSize: 12,
+    fontWeight: '400',
+    textAlign: 'center',
+    opacity: 0.6,
+  },
+  productDivider: {
+    height: 1,
+    marginVertical: 8,
+    opacity: 0.2,
+    borderRadius: 1,
+    width: '60%',
+    alignSelf: 'center',
+  },
+  productFooter: {
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  stockInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    justifyContent: 'center',
+  },
+  stockLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    opacity: 0.8,
+  },
+  stockValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    writingDirection: 'rtl',
   },
 });

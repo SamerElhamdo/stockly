@@ -33,21 +33,21 @@ export const AmountDisplay: React.FC<AmountDisplayProps> = ({ amount }) => {
   return (
     <View style={styles.wrap}>
       <View style={styles.row}> 
+        <Text style={[styles.value, { color: theme.textPrimary }]}>{p.number}</Text>
         {p.symbol ? (
           <View style={[styles.badge, { backgroundColor: mainBadge.light, borderColor: mainBadge.main + '44' }]}> 
             <Text style={[styles.badgeText, { color: mainBadge.dark }]}>{p.symbol}</Text>
           </View>
         ) : null}
-        <Text style={[styles.value, { color: theme.textPrimary }]}>{p.number}</Text>
       </View>
       {s.number ? (
         <View style={styles.row}> 
+          <Text style={[styles.valueSecondary, { color: theme.textSecondary }]}>{s.number}</Text>
           <View style={[styles.badge, { backgroundColor: secondaryBadge.light, borderColor: secondaryBadge.main + '44' }]}> 
             <Text style={[styles.badgeText, { color: secondaryBadge.dark }]}>
               {s.symbol || (profile?.secondary_currency ? (currencySymbols[profile.secondary_currency] || profile.secondary_currency) : '')}
             </Text>
           </View>
-          <Text style={[styles.valueSecondary, { color: theme.textSecondary }]}>{s.number}</Text>
         </View>
       ) : null}
     </View>
