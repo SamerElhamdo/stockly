@@ -99,26 +99,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       await setAuthTokens(access, refresh);
 
+      // Try to get user data from response or token
       let resolvedUser: User | null = null;
+      let userId = 0;
+      
+      // First try from response payload
       if (payloadUser && typeof payloadUser === 'object') {
+        userId = Number(payloadUser.id) || 0;
         resolvedUser = {
-          id: Number(payloadUser.id) || 0,
-          username: payloadUser.username || username,
+          id: userId,
+          username: username, // Always use the entered username
           email: payloadUser.email,
           first_name: payloadUser.first_name,
           last_name: payloadUser.last_name,
         };
-      }
-
-      if (!resolvedUser) {
-        resolvedUser = decodeTokenPayload(access) || {
-          id: 0,
-          username,
+      } else {
+        // Try from decoded token
+        const decoded = decodeTokenPayload(access);
+        userId = decoded ? (Number((decoded as any).user_id) || decoded.id || 0) : 0;
+        resolvedUser = {
+          id: userId,
+          username: username, // Always use the entered username
+          email: decoded?.email,
+          first_name: decoded?.first_name,
+          last_name: decoded?.last_name,
         };
       }
 
+      console.log('✅ User data to save:', resolvedUser);
+      console.log('📝 Username from login input:', username);
       setUser(resolvedUser);
       await persistUser(resolvedUser);
+      console.log('💾 User saved to storage');
       return true;
     } catch (error: any) {
       console.error('Login error', error);

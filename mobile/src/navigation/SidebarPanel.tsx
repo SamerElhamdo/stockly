@@ -13,6 +13,12 @@ export const SidebarPanel: React.FC = () => {
   const { user, logout } = useAuth();
   const { profile } = useCompany();
   
+  // Debug: log user data
+  useEffect(() => {
+    console.log('👤 Sidebar - User data:', user);
+    console.log('🏢 Sidebar - Company profile:', profile);
+  }, [user, profile]);
+  
   // Get screen dimensions and calculate panel width dynamically
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
   const PANEL_WIDTH = Math.min(320, Math.round(dimensions.width * 0.82));
