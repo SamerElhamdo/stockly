@@ -485,3 +485,34 @@ class CustomerBalance(models.Model):
         self.balance = self.total_invoiced - self.total_paid - self.total_returns
         self.save()
         return self.balance
+
+
+class AppConfig(models.Model):
+    """
+    إعدادات التطبيق - يحتوي على إعدادات عامة للتطبيق
+    """
+    apk_download_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name='رابط تحميل تطبيق Android',
+        help_text='رابط تحميل ملف APK من MediaFire أو أي موقع آخر'
+    )
+    
+    class Meta:
+        verbose_name = 'إعدادات التطبيق'
+        verbose_name_plural = 'إعدادات التطبيق'
+    
+    def __str__(self):
+        return 'إعدادات التطبيق'
+    
+    def save(self, *args, **kwargs):
+        """التأكد من وجود سجل واحد فقط"""
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_config(cls):
+        """الحصول على الإعدادات (أو إنشاؤها إذا لم تكن موجودة)"""
+        config, created = cls.objects.get_or_create(pk=1)
+        return config

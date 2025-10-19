@@ -13,7 +13,7 @@ import requests
 from .models import (
     Company, CompanyProfile, User, Category, Product, Customer,
     Invoice, InvoiceItem, Return, ReturnItem, Payment,
-    CustomerBalance, OTPVerification, company_queryset
+    CustomerBalance, OTPVerification, AppConfig, company_queryset
 )
 from .serializers import (
     CompanySerializer, CompanyProfileSerializer, UserSerializer, CategorySerializer, ProductSerializer,
@@ -780,3 +780,16 @@ class LegacyDeleteUserView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=400)
 
+
+class AppConfigView(APIView):
+    """
+    API endpoint للحصول على إعدادات التطبيق (مثل رابط تحميل APK)
+    """
+    permission_classes = []  # متاح للجميع
+    
+    def get(self, request):
+        """الحصول على إعدادات التطبيق"""
+        config = AppConfig.get_config()
+        return Response({
+            'apk_download_url': config.apk_download_url or None
+        })

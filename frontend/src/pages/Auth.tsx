@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import {
@@ -82,6 +82,7 @@ export const Auth: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth();
 
   const [activeTab, setActiveTab] = useState<AuthTab>("login");
+  const [apkDownloadUrl, setApkDownloadUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -169,6 +170,22 @@ export const Auth: React.FC = () => {
     !resetData.username.trim() ||
     !resetData.newPassword ||
     !resetData.confirmPassword;
+
+  // Fetch APK download URL on component mount
+  useEffect(() => {
+    const fetchAppConfig = async () => {
+      try {
+        const response = await apiClient.get(endpoints.appConfig);
+        const url = (response.data as { apk_download_url?: string | null }).apk_download_url;
+        setApkDownloadUrl(url || null);
+      } catch (error) {
+        console.error('Failed to fetch app config:', error);
+        setApkDownloadUrl(null);
+      }
+    };
+
+    fetchAppConfig();
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -953,10 +970,10 @@ export const Auth: React.FC = () => {
 
         <div className="mt-6 space-y-4">
           {/* Android App Download Button */}
-          {import.meta.env.VITE_ANDROID_APP_URL && (
+          {apkDownloadUrl && (
             <div className="flex justify-center">
               <a
-                href={import.meta.env.VITE_ANDROID_APP_URL}
+                href={apkDownloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition-all hover:from-green-600 hover:to-green-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"

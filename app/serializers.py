@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import (
     Company, CompanyProfile, User, Category, Product, Customer,
     Invoice, InvoiceItem, Return, ReturnItem,
-    Payment, CustomerBalance
+    Payment, CustomerBalance, AppConfig
 )
 
 
@@ -227,3 +227,11 @@ class CustomerBalanceSerializer(serializers.ModelSerializer):
         read_only_fields = ['company', 'total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated']
 
 
+class AppConfigSerializer(serializers.ModelSerializer):
+    """
+    Serializer لإعدادات التطبيق - يعرض رابط تحميل APK فقط
+    """
+    class Meta:
+        model = AppConfig
+        fields = ['apk_download_url']
+        read_only_fields = ['apk_download_url']

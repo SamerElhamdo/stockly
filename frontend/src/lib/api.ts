@@ -48,8 +48,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
-    if (token) {
-      // @ts-expect-error dynamic header
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -84,6 +83,9 @@ export const endpoints = {
   verifyOtp: '/api/v1/auth/otp/verify/',
   resetPassword: '/api/v1/auth/reset-password/',
   registerCompany: '/api/register-company/',
+  
+  // App Config (public)
+  appConfig: '/api/app-config/',
   
   // Dashboard
   dashboardStats: '/api/dashboard/stats',

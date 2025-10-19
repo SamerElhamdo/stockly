@@ -6,7 +6,8 @@ from .api_v1 import (
     InvoiceViewSet, ReturnViewSet, PaymentViewSet,
     CustomerBalanceViewSet, CompanyProfileViewSet, UsersViewSet,
     OTPRequestView, OTPVerifyView, ResetPasswordView,
-    DashboardStatsView, CompanyRegisterView, WhatsAppWebhookView, LegacyDeleteUserView
+    DashboardStatsView, CompanyRegisterView, WhatsAppWebhookView, LegacyDeleteUserView,
+    AppConfigView
 )
 # Note: This app exposes API endpoints only. No server-rendered templates.
 
@@ -43,4 +44,7 @@ urlpatterns = [
 
   # Legacy explicit user delete endpoint (kept for backward compatibility)
   path('api/users/<int:user_id>/', LegacyDeleteUserView.as_view()),
+  
+  # App config endpoint (public - للحصول على رابط تحميل APK)
+  path('api/app-config/', AppConfigView.as_view(), name='app-config'),
 ]

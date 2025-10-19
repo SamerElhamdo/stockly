@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, CompanyProfile, OTPVerification, Return, ReturnItem, Payment, CustomerBalance
+from .models import User, Customer, Category, Product, Invoice, InvoiceItem, Company, CompanyProfile, OTPVerification, Return, ReturnItem, Payment, CustomerBalance, AppConfig
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -174,3 +174,34 @@ class CustomerBalanceAdmin(admin.ModelAdmin):
             'fields': ('total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated')
         }),
     )
+
+
+@admin.register(AppConfig)
+class AppConfigAdmin(admin.ModelAdmin):
+    """
+    إدارة إعدادات التطبيق - يظهر فقط للأدمن
+    """
+    list_display = ('id', 'apk_download_url_display')
+    
+    fieldsets = (
+        ('رابط تحميل التطبيق', {
+            'fields': ('apk_download_url',),
+            'description': 'رابط تحميل تطبيق Android (APK) - سيظهر في صفحة تسجيل الدخول للفرونت إند'
+        }),
+    )
+    
+    def apk_download_url_display(self, obj):
+        """عرض جزء من الرابط"""
+        if obj.apk_download_url:
+            url = obj.apk_download_url
+            return url[:50] + '...' if len(url) > 50 else url
+        return '—'
+    apk_download_url_display.short_description = 'رابط التحميل'
+    
+    def has_add_permission(self, request):
+        """منع إضافة سجلات جديدة - يمكن وجود سجل واحد فقط"""
+        return not AppConfig.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        """منع حذف السجل"""
+        return False
