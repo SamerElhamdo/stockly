@@ -21,26 +21,56 @@ export const SidebarPanel: React.FC = () => {
   
   // Get screen dimensions and calculate panel width dynamically
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
-  const PANEL_WIDTH = Math.min(320, Math.round(dimensions.width * 0.82));
+  
+  // Calculate panel width as 85% of screen width
+  const PANEL_WIDTH = Math.round(dimensions.width * 0.85);
+  
+  // Calculate offset: when hidden, panel should be completely off-screen
+  // When visible, panel's right edge should be at screen's right edge
+  // Using left positioning: left = screenWidth - panelWidth, then translateX moves it
+  const HIDDEN_OFFSET = PANEL_WIDTH + (PANEL_WIDTH * 0.2);  // Panel completely hidden to the right + 20% extra margin
+  const VISIBLE_OFFSET = +(PANEL_WIDTH * 0.2);             // Panel visible with 15% extra margin for smooth expansion
+  
+  // Debug: Log panel dimensions
+  useEffect(() => {
+    console.log('🎯 Sidebar Dimensions:', {
+      screenWidth: dimensions.width,
+      panelWidth: PANEL_WIDTH,
+      percentage: ((PANEL_WIDTH / dimensions.width) * 100).toFixed(1) + '%',
+      leftPosition: dimensions.width - PANEL_WIDTH,
+      hiddenOffset: HIDDEN_OFFSET,
+      visibleOffset: VISIBLE_OFFSET,
+      hiddenExtraMargin: (PANEL_WIDTH * 0.2).toFixed(1) + 'px',
+      visibleExtraMargin: (PANEL_WIDTH * 0.15).toFixed(1) + 'px',
+      translateXInitial: HIDDEN_OFFSET
+    });
+  }, [PANEL_WIDTH, dimensions.width, HIDDEN_OFFSET, VISIBLE_OFFSET]);
   
   // Start hidden off-screen to the right
-  const translateX = useRef(new Animated.Value(PANEL_WIDTH)).current;
+  const translateX = useRef(new Animated.Value(HIDDEN_OFFSET)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
 
   // Listen to dimension changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setDimensions(window);
+      // Reset animation value when dimensions change
+      if (!isOpen) {
+        const newPanelWidth = Math.round(window.width * 0.85);
+        const newHiddenOffset = newPanelWidth + (newPanelWidth * 0.2);
+        translateX.setValue(newHiddenOffset);
+      }
     });
     return () => subscription?.remove();
-  }, []);
+  }, [isOpen, translateX]);
 
   useEffect(() => {
     if (isOpen) {
-      // Slide in from right to visible position (0)
+      console.log('🚀 Opening sidebar - Moving from', HIDDEN_OFFSET, 'to', VISIBLE_OFFSET);
+      // Slide in from right to visible position with smooth expansion
       Animated.parallel([
         Animated.timing(translateX, { 
-          toValue: 0, 
+          toValue: VISIBLE_OFFSET, 
           duration: 250, 
           useNativeDriver: true 
         }),
@@ -51,10 +81,12 @@ export const SidebarPanel: React.FC = () => {
         }),
       ]).start();
     } else {
+      console.log('🚪 Closing sidebar - Moving from', VISIBLE_OFFSET, 'to', HIDDEN_OFFSET);
+      console.log('🔍 Current translateX value before animation:', (translateX as any)._value);
       // Slide out to the right (hide completely)
       Animated.parallel([
         Animated.timing(translateX, { 
-          toValue: PANEL_WIDTH, 
+          toValue: HIDDEN_OFFSET, 
           duration: 220, 
           useNativeDriver: true 
         }),
@@ -63,9 +95,12 @@ export const SidebarPanel: React.FC = () => {
           duration: 220, 
           useNativeDriver: true 
         }),
-      ]).start();
+      ]).start(() => {
+        console.log('✅ Animation completed - translateX should now be:', HIDDEN_OFFSET);
+        console.log('🔍 Actual translateX value after animation:', (translateX as any)._value);
+      });
     }
-  }, [isOpen, translateX, backdrop, PANEL_WIDTH]);
+  }, [isOpen, translateX, backdrop, HIDDEN_OFFSET, VISIBLE_OFFSET]);
 
   return (
     <>
@@ -83,6 +118,8 @@ export const SidebarPanel: React.FC = () => {
             width: PANEL_WIDTH, 
             backgroundColor: theme.background, 
             borderColor: theme.border, 
+            // Position panel so its right edge is at screen's right edge when translateX = 0
+            left: dimensions.width - PANEL_WIDTH,  // This positions the panel so its right edge touches screen's right edge
             transform: [{ translateX }],
           }
         ]}
@@ -168,9 +205,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    right: Platform.OS === 'android' ? 95 : 80,
+    // right will be set dynamically in component
     borderLeftWidth: StyleSheet.hairlineWidth,
-    padding: 16,
+    padding: 16,  // This padding is internal and doesn't affect panel width
   },
   safe: { 
     flex: 1,
