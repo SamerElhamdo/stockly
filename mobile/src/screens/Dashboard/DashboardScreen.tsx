@@ -82,9 +82,22 @@ export const DashboardScreen: React.FC = () => {
   const { data: lowStockProducts } = useQuery<ProductPreview[]>({
     queryKey: ['dashboard-low-stock'],
     queryFn: async () => {
-      const res = await apiClient.get(endpoints.products, { params: { ordering: 'stock_qty', page: 1 } });
-      const normalized = normalizeListResponse<{ id: number; name: string; stock_qty: number }>(res.data);
-      return normalized.results.filter((product) => Number(product.stock_qty) <= 5).slice(0, 5);
+      const res = await apiClient.get(endpoints.products, { 
+        params: { 
+          ordering: 'stock_qty', 
+          page: 1, 
+          archived: 'false' // تأكد من تمرير القيمة كـ string
+        } 
+      });
+      const normalized = normalizeListResponse<{ id: number; name: string; stock_qty: number; archived: boolean }>(res.data);
+      // فلترة إضافية للتأكد من استبعاد المنتجات المؤرشفة
+      return normalized.results
+        .filter((product) => {
+          const isNotArchived = product.archived === false || product.archived === undefined;
+          const isLowStock = Number(product.stock_qty) <= 5;
+          return isNotArchived && isLowStock;
+        })
+        .slice(0, 5);
     },
   });
 
@@ -307,16 +320,32 @@ export const DashboardScreen: React.FC = () => {
         <SectionHeader title="فواتير حديثة" subtitle="أحدث الفواتير التي تم إنشاؤها" />
         <View style={styles.listSpacing}>
           {(stats?.recent_invoices || []).map((invoice) => (
-            <ListItem
-              key={invoice.id}
-              title={`فاتورة رقم #${invoice.id}`}
-              subtitle={`${invoice.customer_name} • ${mergeDateTime(invoice.created_at)}`}
-              meta={formatAmount(Number(invoice.total_amount || 0))}
-              right={<SoftBadge label={invoice.status === 'confirmed' ? 'مؤكدة' : 'مسودة'} variant={invoice.status === 'confirmed' ? 'success' : 'info'} />}
-            />
+            <View key={invoice.id} style={[styles.invoiceCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={styles.invoiceHeader}>
+                <Text style={[styles.invoiceTitle, { color: theme.textPrimary }]}>فاتورة #{invoice.id}</Text>
+                <SoftBadge 
+                  label={invoice.status === 'confirmed' ? 'مؤكدة' : 'مسودة'} 
+                  variant={invoice.status === 'confirmed' ? 'success' : 'info'} 
+                />
+              </View>
+              
+              <View style={styles.invoiceDetails}>
+                <Text style={[styles.customerName, { color: theme.textPrimary }]}>{invoice.customer_name}</Text>
+                <Text style={[styles.invoiceDate, { color: theme.textMuted }]}>{mergeDateTime(invoice.created_at)}</Text>
+              </View>
+              
+              <View style={[styles.invoiceDivider, { backgroundColor: theme.border }]} />
+              
+              <View style={styles.invoiceFooter}>
+                <AmountDisplay amount={Number(invoice.total_amount || 0)} />
+              </View>
+            </View>
           ))}
           {!stats?.recent_invoices?.length && (
-            <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فواتير حديثة</Text>
+            <View style={[styles.emptyState, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Ionicons name="receipt-outline" size={32} color={theme.textMuted} />
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>لا توجد فواتير حديثة</Text>
+            </View>
           )}
         </View>
       </SoftCard>
@@ -325,15 +354,61 @@ export const DashboardScreen: React.FC = () => {
         <SectionHeader title="منتجات منخفضة المخزون" subtitle="راقب الكميات لتجنب نفاد المنتجات" />
         <View style={styles.listSpacing}>
           {(lowStockProducts || []).map((product) => (
-            <ListItem
-              key={product.id}
-              title={product.name}
-              subtitle="كمية في المخزون"
-              meta={`${product.stock_qty}`}
-            />
+            <View key={product.id} style={[styles.productCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <View style={styles.productHeader}>
+                <Text style={[styles.productName, { color: theme.textPrimary }]}>{product.name}</Text>
+                <View style={[
+                  styles.stockBadge, 
+                  { 
+                    backgroundColor: Number(product.stock_qty) === 0 
+                      ? theme.softPalette.destructive?.light || '#ffebee'
+                      : theme.softPalette.warning?.light || '#fff8e1'
+                  }
+                ]}>
+                  <Text style={[
+                    styles.stockText, 
+                    { 
+                      color: Number(product.stock_qty) === 0 
+                        ? theme.softPalette.destructive?.main || '#d32f2f'
+                        : theme.softPalette.warning?.main || '#f9a825'
+                    }
+                  ]}>
+                    {Number(product.stock_qty) === 0 ? 'منتهي' : Number(product.stock_qty)}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={[styles.productDivider, { backgroundColor: theme.border }]} />
+              
+              <View style={styles.productFooter}>
+                <View style={styles.productInfo}>
+                  <Ionicons 
+                    name={Number(product.stock_qty) === 0 ? "ban-outline" : "alert-circle-outline"} 
+                    size={16} 
+                    color={Number(product.stock_qty) === 0 
+                      ? theme.softPalette.destructive?.main || '#d32f2f'
+                      : theme.softPalette.warning?.main || '#f9a825'
+                    } 
+                  />
+                  <Text style={[
+                    styles.stockLabel, 
+                    { 
+                      color: Number(product.stock_qty) === 0 
+                        ? theme.softPalette.destructive?.main || '#d32f2f'
+                        : theme.softPalette.warning?.main || '#f9a825'
+                    }
+                  ]}>
+                    {Number(product.stock_qty) === 0 ? 'منتهي المخزون' : 'كمية منخفضة'}
+                  </Text>
+                </View>
+              </View>
+            </View>
           ))}
           {!lowStockProducts?.length && (
-            <Text style={[styles.emptyText, { color: theme.textMuted }]}>المخزون آمن حالياً</Text>
+            <View style={[styles.emptyState, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Ionicons name="checkmark-circle-outline" size={32} color={theme.softPalette.success?.main || '#388e3c'} />
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>المخزون آمن حالياً</Text>
+            </View>
           )}
         </View>
       </SoftCard>
@@ -435,5 +510,128 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     fontSize: 14,
+  },
+  // Invoice Card Styles
+  invoiceCard: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  invoiceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  invoiceTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    writingDirection: 'rtl',
+  },
+  invoiceDetails: {
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 2,
+  },
+  customerName: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+  },
+  invoiceDate: {
+    fontSize: 11,
+    fontWeight: '400',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+  },
+  invoiceDivider: {
+    height: 1,
+    opacity: 0.3,
+    marginVertical: 6,
+    width: '60%',
+    alignSelf: 'center',
+  },
+  invoiceFooter: {
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  // Product Card Styles
+  productCard: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  productHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  stockBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  stockText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  productDivider: {
+    height: 1,
+    opacity: 0.3,
+    marginVertical: 6,
+    width: '60%',
+    alignSelf: 'center',
+  },
+  productFooter: {
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  productInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stockLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    writingDirection: 'rtl',
+  },
+  // Empty State
+  emptyState: {
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    gap: 8,
   },
 });

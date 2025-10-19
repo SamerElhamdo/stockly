@@ -484,56 +484,69 @@ export const InvoicesScreen: React.FC = () => {
           <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
             <View style={[styles.infoCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <View style={styles.detailRow}>
-                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedInvoice.customer_name}</Text>
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>العميل</Text>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{selectedInvoice.customer_name}</Text>
               </View>
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <AmountDisplay amount={selectedInvoice.total_amount} />
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>المبلغ الإجمالي</Text>
+                <AmountDisplay amount={selectedInvoice.total_amount} />
               </View>
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <SoftBadge label={statusMap[selectedInvoice.status].label} variant={statusMap[selectedInvoice.status].variant} />
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>الحالة</Text>
+                <SoftBadge label={statusMap[selectedInvoice.status].label} variant={statusMap[selectedInvoice.status].variant} />
               </View>
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
               <View style={styles.detailRow}>
-                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{mergeDateTime(selectedInvoice.created_at)}</Text>
                 <Text style={[styles.detailLabel, { color: theme.textMuted }]}>التاريخ</Text>
+                <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{mergeDateTime(selectedInvoice.created_at)}</Text>
               </View>
             </View>
             {selectedInvoice.items && selectedInvoice.items.length > 0 && (
               <View style={{ marginTop: 16 }}>
                 <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 12 }]}>{getProductsLabel()}:</Text>
                 {selectedInvoice.items.map((item) => (
-                  <View key={item.id} style={[styles.itemRow, { borderColor: theme.border, marginBottom: 8 }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.itemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                        <Text style={[styles.itemQty, { color: theme.textMuted }]}>الكمية: {Math.floor(Number(item.qty || 0))}</Text>
+                  <View key={item.id} style={[styles.invoiceItemCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                    <View style={styles.invoiceItemHeader}>
+                      <Text style={[styles.invoiceItemName, { color: theme.textPrimary }]}>{item.product_name}</Text>
+                      {selectedInvoice.status === 'draft' && (
+                        <TouchableOpacity
+                          style={[styles.deleteItemButton, { backgroundColor: theme.softPalette.destructive?.light || '#fee' }]}
+                          onPress={async () => {
+                            const confirmed = await showConfirmation({
+                              title: 'حذف العنصر',
+                              message: `هل تريد حذف ${item.product_name}؟`,
+                              confirmText: 'حذف',
+                              cancelText: 'إلغاء',
+                              type: 'danger',
+                            });
+                            if (confirmed) {
+                              removeItemMutation.mutate({ invoiceId: selectedInvoice.id, itemId: item.id });
+                            }
+                          }}
+                        >
+                          <Ionicons name="trash-outline" size={18} color={theme.softPalette.destructive?.main || '#f00'} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    
+                    <View style={[styles.invoiceItemDivider, { backgroundColor: theme.border }]} />
+                    
+                    <View style={styles.invoiceItemDetails}>
+                      <View style={styles.invoiceItemRow}>
+                        <Text style={[styles.invoiceItemLabel, { color: theme.textMuted }]}>الكمية</Text>
+                        <Text style={[styles.invoiceItemValue, { color: theme.textPrimary }]}>{Math.floor(Number(item.qty || 0))}</Text>
+                      </View>
+                      <View style={styles.invoiceItemRow}>
+                        <Text style={[styles.invoiceItemLabel, { color: theme.textMuted }]}>سعر الوحدة</Text>
                         <AmountDisplay amount={Number(item.price_at_add || 0)} />
                       </View>
+                      <View style={styles.invoiceItemRow}>
+                        <Text style={[styles.invoiceItemLabel, { color: theme.textMuted }]}>المجموع</Text>
+                        <AmountDisplay amount={Number(item.price_at_add || 0) * Math.floor(Number(item.qty || 0))} />
+                      </View>
                     </View>
-                    {selectedInvoice.status === 'draft' && (
-                      <TouchableOpacity
-                        style={[styles.deleteItemButton, { backgroundColor: theme.softPalette.destructive?.light || '#fee' }]}
-              onPress={async () => {
-                          const confirmed = await showConfirmation({
-                            title: 'حذف العنصر',
-                            message: `هل تريد حذف ${item.product_name}؟`,
-                            confirmText: 'حذف',
-                            cancelText: 'إلغاء',
-                            type: 'danger',
-                          });
-                          if (confirmed) {
-                            removeItemMutation.mutate({ invoiceId: selectedInvoice.id, itemId: item.id });
-                          }
-                        }}
-                      >
-                        <Ionicons name="trash-outline" size={20} color={theme.softPalette.destructive?.main || '#f00'} />
-                      </TouchableOpacity>
-                    )}
                   </View>
                 ))}
               </View>
@@ -1545,6 +1558,63 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontSize: 11,
     fontWeight: '500',
+    writingDirection: 'rtl',
+  },
+  // Invoice Item Card Styles
+  invoiceItemCard: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  invoiceItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  invoiceItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  invoiceItemDivider: {
+    height: 1,
+    opacity: 0.3,
+    marginVertical: 6,
+    width: '60%',
+    alignSelf: 'center',
+  },
+  invoiceItemDetails: {
+    gap: 6,
+  },
+  invoiceItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  invoiceItemLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'left',
+    writingDirection: 'rtl',
+    opacity: 0.8,
+  },
+  invoiceItemValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'right',
     writingDirection: 'rtl',
   },
 });
