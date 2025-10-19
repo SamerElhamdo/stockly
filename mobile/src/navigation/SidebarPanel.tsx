@@ -88,11 +88,11 @@ export const SidebarPanel: React.FC = () => {
         ]}
       >
         <SafeAreaView style={styles.safe}> 
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
             {profile?.logo_url ? (
-              <Image source={{ uri: profile.logo_url }} style={styles.logo} />
+              <Image source={{ uri: profile.logo_url }} style={[styles.logo, { borderColor: theme.softPalette.primary.main }]} />
             ) : (
-              <View style={[styles.avatar, { backgroundColor: theme.background, borderColor: theme.border }]} />
+              <View style={[styles.avatar, { backgroundColor: theme.background, borderColor: theme.softPalette.primary.main }]} />
             )}
             <View style={{ flex: 1 }}>
               <Text style={[styles.company, { color: theme.textPrimary }]} numberOfLines={1}>{profile?.company_name || 'Stockly'}</Text>
@@ -101,19 +101,20 @@ export const SidebarPanel: React.FC = () => {
           </View>
 
           <View style={styles.links}>
-            <LinkItem label="الرئيسية" icon="home-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Home', params: { screen: 'Dashboard' } } as any)} />
-            <LinkItem label="الفواتير" icon="receipt-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Invoices' } } as any)} />
-            <LinkItem label="الإرجاعات" icon="arrow-undo-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Returns' } } as any)} />
-            <LinkItem label="المدفوعات" icon="cash-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Payments' } } as any)} />
-            <LinkItem label="المنتجات" icon="cube-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Products' } } as any)} />
-            <LinkItem label="التصنيفات" icon="pricetags-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Categories' } } as any)} />
-            <LinkItem label="الأرشيف" icon="archive-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Archive' } } as any)} />
-            <LinkItem label="العملاء" icon="people-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Customers' } } as any)} />
-            <LinkItem label="المستخدمون" icon="person-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Users' } } as any)} />
-            <LinkItem label="الإعدادات" icon="settings-outline" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Settings' } } as any)} />
+            <LinkItem label="الرئيسية" icon="home" iconColor="#6366F1" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Home', params: { screen: 'Dashboard' } } as any)} />
+            <LinkItem label="الفواتير" icon="receipt" iconColor="#8B5CF6" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Invoices' } } as any)} />
+            <LinkItem label="الإرجاعات" icon="arrow-undo" iconColor="#EC4899" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Returns' } } as any)} />
+            <LinkItem label="المدفوعات" icon="cash" iconColor="#10B981" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Sales', params: { screen: 'Payments' } } as any)} />
+            <LinkItem label="المنتجات" icon="cube" iconColor="#F59E0B" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Products' } } as any)} />
+            <LinkItem label="الفئات" icon="pricetags" iconColor="#06B6D4" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Categories' } } as any)} />
+            <LinkItem label="الأرشيف" icon="archive" iconColor="#6B7280" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'Inventory', params: { screen: 'Archive' } } as any)} />
+            <LinkItem label="العملاء" icon="people" iconColor="#3B82F6" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Customers' } } as any)} />
+            <LinkItem label="المستخدمون" icon="person" iconColor="#8B5CF6" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Users' } } as any)} />
+            <LinkItem label="الإعدادات" icon="settings" iconColor="#64748B" onPress={() => navigationRef.isReady() && navigationRef.navigate('Main', { screen: 'More', params: { screen: 'Settings' } } as any)} />
           </View>
 
           <Pressable style={[styles.logout, { backgroundColor: theme.softPalette.destructive.main }]} onPress={() => void logout()}>
+            <Ionicons name="log-out-outline" size={20} color="#fff" style={{ marginLeft: 8 }} />
             <Text style={styles.logoutText}>تسجيل الخروج</Text>
           </Pressable>
         </SafeAreaView>
@@ -122,7 +123,7 @@ export const SidebarPanel: React.FC = () => {
   );
 };
 
-const LinkItem: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }> = ({ label, icon, onPress }) => {
+const LinkItem: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap; iconColor: string; onPress: () => void }> = ({ label, icon, iconColor, onPress }) => {
   const { theme } = useTheme();
   const { close } = useSidebar();
   return (
@@ -154,8 +155,10 @@ const LinkItem: React.FC<{ label: string; icon: keyof typeof Ionicons.glyphMap; 
             },
       ]}
     >
-      <Ionicons name={icon} size={18} color={theme.textMuted} style={{ marginLeft: 8 }} />
       <Text style={[styles.itemLabel, { color: theme.textPrimary }]}>{label}</Text>
+      <View style={[styles.iconContainer, { backgroundColor: iconColor + '15' }]}>
+        <Ionicons name={icon} size={18} color={iconColor} />
+      </View>
     </Pressable>
   );
 };
@@ -175,30 +178,76 @@ const styles = StyleSheet.create({
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 12, 
-    marginBottom: 16,
+    gap: 14, 
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  logo: { width: 44, height: 44, borderRadius: 12 },
-  avatar: { width: 44, height: 44, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth },
-  company: { fontSize: 16, fontWeight: '700', textAlign: 'right' },
-  username: { fontSize: 13, textAlign: 'right' },
+  logo: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 14,
+    borderWidth: 2,
+  },
+  avatar: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 14, 
+    borderWidth: 2,
+  },
+  company: { 
+    fontSize: 17, 
+    fontWeight: '700', 
+    textAlign: 'right',
+    marginBottom: 2,
+  },
+  username: { 
+    fontSize: 13, 
+    textAlign: 'right',
+    opacity: 0.7,
+  },
   links: { 
-    gap: 10, 
+    gap: 8, 
     flex: 1, 
-    paddingTop: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   link: { fontSize: 15, textAlign: 'right' },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  itemLabel: { fontSize: 15, textAlign: 'right' },
-  logout: { borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  logoutText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemLabel: { 
+    fontSize: 14, 
+    textAlign: 'right',
+    fontWeight: '500',
+  },
+  logout: { 
+    borderRadius: 10, 
+    paddingVertical: 12, 
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  logoutText: { 
+    color: '#fff', 
+    fontSize: 15, 
+    fontWeight: '600',
+  },
 });
 
 
