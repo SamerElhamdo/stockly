@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { RefreshControl, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View, ScrollView, Dimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -42,6 +42,16 @@ interface ProductPreview {
 export const DashboardScreen: React.FC = () => {
   const { theme } = useTheme();
   const { formatAmount, profile } = useCompany();
+  
+  // حساب عرض الكروت ديناميكياً
+  const screenWidth = Dimensions.get('window').width;
+  const cardWidth = useMemo(() => {
+    // حساب العرض مع مراعاة الـ gap
+    const availableWidth = screenWidth - 48; // padding من الجانبين
+    const gapWidth = 8; // columnGap
+    const cardWidth = (availableWidth - gapWidth) / 2;
+    return Math.floor(cardWidth);
+  }, [screenWidth]);
 
   const { data: stats, isLoading, refetch, isRefetching } = useQuery<DashboardStatsResponse>({
     queryKey: ['dashboard-stats'],
@@ -251,7 +261,7 @@ export const DashboardScreen: React.FC = () => {
             const colors = colorMap[card.color];
             
             return (
-              <View key={card.title} style={styles.statCardWrapper}>
+              <View key={card.title} style={[styles.statCardWrapper, { width: cardWidth }]}>
                 <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <View style={styles.cardTop}>
                     <View style={[styles.iconBox, { backgroundColor: colors?.light || theme.softPalette.primary.light }]}>
@@ -356,10 +366,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 16,
-    columnGap: 12,
+    columnGap: 8,  // قلل من 12 إلى 8
   },
   statCardWrapper: {
-    width: '48%',
+    // العرض سيتم تعيينه ديناميكياً في الكود
     marginBottom: 0,
   },
   statCard: {
