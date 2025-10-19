@@ -382,30 +382,29 @@ export const ProductsScreen: React.FC = () => {
           onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
         />
 
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Input
-              label="الرمز (SKU)"
-              placeholder="اختياري"
-              value={formData.sku}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, sku: text }))}
-            />
-          </View>
-          <TouchableOpacity
-            style={[styles.scanIconButton, { backgroundColor: theme.softPalette.primary.main }]}
-            onPress={() => {
-              console.log('Barcode button pressed');
-              setFormOpen(false); // إغلاق المودال أولاً
-              setTimeout(() => {
-                setScanMode('add');
-                setScannerVisible(true);
-              }, 100);
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="barcode-outline" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <Input
+          label="الرمز (SKU)"
+          placeholder="اختياري"
+          value={formData.sku}
+          onChangeText={(text) => setFormData((prev) => ({ ...prev, sku: text }))}
+          leading={
+            <TouchableOpacity
+              onPress={() => {
+                console.log('Barcode button pressed');
+                setFormOpen(false);
+                setTimeout(() => {
+                  setScanMode('add');
+                  setScannerVisible(true);
+                }, 100);
+              }}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Scan barcode"
+            >
+              <Ionicons name="barcode-outline" size={18} color={theme.softPalette.primary.main} />
+            </TouchableOpacity>
+          }
+        />
 
         <Picker
           label="الفئة *"
@@ -619,17 +618,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scanIconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+  iconBtn: {
+    paddingRight: 8,
   },
   listWrapper: {
     gap: 12,
@@ -637,11 +627,6 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     paddingVertical: 20,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-start',
   },
   buttonRow: {
     flexDirection: 'row',
