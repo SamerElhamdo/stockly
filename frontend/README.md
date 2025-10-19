@@ -62,8 +62,14 @@ cp .env.example .env
 
 عدّل ملف `.env` حسب إعداداتك:
 ```env
-VITE_API_BASE=http://127.0.0.1:8000
+# API Backend URL
+VITE_API_BASE=http://127.0.0.1:8000/
+
+# تطبيق الأندرويد - رابط التحميل (MediaFire أو Google Drive)
+VITE_ANDROID_APP_URL=https://www.mediafire.com/file/your-file-id/stockly.apk/file
 ```
+
+**ملاحظة**: رابط تطبيق الأندرويد اختياري. إذا تم تعيينه، سيظهر زر تحميل التطبيق في صفحة تسجيل الدخول.
 
 ### 3. تشغيل التطبيق
 ```bash

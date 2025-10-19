@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { RefreshControl, StyleSheet, Text, View, TouchableOpacity, Modal as RNModal } from 'react-native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { RefreshControl, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
 import {
@@ -10,13 +10,8 @@ import {
   Input,
   ListItem,
   Button,
-  FloatingActionButton,
-  Modal,
   SimpleModal,
-  Picker,
-  Skeleton,
   SkeletonList,
-  LoadingSpinner,
   type PickerOption,
 } from '@/components';
 import { apiClient, endpoints, normalizeListResponse } from '@/services/api-client';
@@ -32,7 +27,8 @@ interface CategoryItem {
 
 export const CategoriesScreen: React.FC = () => {
   const { theme } = useTheme();
-  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+  const { showConfirmation } = useConfirmation();
   const route = useRoute();
   const navigation = useNavigation();
   
@@ -70,14 +66,16 @@ export const CategoriesScreen: React.FC = () => {
     setEditingCategory(null);
   };
 
-  // Handle openAdd parameter from navigation
+  // Handle openAdd parameter from global FAB
   useEffect(() => {
-    if (route?.params?.openAdd) {
+    const params = route.params as any;
+    if (params?.openAdd) {
       resetForm();
       setFormOpen(true);
-      navigation.setParams({ openAdd: undefined });
+      // Clear the parameter to allow future opens
+      navigation.setParams({ openAdd: undefined } as any);
     }
-  }, [route?.params?.openAdd, navigation]);
+  }, [route.params]);
 
   const openEditForm = (category: CategoryItem) => {
     setEditingCategory(category);
@@ -94,13 +92,15 @@ export const CategoriesScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم إضافة الفئة بنجاح');
+      showSuccess('تم إضافة الفئة بنجاح');
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل إضافة الفئة');
+      const errorCode = err?.response?.status || 'UNKNOWN';
+      const errorMsg = err?.response?.data?.detail || 'فشل إضافة الفئة';
+      showError(`[${errorCode}] ${errorMsg}`);
     },
   });
 
@@ -110,13 +110,15 @@ export const CategoriesScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم تحديث الفئة بنجاح');
+      showSuccess('تم تحديث الفئة بنجاح');
       setFormOpen(false);
       resetForm();
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل تحديث الفئة');
+      const errorCode = err?.response?.status || 'UNKNOWN';
+      const errorMsg = err?.response?.data?.detail || 'فشل تحديث الفئة';
+      showError(`[${errorCode}] ${errorMsg}`);
     },
   });
 
@@ -126,18 +128,20 @@ export const CategoriesScreen: React.FC = () => {
       return res.data;
     },
     onSuccess: () => {
-      Alert.alert('نجح', 'تم حذف الفئة بنجاح');
+      showSuccess('تم حذف الفئة بنجاح');
       refetch();
     },
     onError: (err: any) => {
-      Alert.alert('خطأ', err?.response?.data?.detail || 'فشل حذف الفئة');
+      const errorCode = err?.response?.status || 'UNKNOWN';
+      const errorMsg = err?.response?.data?.detail || 'فشل حذف الفئة';
+      showError(`[${errorCode}] ${errorMsg}`);
     },
   });
 
   const handleSave = () => {
     const name = formData.name.trim();
     if (!name) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم الفئة');
+      showError('يرجى إدخال اسم الفئة');
       return;
     }
 
@@ -153,15 +157,17 @@ export const CategoriesScreen: React.FC = () => {
     }
   };
 
-  const handleDelete = (category: CategoryItem) => {
-    Alert.alert('تأكيد الحذف', `هل تريد حذف الفئة "${category.name}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف',
-        style: 'destructive',
-        onPress: () => deleteCategoryMutation.mutate(category.id),
-      },
-    ]);
+  const handleDelete = async (category: CategoryItem) => {
+    const confirmed = await showConfirmation({
+      title: 'تأكيد الحذف',
+      message: `هل تريد حذف الفئة "${category.name}"؟`,
+      confirmText: 'حذف',
+      cancelText: 'إلغاء',
+      type: 'danger',
+    });
+    if (confirmed) {
+      deleteCategoryMutation.mutate(category.id);
+    }
   };
 
   return (
@@ -240,6 +246,18 @@ export const CategoriesScreen: React.FC = () => {
             loading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
           />
         </View>
+        
+        {editingCategory && (
+          <Button
+            title="حذف الفئة"
+            variant="destructive"
+            onPress={() => {
+              setFormOpen(false);
+              handleDelete(editingCategory);
+            }}
+            loading={deleteCategoryMutation.isPending}
+          />
+        )}
       </SimpleModal>
     </>
   );

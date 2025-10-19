@@ -59,6 +59,7 @@ export const endpoints = {
   customerArchive: (id: number) => `/api/v1/customers/${id}/archive/`,
   customerRestore: (id: number) => `/api/v1/customers/${id}/restore/`,
   categories: '/api/v1/categories/',
+  categoryDetail: (id: number) => `/api/v1/categories/${id}/`,
   invoices: '/api/v1/invoices/',
   invoiceDetail: (id: number) => `/api/v1/invoices/${id}/`,
   invoiceConfirm: (id: number) => `/api/v1/invoices/${id}/confirm/`,

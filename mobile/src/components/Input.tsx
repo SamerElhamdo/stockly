@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
     marginBottom: 4,
   },
   container: {
