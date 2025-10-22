@@ -20,6 +20,7 @@ import { mergeDateTime } from '@/utils/format';
 interface ReturnItem {
   id: number;
   invoice_id: number;
+  customer: number; // معرف العميل
   customer_name: string;
   total_amount: number;
   status: 'pending' | 'approved' | 'rejected';
@@ -81,11 +82,17 @@ export const ReturnsScreen: React.FC = () => {
       const res = await apiClient.post(endpoints.returnApprove(id));
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       showSuccess('تم اعتماد المرتجع بنجاح');
       setDetailOpen(false);
       setSelectedReturn(null);
       queryClient.invalidateQueries({ queryKey: ['returns'] });
+      // تحديث بيانات العميل والأرصدة
+      if (selectedReturn?.customer) {
+        queryClient.invalidateQueries({ queryKey: ['customer-detail', selectedReturn.customer] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (err: any) => {
       showError(err?.response?.data?.detail || 'فشل اعتماد المرتجع');
@@ -102,6 +109,12 @@ export const ReturnsScreen: React.FC = () => {
       setDetailOpen(false);
       setSelectedReturn(null);
       queryClient.invalidateQueries({ queryKey: ['returns'] });
+      // تحديث بيانات العميل والأرصدة
+      if (selectedReturn?.customer) {
+        queryClient.invalidateQueries({ queryKey: ['customer-detail', selectedReturn.customer] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['balances'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (err: any) => {
       showError(err?.response?.data?.detail || 'فشل رفض المرتجع');

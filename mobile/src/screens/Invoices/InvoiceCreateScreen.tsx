@@ -112,6 +112,10 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
       showSuccess('تم تأكيد الفاتورة بنجاح');
       qc.invalidateQueries({ queryKey: ['invoices'] });
       qc.invalidateQueries({ queryKey: ['invoice-detail', invoiceId] });
+      // تحديث بيانات العميل والأرصدة
+      qc.invalidateQueries({ queryKey: ['customer-detail', customerId] });
+      qc.invalidateQueries({ queryKey: ['balances'] });
+      qc.invalidateQueries({ queryKey: ['customers'] });
       navigation.goBack();
     },
     onError: (err: any) => {
