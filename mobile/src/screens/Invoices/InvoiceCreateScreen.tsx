@@ -280,6 +280,11 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
                         }}
                         keyboardType="numeric"
                         returnKeyType="done"
+                        multiline={false}
+                        numberOfLines={1}
+                        scrollEnabled={false}
+                        editable={true}
+                        selectTextOnFocus={true}
                         onSubmitEditing={() => {
                           // إخفاء الكيبورد عند الضغط على "تم"
                           Keyboard.dismiss();
@@ -556,12 +561,24 @@ const styles = StyleSheet.create({
   },
   qtyInput: {
     width: 60,
-    height: 32,
+    height: 44, // ارتفاع أكبر لـ Android
     borderRadius: 8,
     borderWidth: 1,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
+    paddingTop: 0, // إزالة padding علوي
+    paddingBottom: 0, // إزالة padding سفلي
+    paddingLeft: 0, // إزالة padding يساري
+    paddingRight: 0, // إزالة padding يميني
+    marginTop: 0, // إزالة margin علوي
+    marginBottom: 0, // إزالة margin سفلي
+    includeFontPadding: false, // إزالة padding إضافي في Android
+    textAlignVertical: 'center', // توسيط النص عمودياً في Android
+    lineHeight: 14, // تحديد line height للتحكم الدقيق
+    overflow: 'hidden', // منع overflow
+    maxHeight: 44, // تحديد حد أقصى للارتفاع
+    minHeight: 44, // تحديد حد أدنى للارتفاع
   },
   
   // Add Button
