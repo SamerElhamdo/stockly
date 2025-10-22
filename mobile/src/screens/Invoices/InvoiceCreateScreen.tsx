@@ -46,6 +46,16 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [qtyByProduct, setQtyByProduct] = useState<Record<number, string>>({});
   const [addingProducts, setAddingProducts] = useState<Set<number>>(new Set());
+  
+  // دالة لإعادة تعيين النموذج
+  const resetForm = () => {
+    setSearch('');
+    setKeyword('');
+    setSelectedProductId(null);
+    setQtyByProduct({});
+    setAddingProducts(new Set());
+  };
+  
   // debounce search
   useEffect(() => {
     const handle = setTimeout(() => setKeyword(search.trim()), 250);
@@ -116,6 +126,8 @@ export const InvoiceCreateScreen: React.FC<Props> = ({ route, navigation }) => {
       qc.invalidateQueries({ queryKey: ['customer-detail', customerId] });
       qc.invalidateQueries({ queryKey: ['balances'] });
       qc.invalidateQueries({ queryKey: ['customers'] });
+      // إعادة تعيين النموذج
+      resetForm();
       navigation.goBack();
     },
     onError: (err: any) => {

@@ -4,7 +4,6 @@ import { Keyboard, Pressable, StyleSheet, Text, View, Animated, TouchableOpacity
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
 import { useTheme } from '@/theme';
 import { useCompany } from '@/context';
 import { HeaderMenuButton } from '@/components/HeaderMenuButton';
@@ -384,9 +383,10 @@ export const MainTabs = () => {
         }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
-            if (navigation.isFocused()) {
-              navigation.navigate('Sales', { screen: 'Invoices' });
-            }
+            // منع السلوك الافتراضي
+            e.preventDefault();
+            // الذهاب دائماً لقائمة الفواتير
+            navigation.navigate('Sales', { screen: 'Invoices' });
           },
         })}
       />
