@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View, RefreshControl } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, RefreshControl, Dimensions } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -71,6 +71,16 @@ export const CustomerDetailsScreen: React.FC<Props> = ({ route, navigation }) =>
   const { customerId } = route.params;
   const { theme } = useTheme();
   const { formatAmount } = useCompany();
+
+  // حساب عرض الكروت ديناميكياً مثل لوحة التحكم
+  const screenWidth = Dimensions.get('window').width;
+  const cardWidth = useMemo(() => {
+    // حساب العرض مع مراعاة الـ gap
+    const availableWidth = screenWidth - 48; // padding من الجانبين
+    const gapWidth = 8; // columnGap
+    const cardWidth = (availableWidth - gapWidth) / 2;
+    return Math.floor(cardWidth);
+  }, [screenWidth]);
 
   const { data: customer, isLoading: customerLoading, refetch: refetchCustomer } = useQuery({
     queryKey: ['customer-detail', customerId],
@@ -266,48 +276,224 @@ export const CustomerDetailsScreen: React.FC<Props> = ({ route, navigation }) =>
 
         {/* الإحصائيات */}
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={[styles.statIcon, { backgroundColor: theme.softPalette.primary.light }]}>
-              <Ionicons name="document-text-outline" size={26} color={theme.softPalette.primary.main} />
+          <View style={[styles.statCardWrapper, { width: cardWidth }]}>
+            <View style={[
+              styles.statCard, 
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: theme.softPalette.primary.main + '20',
+                borderLeftWidth: 4,
+                borderLeftColor: theme.softPalette.primary.main,
+              }
+            ]}>
+              <View style={styles.cardHeader}>
+                <View style={[
+                  styles.statIcon, 
+                  { 
+                    backgroundColor: theme.softPalette.primary.light,
+                    shadowColor: theme.softPalette.primary.main,
+                  }
+                ]}>
+                  <Ionicons name="document-text-outline" size={24} color={theme.softPalette.primary.main} />
+                </View>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={[styles.statLabel, { color: theme.textMuted }]}>الفواتير</Text>
+                  <Text style={[styles.statValue, { color: theme.softPalette.primary.main }]}>{invoices.length}</Text>
+                </View>
+              </View>
+              <View style={[styles.cardDivider, { backgroundColor: theme.softPalette.primary.main + '15' }]} />
+              <View style={styles.cardAmountContainer}>
+                {formatAmount(totals.invoices).split('|').map((part, index) => (
+                  <View 
+                    key={index}
+                    style={[
+                      styles.amountBadge,
+                      { 
+                        backgroundColor: index === 0 
+                          ? theme.softPalette.primary.light + '40'
+                          : theme.softPalette.primary.light + '20',
+                        borderColor: theme.softPalette.primary.main + '30',
+                      }
+                    ]}
+                  >
+                    <Text 
+                      style={[
+                        index === 0 ? styles.statAmount : styles.statAmountSecondary, 
+                        { color: theme.softPalette.primary.main }
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {part.trim()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>الفواتير</Text>
-            <Text style={[styles.statValue, { color: theme.textPrimary }]}>{invoices.length}</Text>
-            <Text style={[styles.statAmount, { color: theme.textMuted }]} numberOfLines={1}>
-              {formatAmount(totals.invoices)}
-            </Text>
           </View>
 
-          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={[styles.statIcon, { backgroundColor: theme.softPalette.success?.light }]}>
-              <Ionicons name="wallet-outline" size={26} color={theme.softPalette.success?.main} />
+          <View style={[styles.statCardWrapper, { width: cardWidth }]}>
+            <View style={[
+              styles.statCard, 
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: theme.softPalette.success?.main + '20',
+                borderLeftWidth: 4,
+                borderLeftColor: theme.softPalette.success?.main,
+              }
+            ]}>
+              <View style={styles.cardHeader}>
+                <View style={[
+                  styles.statIcon, 
+                  { 
+                    backgroundColor: theme.softPalette.success?.light,
+                    shadowColor: theme.softPalette.success?.main,
+                  }
+                ]}>
+                  <Ionicons name="wallet-outline" size={24} color={theme.softPalette.success?.main} />
+                </View>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={[styles.statLabel, { color: theme.textMuted }]}>الدفعات</Text>
+                  <Text style={[styles.statValue, { color: theme.softPalette.success?.main }]}>{positivePayments.length}</Text>
+                </View>
+              </View>
+              <View style={[styles.cardDivider, { backgroundColor: theme.softPalette.success?.main + '15' }]} />
+              <View style={styles.cardAmountContainer}>
+                {formatAmount(totals.paymentsPositive).split('|').map((part, index) => (
+                  <View 
+                    key={index}
+                    style={[
+                      styles.amountBadge,
+                      { 
+                        backgroundColor: index === 0 
+                          ? theme.softPalette.success?.light + '40'
+                          : theme.softPalette.success?.light + '20',
+                        borderColor: theme.softPalette.success?.main + '30',
+                      }
+                    ]}
+                  >
+                    <Text 
+                      style={[
+                        index === 0 ? styles.statAmount : styles.statAmountSecondary, 
+                        { color: theme.softPalette.success?.main }
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {part.trim()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>الدفعات</Text>
-            <Text style={[styles.statValue, { color: theme.textPrimary }]}>{positivePayments.length}</Text>
-            <Text style={[styles.statAmount, { color: theme.textMuted }]} numberOfLines={1}>
-              {formatAmount(totals.paymentsPositive)}
-            </Text>
           </View>
 
-          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={[styles.statIcon, { backgroundColor: theme.softPalette.warning?.light }]}>
-              <Ionicons name="return-down-back-outline" size={26} color={theme.softPalette.warning?.main} />
+          <View style={[styles.statCardWrapper, { width: cardWidth }]}>
+            <View style={[
+              styles.statCard, 
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: theme.softPalette.warning?.main + '20',
+                borderLeftWidth: 4,
+                borderLeftColor: theme.softPalette.warning?.main,
+              }
+            ]}>
+              <View style={styles.cardHeader}>
+                <View style={[
+                  styles.statIcon, 
+                  { 
+                    backgroundColor: theme.softPalette.warning?.light,
+                    shadowColor: theme.softPalette.warning?.main,
+                  }
+                ]}>
+                  <Ionicons name="return-down-back-outline" size={24} color={theme.softPalette.warning?.main} />
+                </View>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={[styles.statLabel, { color: theme.textMuted }]}>المرتجعات</Text>
+                  <Text style={[styles.statValue, { color: theme.softPalette.warning?.main }]}>{returns.length}</Text>
+                </View>
+              </View>
+              <View style={[styles.cardDivider, { backgroundColor: theme.softPalette.warning?.main + '15' }]} />
+              <View style={styles.cardAmountContainer}>
+                {formatAmount(totals.returns).split('|').map((part, index) => (
+                  <View 
+                    key={index}
+                    style={[
+                      styles.amountBadge,
+                      { 
+                        backgroundColor: index === 0 
+                          ? theme.softPalette.warning?.light + '40'
+                          : theme.softPalette.warning?.light + '20',
+                        borderColor: theme.softPalette.warning?.main + '30',
+                      }
+                    ]}
+                  >
+                    <Text 
+                      style={[
+                        index === 0 ? styles.statAmount : styles.statAmountSecondary, 
+                        { color: theme.softPalette.warning?.main }
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {part.trim()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>المرتجعات</Text>
-            <Text style={[styles.statValue, { color: theme.textPrimary }]}>{returns.length}</Text>
-            <Text style={[styles.statAmount, { color: theme.textMuted }]} numberOfLines={1}>
-              {formatAmount(totals.returns)}
-            </Text>
           </View>
 
-          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={[styles.statIcon, { backgroundColor: theme.softPalette.destructive?.light }]}>
-              <Ionicons name="trending-down-outline" size={26} color={theme.softPalette.destructive?.main} />
+          <View style={[styles.statCardWrapper, { width: cardWidth }]}>
+            <View style={[
+              styles.statCard, 
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: theme.softPalette.destructive?.main + '20',
+                borderLeftWidth: 4,
+                borderLeftColor: theme.softPalette.destructive?.main,
+              }
+            ]}>
+              <View style={styles.cardHeader}>
+                <View style={[
+                  styles.statIcon, 
+                  { 
+                    backgroundColor: theme.softPalette.destructive?.light,
+                    shadowColor: theme.softPalette.destructive?.main,
+                  }
+                ]}>
+                  <Ionicons name="trending-down-outline" size={24} color={theme.softPalette.destructive?.main} />
+                </View>
+                <View style={styles.cardTitleContainer}>
+                  <Text style={[styles.statLabel, { color: theme.textMuted }]}>السحوبات</Text>
+                  <Text style={[styles.statValue, { color: theme.softPalette.destructive?.main }]}>{negativePayments.length}</Text>
+                </View>
+              </View>
+              <View style={[styles.cardDivider, { backgroundColor: theme.softPalette.destructive?.main + '15' }]} />
+              <View style={styles.cardAmountContainer}>
+                {formatAmount(totals.paymentsNegative).split('|').map((part, index) => (
+                  <View 
+                    key={index}
+                    style={[
+                      styles.amountBadge,
+                      { 
+                        backgroundColor: index === 0 
+                          ? theme.softPalette.destructive?.light + '40'
+                          : theme.softPalette.destructive?.light + '20',
+                        borderColor: theme.softPalette.destructive?.main + '30',
+                      }
+                    ]}
+                  >
+                    <Text 
+                      style={[
+                        index === 0 ? styles.statAmount : styles.statAmountSecondary, 
+                        { color: theme.softPalette.destructive?.main }
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {part.trim()}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text style={[styles.statLabel, { color: theme.textMuted }]}>السحوبات</Text>
-            <Text style={[styles.statValue, { color: theme.textPrimary }]}>{negativePayments.length}</Text>
-            <Text style={[styles.statAmount, { color: theme.textMuted }]} numberOfLines={1}>
-              {formatAmount(totals.paymentsNegative)}
-            </Text>
           </View>
         </View>
 
@@ -518,46 +704,99 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
-    columnGap: 12,
+    rowGap: 16,
+    columnGap: 8,  // قلل من 12 إلى 8 مثل لوحة التحكم
+  },
+  statCardWrapper: {
+    // العرض سيتم تعيينه ديناميكياً في الكود
+    marginBottom: 0,
   },
   statCard: {
-    width: '48%',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
-    borderRadius: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 1,
+    height: 180, // زيادة الارتفاع
+    justifyContent: 'space-between',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  cardTitleContainer: {
+    flex: 1,
+    alignItems: 'flex-end',
+    marginRight: 12,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    borderRadius: 0.5,
+    marginVertical: 4,
+    width: '80%',
+    alignSelf: 'center',
+  },
+  cardAmountContainer: {
+    alignItems: 'center',
+    gap: 2,
+    paddingTop: 4,
   },
   statIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    alignSelf: 'flex-start',
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 6,
+    opacity: 0.8,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: '800',
+    textAlign: 'right',
+    lineHeight: 32,
   },
   statAmount: {
-    fontSize: 11,
+    fontSize: 14,
+    fontWeight: '700',
     textAlign: 'center',
+    lineHeight: 18,
+  },
+  statAmountSecondary: {
+    fontSize: 9,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  amountBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginVertical: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
+    elevation: 1,
   },
   listContainer: {
     borderRadius: 18,
