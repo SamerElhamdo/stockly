@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from datetime import datetime, timedelta
 from .models import Product, Customer, Invoice, InvoiceItem, Category, Company, User, OTPVerification, Return, ReturnItem, Payment, CustomerBalance
+from .api_v1 import update_customer_balance
 from django.http import JsonResponse
 from functools import wraps
 
@@ -213,6 +214,12 @@ def admin_add_payment_by_phone(request):
         created_by=superuser
     )
 
+    # Update customer balance
+    try:
+        update_customer_balance(customer, company)
+    except Exception as e:
+        print(f"Error updating customer balance: {e}")
+
     return Response({
         "id": payment.id,
         "amount": float(payment.amount),
@@ -271,6 +278,12 @@ def admin_withdraw_payment_by_phone(request):
         notes=f"سحب من رصيد العميل {customer_name}: {reason}" if reason else f"سحب من رصيد العميل {customer_name}",
         created_by=request.user
     )
+
+    # Update customer balance
+    try:
+        update_customer_balance(customer, company)
+    except Exception as e:
+        print(f"Error updating customer balance: {e}")
 
     return Response({
         "id": withdrawal_payment.id,
