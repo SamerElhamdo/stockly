@@ -122,6 +122,167 @@ def admin_get_invoice_details(request, invoice_id):
 
 # ==================== PAYMENTS MANAGEMENT ====================
 
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_payments_by_phone(request):
+    """Get all payments for a company by phone number (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+        payments = Payment.objects.filter(company=company).select_related('customer', 'invoice', 'created_by')
+        
+        return Response([{
+            "id": p.id,
+            "customer_id": p.customer.id,
+            "customer_name": p.customer.name,
+            "invoice_id": p.invoice.id if p.invoice else None,
+            "amount": float(p.amount),
+            "payment_method": p.payment_method,
+            "payment_method_display": p.get_payment_method_display(),
+            "payment_date": p.payment_date.isoformat(),
+            "notes": p.notes,
+            "created_by": p.created_by.username,
+            "company": company.name,
+            "company_phone": company.phone
+        } for p in payments])
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+
+@api_view(["POST"])
+@api_superuser_required
+def admin_add_payment_by_phone(request):
+    """Add payment for a company by phone number (superuser only)"""
+    data = request.data
+    phone = str(data.get('phone', '')).strip()
+    customer_id = data.get('customer_id')
+    customer_name = str(data.get('customer_name', '')).strip()
+    amount = data.get('amount')
+    payment_method = data.get('payment_method', 'cash')
+    invoice_id = data.get('invoice_id')
+    notes = str(data.get('notes', '')).strip()
+
+    if not phone or not amount:
+        return Response({"error": "phone_and_amount_required"}, status=400)
+
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "company_not_found"}, status=404)
+
+    # Find customer
+    customer = None
+    if customer_id:
+        try:
+            customer = Customer.objects.get(id=customer_id, company=company)
+        except Customer.DoesNotExist:
+            return Response({"error": "customer_not_found"}, status=404)
+    elif customer_name:
+        customer = Customer.objects.filter(company=company, name__iexact=customer_name).first()
+        if not customer:
+            return Response({"error": "customer_not_found"}, status=404)
+    else:
+        return Response({"error": "customer_id_or_name_required"}, status=400)
+
+    # Find invoice if provided
+    invoice = None
+    if invoice_id:
+        try:
+            invoice = Invoice.objects.get(id=invoice_id, company=company)
+        except Invoice.DoesNotExist:
+            return Response({"error": "invoice_not_found"}, status=404)
+
+    # Get superuser for created_by
+    superuser = request.user
+
+    payment = Payment.objects.create(
+        company=company,
+        customer=customer,
+        invoice=invoice,
+        amount=float(amount),
+        payment_method=payment_method,
+        notes=notes,
+        created_by=superuser
+    )
+
+    return Response({
+        "id": payment.id,
+        "amount": float(payment.amount),
+        "payment_method": payment.payment_method,
+        "payment_method_display": payment.get_payment_method_display(),
+        "customer_name": customer.name,
+        "invoice_id": invoice.id if invoice else None,
+        "company": company.name
+    }, status=201)
+
+@api_view(["POST"])
+@api_superuser_required
+def admin_withdraw_payment_by_phone(request):
+    """Withdraw/refund payment for a company by phone number (superuser only)"""
+    data = request.data
+    phone = str(data.get('phone', '')).strip()
+    customer_name = str(data.get('customer_name', '')).strip()
+    amount = data.get('amount')
+    reason = str(data.get('reason', '')).strip()
+
+    if not phone or not customer_name or not amount:
+        return Response({"error": "phone_customer_name_and_amount_required"}, status=400)
+
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "company_not_found"}, status=404)
+
+    # Find customer by name
+    customer = Customer.objects.filter(company=company, name__iexact=customer_name).first()
+    if not customer:
+        return Response({"error": "customer_not_found"}, status=404)
+
+    # Get customer's total payments to check if withdrawal is valid
+    total_payments = Payment.objects.filter(customer=customer, company=company).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+
+    # Check if withdrawal amount is valid
+    if float(amount) > float(total_payments):
+        return Response({
+            "error": "withdrawal_amount_exceeds_total_payments",
+            "total_payments": float(total_payments),
+            "requested_amount": float(amount)
+        }, status=400)
+
+    # Create withdrawal payment (negative amount)
+    withdrawal_payment = Payment.objects.create(
+        company=company,
+        customer=customer,
+        invoice=None,  # Withdrawals are not tied to specific invoices
+        amount=-float(amount),  # Negative amount for withdrawal
+        payment_method='cash',  # Default method for withdrawals
+        notes=f"سحب من رصيد العميل {customer_name}: {reason}" if reason else f"سحب من رصيد العميل {customer_name}",
+        created_by=request.user
+    )
+
+    return Response({
+        "id": withdrawal_payment.id,
+        "amount": float(withdrawal_payment.amount),
+        "customer_name": customer.name,
+        "customer_id": customer.id,
+        "reason": reason,
+        "total_customer_payments": float(total_payments),
+        "remaining_balance": float(total_payments) - float(amount),
+        "company": company.name
+    }, status=201)
+
 # ==================== USERS MANAGEMENT ====================
 
 # ==================== SYSTEM STATISTICS ====================
@@ -424,6 +585,216 @@ def admin_get_company_customers_by_phone(request):
 
 @api_view(["GET"])
 @api_superuser_required
+def admin_get_customer_details_by_phone(request):
+    """Get comprehensive customer details including balance, invoices, returns, and payments (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    customer_name = request.GET.get('customer_name', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    if not customer_name:
+        return Response({"error": "customer_name is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+    
+    # Find customer by name
+    customer = Customer.objects.filter(company=company, name__iexact=customer_name).first()
+    if not customer:
+        return Response({"error": "Customer not found"}, status=404)
+    
+    # Get customer balance
+    try:
+        balance = CustomerBalance.objects.get(customer=customer, company=company)
+    except CustomerBalance.DoesNotExist:
+        balance = CustomerBalance.objects.create(
+            customer=customer,
+            company=company,
+            total_invoiced=0,
+            total_paid=0,
+            total_returns=0,
+            balance=0
+        )
+    
+    # Get invoices
+    invoices = customer.invoices.filter(company=company).order_by('-created_at')
+    invoices_data = [{
+        "id": inv.id,
+        "total_amount": float(inv.total_amount),
+        "status": inv.status,
+        "status_display": inv.get_status_display(),
+        "created_at": inv.created_at.isoformat(),
+        "items_count": inv.items.count()
+    } for inv in invoices]
+    
+    # Get payments
+    payments = Payment.objects.filter(customer=customer, company=company).order_by('-payment_date')
+    payments_data = [{
+        "id": p.id,
+        "amount": float(p.amount),
+        "payment_method": p.payment_method,
+        "payment_method_display": p.get_payment_method_display(),
+        "payment_date": p.payment_date.isoformat(),
+        "invoice_id": p.invoice.id if p.invoice else None,
+        "notes": p.notes
+    } for p in payments]
+    
+    # Get returns
+    returns = Return.objects.filter(customer=customer, company=company).order_by('-return_date')
+    returns_data = [{
+        "id": r.id,
+        "return_number": r.return_number,
+        "original_invoice_id": r.original_invoice.id,
+        "total_amount": float(r.total_amount),
+        "status": r.status,
+        "status_display": r.get_status_display(),
+        "return_date": r.return_date.isoformat(),
+        "notes": r.notes
+    } for r in returns]
+    
+    return Response({
+        "customer": {
+            "id": customer.id,
+            "name": customer.name,
+            "phone": customer.phone,
+            "email": customer.email,
+            "address": customer.address,
+            "company": company.name
+        },
+        "balance": {
+            "total_invoiced": float(balance.total_invoiced),
+            "total_paid": float(balance.total_paid),
+            "total_returns": float(balance.total_returns),
+            "current_balance": float(balance.balance),
+            "last_updated": balance.last_updated.isoformat()
+        },
+        "invoices": invoices_data,
+        "payments": payments_data,
+        "returns": returns_data,
+        "summary": {
+            "total_invoices": len(invoices_data),
+            "total_payments": len(payments_data),
+            "total_returns": len(returns_data),
+            "total_invoiced_amount": sum(inv["total_amount"] for inv in invoices_data),
+            "total_paid_amount": sum(p["amount"] for p in payments_data),
+            "total_returned_amount": sum(r["total_amount"] for r in returns_data)
+        }
+    })
+
+@api_view(["GET"])
+@api_superuser_required
+def admin_get_company_financial_details_by_phone(request):
+    """Get comprehensive company financial details including profits, sales, inventory value (superuser only)"""
+    phone = request.GET.get('phone', '').strip()
+    
+    if not phone:
+        return Response({"error": "Phone number is required"}, status=400)
+    
+    # Clean phone number
+    clean_phone = phone.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+    
+    try:
+        company = Company.objects.get(phone=clean_phone)
+    except Company.DoesNotExist:
+        return Response({"error": "Company not found with this phone number"}, status=404)
+    
+    # Calculate sales statistics
+    confirmed_invoices = company.invoices.filter(status='confirmed')
+    total_sales = confirmed_invoices.aggregate(total=Sum('total_amount'))['total'] or 0
+    
+    # Calculate inventory value (cost and retail)
+    products = company.products.filter(archived=False)
+    inventory_value_cost = products.exclude(cost_price=None).aggregate(
+        total=Sum(F('cost_price') * F('stock_qty'))
+    )['total'] or 0
+    
+    inventory_value_retail = products.aggregate(
+        total=Sum(F('price') * F('stock_qty'))
+    )['total'] or 0
+    
+    # Calculate profits (retail value - cost value)
+    total_profit_potential = inventory_value_retail - inventory_value_cost
+    
+    # Calculate payments received
+    total_payments = Payment.objects.filter(company=company).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
+    
+    # Calculate outstanding receivables
+    outstanding_receivables = CustomerBalance.objects.filter(company=company).aggregate(
+        total=Sum(
+            Case(
+                When(balance__gt=0, then='balance'),
+                default=0,
+                output_field=DecimalField(max_digits=14, decimal_places=4)
+            )
+        )
+    )['total'] or 0
+    
+    # Get recent activity
+    recent_invoices = confirmed_invoices.select_related('customer').order_by('-created_at')[:10]
+    recent_invoices_data = [{
+        "id": inv.id,
+        "customer_name": inv.customer.name,
+        "total_amount": float(inv.total_amount),
+        "created_at": inv.created_at.isoformat()
+    } for inv in recent_invoices]
+    
+    # Get low stock products
+    low_stock_products = products.filter(stock_qty__lt=5)
+    low_stock_data = [{
+        "id": p.id,
+        "name": p.name,
+        "sku": p.sku,
+        "stock_qty": p.stock_qty,
+        "price": float(p.price)
+    } for p in low_stock_products]
+    
+    return Response({
+        "company": {
+            "id": company.id,
+            "name": company.name,
+            "code": company.code,
+            "phone": company.phone,
+            "email": company.email,
+            "address": company.address,
+            "created_at": company.created_at.isoformat()
+        },
+        "financial_summary": {
+            "total_sales": float(total_sales),
+            "total_payments_received": float(total_payments),
+            "outstanding_receivables": float(outstanding_receivables),
+            "inventory_value_cost": float(inventory_value_cost),
+            "inventory_value_retail": float(inventory_value_retail),
+            "total_profit_potential": float(total_profit_potential),
+            "profit_margin_percentage": round((total_profit_potential / inventory_value_retail * 100) if inventory_value_retail > 0 else 0, 2)
+        },
+        "inventory": {
+            "total_products": products.count(),
+            "low_stock_count": low_stock_products.count(),
+            "low_stock_products": low_stock_data,
+            "total_stock_value_cost": float(inventory_value_cost),
+            "total_stock_value_retail": float(inventory_value_retail)
+        },
+        "sales": {
+            "total_invoices": confirmed_invoices.count(),
+            "total_sales_amount": float(total_sales),
+            "recent_invoices": recent_invoices_data
+        },
+        "customers": {
+            "total_customers": company.customers.filter(archived=False).count(),
+            "customers_with_balance": CustomerBalance.objects.filter(company=company, balance__gt=0).count()
+        }
+    })
+
+@api_view(["GET"])
+@api_superuser_required
 def admin_get_company_invoices_by_phone(request):
     """Get all invoices for a company by phone number (superuser only)"""
     phone = request.GET.get('phone', '').strip()
@@ -692,6 +1063,38 @@ def admin_api_docs(request):
                     "parameters": {
                         "required": ["phone", "name"],
                         "optional": ["customer_phone", "email", "address"]
+                    }
+                },
+                f"{base_url}company/payment/add/": {
+                    "method": "POST",
+                    "description": "Add a new payment for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone", "amount", "customer_id or customer_name"],
+                        "optional": ["payment_method", "invoice_id", "notes"]
+                    }
+                },
+                f"{base_url}company/payment/withdraw/": {
+                    "method": "POST",
+                    "description": "Withdraw/refund payment for a company by phone number.",
+                    "parameters": {
+                        "required": ["phone", "customer_name", "amount"],
+                        "optional": ["reason"]
+                    }
+                },
+                f"{base_url}company/customer/details/": {
+                    "method": "GET",
+                    "description": "Get comprehensive customer details including balance, invoices, returns, and payments.",
+                    "parameters": {
+                        "required": ["phone", "customer_name"],
+                        "optional": []
+                    }
+                },
+                f"{base_url}company/financial-details/": {
+                    "method": "GET",
+                    "description": "Get comprehensive company financial details including profits, sales, inventory value.",
+                    "parameters": {
+                        "required": ["phone"],
+                        "optional": []
                     }
                 }
             }

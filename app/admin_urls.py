@@ -6,6 +6,8 @@ from .admin_api import (
     admin_get_company_returns_by_phone, admin_get_company_payments_by_phone,
     admin_get_company_users_by_phone, admin_get_company_categories_by_phone,
     admin_add_category_by_phone, admin_add_product_by_phone, admin_add_customer_by_phone,
+    admin_add_payment_by_phone, admin_withdraw_payment_by_phone,
+    admin_get_customer_details_by_phone, admin_get_company_financial_details_by_phone,
     admin_api_docs
 )
 
@@ -36,4 +38,12 @@ urlpatterns = [
     path('company/category/add/', admin_add_category_by_phone, name='admin_add_category_by_phone'),
     path('company/product/add/', admin_add_product_by_phone, name='admin_add_product_by_phone'),
     path('company/customer/add/', admin_add_customer_by_phone, name='admin_add_customer_by_phone'),
+    
+    # Payment management
+    path('company/payment/add/', admin_add_payment_by_phone, name='admin_add_payment_by_phone'),
+    path('company/payment/withdraw/', admin_withdraw_payment_by_phone, name='admin_withdraw_payment_by_phone'),
+    
+    # Detailed endpoints
+    path('company/customer/details/', admin_get_customer_details_by_phone, name='admin_get_customer_details_by_phone'),
+    path('company/financial-details/', admin_get_company_financial_details_by_phone, name='admin_get_company_financial_details_by_phone'),
 ]
