@@ -468,6 +468,7 @@ class CustomerBalance(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, unique=True, verbose_name='العميل')
     total_invoiced = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي الفواتير')
     total_paid = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي المدفوع')
+    total_withdrawn = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي المسحوب')
     total_returns = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='إجمالي المرتجعات')
     balance = models.DecimalField(max_digits=12, decimal_places=4, default=0, verbose_name='الرصيد')
     last_updated = models.DateTimeField(auto_now=True, verbose_name='آخر تحديث')
@@ -482,7 +483,8 @@ class CustomerBalance(models.Model):
     
     def calculate_balance(self):
         """حساب الرصيد"""
-        self.balance = self.total_invoiced - self.total_paid - self.total_returns
+        # الرصيد = إجمالي الفواتير - إجمالي المدفوع + إجمالي المسحوب - إجمالي المرتجعات
+        self.balance = self.total_invoiced - self.total_paid + self.total_withdrawn - self.total_returns
         self.save()
         return self.balance
 

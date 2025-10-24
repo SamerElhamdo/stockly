@@ -671,6 +671,7 @@ def admin_get_customer_details_by_phone(request):
         "balance": {
             "total_invoiced": float(balance.total_invoiced),
             "total_paid": float(balance.total_paid),
+            "total_withdrawn": float(balance.total_withdrawn),
             "total_returns": float(balance.total_returns),
             "current_balance": float(balance.balance),
             "last_updated": balance.last_updated.isoformat()
@@ -683,7 +684,8 @@ def admin_get_customer_details_by_phone(request):
             "total_payments": len(payments_data),
             "total_returns": len(returns_data),
             "total_invoiced_amount": sum(inv["total_amount"] for inv in invoices_data),
-            "total_paid_amount": sum(p["amount"] for p in payments_data),
+            "total_paid_amount": float(balance.total_paid),
+            "total_withdrawn_amount": float(balance.total_withdrawn),
             "total_returned_amount": sum(r["total_amount"] for r in returns_data)
         }
     })

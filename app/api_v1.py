@@ -34,17 +34,27 @@ def update_customer_balance(customer, company):
             defaults={
                 'total_invoiced': 0,
                 'total_paid': 0,
+                'total_withdrawn': 0,
                 'total_returns': 0,
                 'balance': 0
             }
         )
 
+        # حساب إجمالي الفواتير المؤكدة
         total_invoiced = sum(inv.total_amount for inv in customer.invoices.filter(company=company, status='confirmed'))
-        total_paid = sum(pay.amount for pay in Payment.objects.filter(customer=customer, company=company))
+        
+        # حساب إجمالي المدفوع (المبالغ الموجبة فقط)
+        total_paid = sum(pay.amount for pay in Payment.objects.filter(customer=customer, company=company, amount__gt=0))
+        
+        # حساب إجمالي المسحوب (المبالغ السالبة فقط)
+        total_withdrawn = sum(abs(pay.amount) for pay in Payment.objects.filter(customer=customer, company=company, amount__lt=0))
+        
+        # حساب إجمالي المرتجعات المعتمدة
         total_returns = sum(ret.total_amount for ret in Return.objects.filter(customer=customer, company=company, status='approved'))
 
         balance.total_invoiced = total_invoiced
         balance.total_paid = total_paid
+        balance.total_withdrawn = total_withdrawn
         balance.total_returns = total_returns
         balance.calculate_balance()
     except Exception as e:

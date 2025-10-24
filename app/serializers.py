@@ -223,8 +223,8 @@ class CustomerBalanceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerBalance
-        fields = ['id', 'company', 'customer', 'customer_name', 'total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated']
-        read_only_fields = ['company', 'total_invoiced', 'total_paid', 'total_returns', 'balance', 'last_updated']
+        fields = ['id', 'company', 'customer', 'customer_name', 'total_invoiced', 'total_paid', 'total_withdrawn', 'total_returns', 'balance', 'last_updated']
+        read_only_fields = ['company', 'total_invoiced', 'total_paid', 'total_withdrawn', 'total_returns', 'balance', 'last_updated']
 
 
 class AppConfigSerializer(serializers.ModelSerializer):
