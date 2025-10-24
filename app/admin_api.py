@@ -238,7 +238,8 @@ def admin_withdraw_payment_by_phone(request):
     phone = str(data.get('phone', '')).strip()
     customer_name = str(data.get('customer_name', '')).strip()
     amount = data.get('amount')
-    reason = str(data.get('reason', '')).strip()
+    payment_method = data.get('payment_method', 'cash')
+    notes = str(data.get('notes', '')).strip()
 
     if not phone or not customer_name or not amount:
         return Response({"error": "phone_customer_name_and_amount_required"}, status=400)
@@ -255,27 +256,14 @@ def admin_withdraw_payment_by_phone(request):
     if not customer:
         return Response({"error": "customer_not_found"}, status=404)
 
-    # Get customer's total payments to check if withdrawal is valid
-    total_payments = Payment.objects.filter(customer=customer, company=company).aggregate(
-        total=Sum('amount')
-    )['total'] or 0
-
-    # Check if withdrawal amount is valid
-    if float(amount) > float(total_payments):
-        return Response({
-            "error": "withdrawal_amount_exceeds_total_payments",
-            "total_payments": float(total_payments),
-            "requested_amount": float(amount)
-        }, status=400)
-
     # Create withdrawal payment (negative amount)
     withdrawal_payment = Payment.objects.create(
         company=company,
         customer=customer,
         invoice=None,  # Withdrawals are not tied to specific invoices
         amount=-float(amount),  # Negative amount for withdrawal
-        payment_method='cash',  # Default method for withdrawals
-        notes=f"سحب من رصيد العميل {customer_name}: {reason}" if reason else f"سحب من رصيد العميل {customer_name}",
+        payment_method=payment_method,  # Use provided payment method
+        notes=f"سحب من رصيد العميل {customer_name}" + (f": {notes}" if notes else ""),
         created_by=request.user
     )
 
@@ -288,11 +276,11 @@ def admin_withdraw_payment_by_phone(request):
     return Response({
         "id": withdrawal_payment.id,
         "amount": float(withdrawal_payment.amount),
+        "payment_method": withdrawal_payment.payment_method,
+        "payment_method_display": withdrawal_payment.get_payment_method_display(),
         "customer_name": customer.name,
         "customer_id": customer.id,
-        "reason": reason,
-        "total_customer_payments": float(total_payments),
-        "remaining_balance": float(total_payments) - float(amount),
+        "notes": notes,
         "company": company.name
     }, status=201)
 
@@ -1091,7 +1079,7 @@ def admin_api_docs(request):
                     "description": "Withdraw/refund payment for a company by phone number.",
                     "parameters": {
                         "required": ["phone", "customer_name", "amount"],
-                        "optional": ["reason"]
+                        "optional": ["payment_method", "notes"]
                     }
                 },
                 f"{base_url}company/customer/details/": {
