@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Stockly Mobile",
-    "slug": "stockly-mobile",
+    "name": "المحاسب الذكي",
+    "slug": "smart-accountant",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +19,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "يحتاج التطبيق إلى الوصول للكاميرا لمسح الباركود والكيو آر كود"
       },
-      "bundleIdentifier": "com.samerelhamdott.stocklymobile"
+      "bundleIdentifier": "com.mahmoudhamdo.smartaccountant"
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +35,7 @@
         "backgroundColor": "#0F172A",
         "translucent": false
       },
-      "package": "com.samerelhamdott.stocklymobile"
+      "package": "com.mahmoudhamdo.smartaccountant"
     },
     "web": {
       "favicon": "./assets/favicon.png"
