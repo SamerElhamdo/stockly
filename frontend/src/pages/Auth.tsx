@@ -542,7 +542,7 @@ export const Auth: React.FC = () => {
           <Tabs
             value={activeTab}
             onValueChange={(value) => setActiveTab(value as AuthTab)}
-            className="space-y-6"
+            className="space-y-3 sm:space-y-6"
           >
             <TabsList className="grid grid-cols-3">
               <TabsTrigger value="login">تسجيل الدخول</TabsTrigger>
