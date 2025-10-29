@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { isAxiosError } from "axios";
 import {
   ArrowPathIcon,
@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/custom-button";
 import { Input } from "@/components/ui/custom-input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
@@ -107,6 +108,7 @@ export const Auth: React.FC = () => {
   const [registerOtp, setRegisterOtp] = useState("");
   const [registerOtpVerified, setRegisterOtpVerified] = useState(false);
   const [registerOtpExpiry, setRegisterOtpExpiry] = useState<number | null>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const [resetData, setResetData] = useState<ResetFormData>({
     username: "",
@@ -156,6 +158,7 @@ export const Auth: React.FC = () => {
     !registerOtpSession ||
     !registerOtpVerified ||
     registerPasswordMismatch ||
+    !acceptTerms ||
     !registerData.companyName.trim() ||
     !registerData.companyCode.trim() ||
     !registerData.adminUsername.trim() ||
@@ -624,15 +627,6 @@ export const Auth: React.FC = () => {
                     required
                   />
                   <Input
-                    name="companyEmail"
-                    type="email"
-                    label="البريد الإلكتروني"
-                    placeholder="example@company.com"
-                    value={registerData.companyEmail}
-                    onChange={handleRegisterChange}
-                    leftIcon={<EnvelopeIcon className="h-4 w-4" />}
-                  />
-                  <Input
                     name="companyPhone"
                     type="tel"
                     label="رقم واتساب الشركة"
@@ -641,15 +635,6 @@ export const Auth: React.FC = () => {
                     onChange={handleRegisterChange}
                     leftIcon={<PhoneIcon className="h-4 w-4" />}
                     required
-                  />
-                  <Input
-                    name="companyAddress"
-                    type="text"
-                    label="عنوان الشركة"
-                    placeholder="العنوان التفصيلي (اختياري)"
-                    value={registerData.companyAddress}
-                    onChange={handleRegisterChange}
-                    leftIcon={<MapPinIcon className="h-4 w-4" />}
                     className="md:col-span-2"
                   />
                 </div>
@@ -780,6 +765,24 @@ export const Auth: React.FC = () => {
                       أدخل الرمز خلال {registerOtpExpiry ? Math.ceil(registerOtpExpiry / 60) : 5} دقائق لضمان نجاح التحقق.
                     </p>
                   )}
+                </div>
+
+                {/* Terms Acceptance Checkbox */}
+                <div className="flex items-start gap-2 p-4 bg-muted/50 rounded-lg border border-border">
+                  <Checkbox
+                    id="accept-terms"
+                    checked={acceptTerms}
+                    onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                  />
+                  <label
+                    htmlFor="accept-terms"
+                    className="text-sm text-muted-foreground cursor-pointer flex-1 leading-relaxed"
+                  >
+                    أوافق على{' '}
+                    <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                      شروط الاستخدام
+                    </Link>
+                  </label>
                 </div>
 
                 <Button
