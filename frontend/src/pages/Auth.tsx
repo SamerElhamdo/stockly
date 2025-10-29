@@ -535,7 +535,7 @@ export const Auth: React.FC = () => {
       <div className="w-full max-w-4xl" style={{ direction: 'rtl' }}>
         <div className="bg-card rounded-xl shadow-lg p-8 border border-border" style={{ direction: 'rtl' }}>
           <div className="text-center mb-8 space-y-2">
-            <h1 className="text-3xl font-bold text-primary">Stockly</h1>
+            <h1 className="text-3xl font-bold text-primary">المحاسب الذكي</h1>
             <p className="text-muted-foreground">منظومة إدارة المخزون والفواتير</p>
           </div>
 
@@ -991,7 +991,7 @@ export const Auth: React.FC = () => {
           )}
           
           <div className="text-center">
-            <p className="text-sm text-muted-foreground">© 2024 Stockly. جميع الحقوق محفوظة.</p>
+            <p className="text-sm text-muted-foreground" style={{ direction: 'ltr' }}>© 2025 - 2024 المحاسب الذكي جميع الحقوق محفوظة.</p>
           </div>
         </div>
       </div>

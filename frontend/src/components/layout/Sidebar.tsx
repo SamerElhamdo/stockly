@@ -133,7 +133,7 @@ export const Sidebar: React.FC = () => {
         <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-sidebar-primary leading-tight">Stockly</h2>
+              <h2 className="text-xl font-semibold text-sidebar-primary leading-tight">المحاسب الذكي</h2>
               <p className="text-xs text-sidebar-foreground/70 leading-tight">نظام إدارة المخزون</p>
             </div>
           )}

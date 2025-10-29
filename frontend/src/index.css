@@ -4,11 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Stockly Design System - Professional Arabic RTL Interface */
+/* المحاسب الذكي Design System - Professional Arabic RTL Interface */
 
 @layer base {
   :root {
-    /* Stockly Brand Colors (Light - Neumorphic soft palette) */
+    /* المحاسب الذكي Brand Colors (Light - Neumorphic soft palette) */
     --background: 222 45% 96%;
     --foreground: 222 47% 11%;
     --background-secondary: 208 32% 92%;
@@ -22,7 +22,7 @@
     --popover: 222 45% 97%;
     --popover-foreground: 222 47% 11%;
 
-    /* Stockly Primary Blue */
+    /* المحاسب الذكي Primary Blue */
     --primary: 219 78% 58%;
     --primary-foreground: 255 255 255;
     --primary-hover: 219 78% 50%;

@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         toast({
           title: 'تم تسجيل الدخول بنجاح',
-          description: 'مرحباً بك في منظومة Stockly',
+          description: 'مرحباً بك في منظومة المحاسب الذكي',
         });
         
         return true;
