@@ -259,7 +259,7 @@ export const DashboardScreen: React.FC = () => {
     >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerBlock}>
-          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>لوحة التحكم</Text>
+          <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>المحاسب الذكي</Text>
           <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>نظرة شاملة على أداء الشركة اليوم</Text>
         </View>
 

@@ -38,7 +38,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <View style={[styles.logoCard, { backgroundColor: theme.softPalette.primary.light }]}>
             <Image source={logo} resizeMode="cover" style={styles.logo} />
           </View>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>مرحباً بك مجدداً</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>مرحباً بك في المحاسب الذكي</Text>
           <Text style={[styles.subtitle, { color: theme.textMuted }]}>سجل دخولك للوصول إلى حسابك</Text>
         </View>
 

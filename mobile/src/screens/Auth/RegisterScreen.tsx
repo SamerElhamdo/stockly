@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import logo from '../../../assets/logo.png';
 
 import { ScreenContainer, SoftCard, SoftBadge, Button, Input } from '@/components';
@@ -12,16 +13,19 @@ import { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
+type Step = 'company' | 'verification' | 'admin';
+
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
-  const { showError, showSuccess, showInfo } = useToast();
+  const { showError, showSuccess } = useToast();
+  
+  // Current step
+  const [currentStep, setCurrentStep] = useState<Step>('company');
   
   // Form states
   const [companyName, setCompanyName] = useState('');
   const [companyCode, setCompanyCode] = useState('');
-  const [companyEmail, setCompanyEmail] = useState('');
   const [companyPhone, setCompanyPhone] = useState('');
-  const [companyAddress, setCompanyAddress] = useState('');
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
@@ -40,6 +44,34 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     () => adminPassword.length > 0 && adminPasswordConfirm.length > 0 && adminPassword !== adminPasswordConfirm,
     [adminPassword, adminPasswordConfirm],
   );
+
+  const canProceedFromCompany = useMemo(() => {
+    return companyName.trim() && companyCode.trim() && companyPhone.trim();
+  }, [companyName, companyCode, companyPhone]);
+
+  const steps: Array<{ key: Step; title: string; icon: string }> = [
+    { key: 'company', title: 'معلومات الشركة', icon: 'business-outline' },
+    { key: 'verification', title: 'التحقق', icon: 'checkmark-circle-outline' },
+    { key: 'admin', title: 'حساب المدير', icon: 'person-outline' },
+  ];
+
+  const currentStepIndex = steps.findIndex(s => s.key === currentStep);
+
+  const handleNextStep = () => {
+    if (currentStep === 'company') {
+      setCurrentStep('verification');
+    } else if (currentStep === 'verification') {
+      setCurrentStep('admin');
+    }
+  };
+
+  const handlePreviousStep = () => {
+    if (currentStep === 'verification') {
+      setCurrentStep('company');
+    } else if (currentStep === 'admin') {
+      setCurrentStep('verification');
+    }
+  };
 
   const handleSendOtp = async () => {
     if (!companyPhone.trim()) return;
@@ -90,9 +122,9 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         company: {
           name: companyName.trim(),
           code: companyCode.trim(),
-          email: companyEmail.trim(),
+          email: '',
           phone: companyPhone.trim(),
-          address: companyAddress.trim(),
+          address: '',
         },
         admin: { username: adminUsername.trim(), password: adminPassword },
         otp_session_id: registerOtpSession,
@@ -111,6 +143,122 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const renderCompanyInfo = () => (
+    <View style={styles.stepContent}>
+      <Text style={[styles.stepDescription, { color: theme.textMuted }]}>
+        أدخل المعلومات الأساسية لشركتك
+      </Text>
+      
+      <Input 
+        label="اسم الشركة *" 
+        value={companyName} 
+        onChangeText={setCompanyName} 
+        placeholder="مثال: شركة النجاح" 
+      />
+      <Input 
+        label="رمز الشركة *" 
+        value={companyCode} 
+        onChangeText={setCompanyCode} 
+        placeholder="رمز مميز للشركة" 
+      />
+      <Input 
+        label="رقم واتساب الشركة *" 
+        value={companyPhone} 
+        onChangeText={(t) => {
+          setCompanyPhone(t);
+          setRegisterOtpSession(null);
+          setRegisterOtp('');
+          setRegisterOtpVerified(false);
+        }} 
+        placeholder="9665XXXXXXXX" 
+        keyboardType="phone-pad" 
+      />
+    </View>
+  );
+
+  const renderVerification = () => (
+    <View style={styles.stepContent}>
+      <Text style={[styles.stepDescription, { color: theme.textMuted }]}>
+        سنرسل رمز التحقق عبر واتساب
+      </Text>
+      
+      <Button
+        title={isSendingRegisterOtp ? 'جاري الإرسال...' : 'إرسال رمز التحقق'}
+        variant="secondary"
+        onPress={handleSendOtp}
+        disabled={!companyPhone.trim() || isSendingRegisterOtp}
+      />
+      
+      {registerOtpSession && (
+        <View style={styles.otpSection}>
+          <Input 
+            label="رمز التحقق (6 أرقام)" 
+            value={registerOtp} 
+            onChangeText={setRegisterOtp} 
+            placeholder="أدخل الرمز المرسل" 
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          <Button
+            title={isVerifyingRegisterOtp ? 'جاري التحقق...' : 'تأكيد الرمز'}
+            variant="secondary"
+            onPress={handleVerifyOtp}
+            disabled={registerOtp.length !== 6 || isVerifyingRegisterOtp}
+          />
+          {registerOtpVerified && (
+            <SoftBadge label="✓ تم التحقق من الرقم" variant="success" />
+          )}
+        </View>
+      )}
+    </View>
+  );
+
+  const renderAdminAccount = () => (
+    <View style={styles.stepContent}>
+      <Text style={[styles.stepDescription, { color: theme.textMuted }]}>
+        أنشئ حساب المدير للدخول إلى النظام
+      </Text>
+      
+      <Input 
+        label="اسم المستخدم *" 
+        value={adminUsername} 
+        onChangeText={setAdminUsername} 
+        placeholder="اختر اسم مستخدم" 
+        autoCapitalize="none" 
+      />
+      <Input 
+        label="كلمة المرور *" 
+        value={adminPassword} 
+        onChangeText={setAdminPassword} 
+        placeholder="كلمة مرور قوية" 
+        secureTextEntry 
+        secureToggle 
+      />
+      <Input 
+        label="تأكيد كلمة المرور *" 
+        value={adminPasswordConfirm} 
+        onChangeText={setAdminPasswordConfirm} 
+        placeholder="أعد إدخال كلمة المرور" 
+        secureTextEntry 
+        secureToggle 
+        error={registerPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} 
+      />
+    </View>
+  );
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 'company':
+        return renderCompanyInfo();
+      case 'verification':
+        return renderVerification();
+      case 'admin':
+        return renderAdminAccount();
+      default:
+        return null;
+    }
+  };
+
   return (
     <ScreenContainer>
       <StatusBar style={theme.name === 'light' ? 'dark' : 'light'} />
@@ -121,124 +269,104 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             <Image source={logo} resizeMode="cover" style={styles.logo} />
           </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>تسجيل شركة جديدة</Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>أدخل بيانات شركتك لإنشاء حساب جديد</Text>
+        </View>
+
+        {/* Steps Indicator */}
+        <View style={styles.stepsContainer}>
+          {steps.map((step, index) => {
+            const isActive = currentStepIndex === index;
+            const isCompleted = currentStepIndex > index;
+            const isAccessible = isActive || isCompleted || index <= currentStepIndex;
+            
+            return (
+              <React.Fragment key={step.key}>
+                <TouchableOpacity
+                  style={styles.stepItem}
+                  onPress={() => isAccessible && setCurrentStep(step.key)}
+                  disabled={!isAccessible}
+                >
+                  <View style={[
+                    styles.stepIcon,
+                    { 
+                      backgroundColor: isActive || isCompleted 
+                        ? theme.softPalette.success.main 
+                        : theme.surface,
+                      borderColor: isActive || isCompleted 
+                        ? theme.softPalette.success.main 
+                        : theme.border,
+                    }
+                  ]}>
+                    {isCompleted ? (
+                      <Ionicons name="checkmark" size={20} color="white" />
+                    ) : (
+                      <Ionicons name={step.icon as any} size={20} color={isActive ? 'white' : theme.textMuted} />
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.stepTitle,
+                    { 
+                      color: isActive || isCompleted 
+                        ? theme.softPalette.success.main 
+                        : theme.textMuted 
+                    }
+                  ]}>
+                    {step.title}
+                  </Text>
+                </TouchableOpacity>
+                {index < steps.length - 1 && (
+                  <View style={[
+                    styles.stepConnector,
+                    { 
+                      backgroundColor: currentStepIndex > index 
+                        ? theme.softPalette.success.main 
+                        : theme.border 
+                    }
+                  ]} />
+                )}
+              </React.Fragment>
+            );
+          })}
         </View>
 
         {/* Form Card */}
         <SoftCard style={styles.formCard}>
-          <View style={styles.form}>
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>معلومات الشركة</Text>
-              <Input 
-                label="اسم الشركة" 
-                value={companyName} 
-                onChangeText={setCompanyName} 
-                placeholder="مثال: شركة النجاح" 
-              />
-              <Input 
-                label="رمز الشركة" 
-                value={companyCode} 
-                onChangeText={setCompanyCode} 
-                placeholder="رمز مميز للشركة" 
-              />
-              <Input 
-                label="البريد الإلكتروني" 
-                value={companyEmail} 
-                onChangeText={setCompanyEmail} 
-                placeholder="example@company.com" 
-                autoCapitalize="none" 
-                keyboardType="email-address" 
-              />
-              <Input 
-                label="رقم واتساب الشركة" 
-                value={companyPhone} 
-                onChangeText={(t) => {
-                  setCompanyPhone(t);
-                  setRegisterOtpSession(null);
-                  setRegisterOtp('');
-                  setRegisterOtpVerified(false);
-                }} 
-                placeholder="9665XXXXXXXX" 
-                keyboardType="phone-pad" 
-              />
-              <Input 
-                label="عنوان الشركة (اختياري)" 
-                value={companyAddress} 
-                onChangeText={setCompanyAddress} 
-                placeholder="العنوان التفصيلي" 
-              />
-            </View>
+          <Text style={[styles.stepHeader, { color: theme.textPrimary }]}>
+            {steps[currentStepIndex].title}
+          </Text>
+          {renderCurrentStep()}
+        </SoftCard>
 
-            {/* OTP Verification */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>التحقق من الرقم</Text>
-              <Button
-                title={isSendingRegisterOtp ? 'جاري الإرسال...' : 'إرسال رمز التحقق عبر واتساب'}
-                variant="secondary"
-                onPress={handleSendOtp}
-                disabled={!companyPhone.trim()}
-              />
-              
-              {registerOtpSession && (
-                <View style={styles.otpSection}>
-                  <Input 
-                    label="رمز التحقق" 
-                    value={registerOtp} 
-                    onChangeText={setRegisterOtp} 
-                    placeholder="6 أرقام" 
-                    keyboardType="number-pad"
-                    maxLength={6}
-                  />
-                  <Button
-                    title={isVerifyingRegisterOtp ? 'جاري التحقق...' : 'تأكيد الرمز'}
-                    variant="secondary"
-                    onPress={handleVerifyOtp}
-                    disabled={registerOtp.length !== 6}
-                  />
-                  {registerOtpVerified && (
-                    <SoftBadge label="✓ الرقم موثق" variant="success" />
-                  )}
-                </View>
-              )}
-            </View>
-
-            {/* Admin Account */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>حساب المدير</Text>
-              <Input 
-                label="اسم المستخدم للمدير" 
-                value={adminUsername} 
-                onChangeText={setAdminUsername} 
-                placeholder="اختر اسم مستخدم" 
-                autoCapitalize="none" 
-              />
-              <Input 
-                label="كلمة مرور المدير" 
-                value={adminPassword} 
-                onChangeText={setAdminPassword} 
-                placeholder="كلمة مرور قوية" 
-                secureTextEntry 
-                secureToggle 
-              />
-              <Input 
-                label="تأكيد كلمة المرور" 
-                value={adminPasswordConfirm} 
-                onChangeText={setAdminPasswordConfirm} 
-                placeholder="أعد إدخال كلمة المرور" 
-                secureTextEntry 
-                secureToggle 
-                error={registerPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} 
-              />
-            </View>
-
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          {currentStep !== 'company' && (
+            <Button
+              title="السابق"
+              variant="secondary"
+              onPress={handlePreviousStep}
+              style={styles.button}
+            />
+          )}
+          <View style={{ flex: 1 }} />
+          {currentStep === 'admin' ? (
             <Button
               title="إتمام التسجيل"
-              disabled={registerPasswordMismatch || !registerOtpSession || !registerOtpVerified}
+              disabled={registerPasswordMismatch || !registerOtpSession || !registerOtpVerified || !adminUsername.trim() || !adminPassword}
               loading={isRegisterSubmitting}
               onPress={handleRegister}
+              style={styles.button}
             />
-          </View>
-        </SoftCard>
+          ) : (
+            <Button
+              title="التالي"
+              disabled={
+                (currentStep === 'company' && !canProceedFromCompany) ||
+                (currentStep === 'verification' && !registerOtpVerified)
+              }
+              onPress={handleNextStep}
+              style={styles.button}
+            />
+          )}
+        </View>
 
         {/* Login Link */}
         <View style={styles.loginSection}>
@@ -259,20 +387,18 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
   logoWrapper: {
     alignItems: 'center',
     gap: 12,
+    marginBottom: 24,
   },
   logoCard: {
-    width: 100,
-    height: 100,
-    borderRadius: 28,
+    width: 80,
+    height: 80,
+    borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#4caf50',
     shadowOffset: { width: 0, height: 8 },
@@ -283,42 +409,77 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(76, 175, 80, 0.15)',
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
     marginTop: 8,
   },
-  subtitle: {
-    fontSize: 14,
+  stepsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  stepItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+  stepTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 6,
     textAlign: 'center',
+  },
+  stepConnector: {
+    height: 2,
+    flex: 1,
+    marginHorizontal: -8,
+    marginBottom: 20,
   },
   formCard: {
     width: '100%',
-    maxWidth: 420,
-    alignSelf: 'center',
+    marginBottom: 24,
   },
-  form: {
-    gap: 20,
+  stepHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
   },
-  section: {
-    gap: 12,
+  stepContent: {
+    gap: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+  stepDescription: {
+    fontSize: 14,
+    marginBottom: 8,
   },
   otpSection: {
     gap: 12,
+    marginTop: 8,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  button: {
+    minWidth: 120,
   },
   loginSection: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    marginTop: 8,
   },
   loginQuestion: {
     fontSize: 15,
@@ -328,4 +489,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
