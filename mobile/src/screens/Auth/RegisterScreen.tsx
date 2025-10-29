@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,10 +40,16 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [isVerifyingRegisterOtp, setIsVerifyingRegisterOtp] = useState(false);
   const [isRegisterSubmitting, setIsRegisterSubmitting] = useState(false);
   
+  // Terms acceptance
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  
   const registerPasswordMismatch = useMemo(
     () => adminPassword.length > 0 && adminPasswordConfirm.length > 0 && adminPassword !== adminPasswordConfirm,
     [adminPassword, adminPasswordConfirm],
   );
+
+  // Get terms URL from environment
+  const TERMS_URL = process.env.EXPO_PUBLIC_TERMS_URL || 'https://www.example.com/terms';
 
   const canProceedFromCompany = useMemo(() => {
     return companyName.trim() && companyCode.trim() && companyPhone.trim();
@@ -115,6 +121,10 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
+    if (!termsAccepted) {
+      showError('يجب الموافقة على الشروط والأحكام أولاً');
+      return;
+    }
     if (registerPasswordMismatch || !registerOtpSession || !registerOtpVerified) return;
     setIsRegisterSubmitting(true);
     try {
@@ -243,6 +253,40 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         secureToggle 
         error={registerPasswordMismatch ? 'كلمات المرور غير متطابقة' : undefined} 
       />
+
+      {/* Terms and Conditions */}
+      <View style={styles.termsContainer}>
+        <TouchableOpacity 
+          style={styles.checkboxRow}
+          onPress={() => setTermsAccepted(!termsAccepted)}
+          activeOpacity={0.7}
+        >
+          <View style={[
+            styles.checkbox,
+            {
+              backgroundColor: termsAccepted ? theme.softPalette.success.main : 'transparent',
+              borderColor: termsAccepted ? theme.softPalette.success.main : theme.border,
+            }
+          ]}>
+            {termsAccepted && (
+              <Ionicons name="checkmark" size={16} color="white" />
+            )}
+          </View>
+          <View style={styles.termsTextWrapper}>
+            <Text style={[styles.termsText, { color: theme.textPrimary }]}>
+              أوافق على{' '}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => Linking.openURL(TERMS_URL)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.termsLink, { color: theme.softPalette.primary.main }]}>
+                الشروط والأحكام
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -350,7 +394,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           {currentStep === 'admin' ? (
             <Button
               title="إتمام التسجيل"
-              disabled={registerPasswordMismatch || !registerOtpSession || !registerOtpVerified || !adminUsername.trim() || !adminPassword}
+              disabled={registerPasswordMismatch || !registerOtpSession || !registerOtpVerified || !adminUsername.trim() || !adminPassword || !termsAccepted}
               loading={isRegisterSubmitting}
               onPress={handleRegister}
               style={styles.button}
@@ -487,5 +531,36 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  termsContainer: {
+    marginTop: 8,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  termsTextWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  termsText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  termsLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
