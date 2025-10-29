@@ -184,6 +184,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://stockly.encryptosystem.com',
     'https://www.stockly.encryptosystem.com',
     'https://mohaseb.encryptosystem.com',
+    'https://backend.encryptosystem.com',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://localhost:5173',
