@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 
 // Context Providers
@@ -57,7 +57,11 @@ const App = () => (
               <Route path="/terms" element={<Terms />} />
               
               {/* Protected Routes with Layout */}
-              <Route element={<Layout children={<></>} />}>
+              <Route element={
+                <Layout>
+                  <Outlet />
+                </Layout>
+              }>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route 
                   path="/dashboard" 
