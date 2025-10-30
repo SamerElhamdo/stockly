@@ -9,6 +9,7 @@ from .api_v1 import (
     DashboardStatsView, CompanyRegisterView, WhatsAppWebhookView, LegacyDeleteUserView,
     AppConfigView
 )
+from .views import backend_home
 # Note: This app exposes API endpoints only. No server-rendered templates.
 
 router = DefaultRouter()
@@ -47,4 +48,7 @@ urlpatterns = [
   
   # App config endpoint (public - للحصول على رابط تحميل APK)
   path('api/app-config/', AppConfigView.as_view(), name='app-config'),
+
+  # Backend home
+  path('/', backend_home, name='backend-home'),
 ]

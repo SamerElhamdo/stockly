@@ -1,8 +1,4 @@
-"""
-API-ONLY NOTICE
-===============
+from django.http import JsonResponse
 
-This module previously included server-rendered template views (dashboard, customers, etc.).
-The project has migrated to a frontend SPA; no templates are served from the backend now.
-All legacy page views and PDF rendering have been removed. Backend exposes APIs only.
-"""
+def backend_home(request):
+    return JsonResponse({'status': 'ok', 'message': 'Backend is running'})
