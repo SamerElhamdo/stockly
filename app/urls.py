@@ -25,7 +25,7 @@ router.register(r'v1/users', UsersViewSet, basename='v1-users')
 
 urlpatterns = [
 
-  path('/', backend_home, name='backend-home'),
+  path('', backend_home, name='backend-home'),
 
   # DRF v1 API
   path('api/', include(router.urls)),
