@@ -1,4 +1,4 @@
-package com.samerelhamdott.stocklymobile
+package com.mahmoudhamdo.smartaccountant
 
 import android.os.Build
 import android.os.Bundle

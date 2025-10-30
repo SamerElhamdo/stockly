@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.samerelhamdott.stocklymobile'
+    namespace 'com.mahmoudhamdo.smartaccountant'
     defaultConfig {
-        applicationId 'com.samerelhamdott.stocklymobile'
+        applicationId 'com.mahmoudhamdo.smartaccountant'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
