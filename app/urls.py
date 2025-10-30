@@ -24,6 +24,9 @@ router.register(r'v1/company-profile', CompanyProfileViewSet, basename='v1-compa
 router.register(r'v1/users', UsersViewSet, basename='v1-users')
 
 urlpatterns = [
+
+  path('/', backend_home, name='backend-home'),
+
   # DRF v1 API
   path('api/', include(router.urls)),
   path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -50,5 +53,5 @@ urlpatterns = [
   path('api/app-config/', AppConfigView.as_view(), name='app-config'),
 
   # Backend home
-  path('/', backend_home, name='backend-home'),
+
 ]
