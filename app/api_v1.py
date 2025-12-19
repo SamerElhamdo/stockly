@@ -426,6 +426,7 @@ class CustomerBalanceViewSet(CompanyScopedQuerysetMixin, mixins.ListModelMixin, 
     serializer_class = CustomerBalanceSerializer
     queryset = CustomerBalance.objects.select_related('customer')
     permission_classes = [IsCompanyStaff]
+    pagination_class = None
 
 
 class UsersViewSet(viewsets.ModelViewSet):
