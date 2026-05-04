@@ -493,7 +493,7 @@ class OTPRequestView(APIView):
                 except User.DoesNotExist:
                     return Response({"error": "اسم المستخدم أو رقم الهاتف غير صحيح"}, status=400)
 
-            webhook_url = "https://n8n.srv772321.hstgr.cloud/webhook/7d526f0e-36a0-4d77-a05b-e9a0fe46785a"
+            webhook_url = "https://n8n.whatsnow.io/webhook/7d526f0e-36a0-4d77-a05b-e9a0fe46785a"
             try:
                 r = requests.post(webhook_url, json={"phone": clean_phone, "otp_code": otp_code}, timeout=5)
                 try:
